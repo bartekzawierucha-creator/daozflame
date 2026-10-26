@@ -55,6 +55,7 @@ import com.example.ui.audio.WuxiaAudioEngine
 import com.example.ui.screens.DiplomacyScreen
 import com.example.ui.screens.MultiplayerScreen
 import com.example.ui.screens.WorldMapScreen
+import com.example.game.content.ResourceCatalog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -67,7 +68,9 @@ internal fun champion(ui: WuxiaUiState): Disciple? = ui.disciples.maxByOrNull { 
 
 private val REGION_SPOTS = listOf(
     Offset(0.28f, 0.52f), Offset(0.70f, 0.27f), Offset(0.22f, 0.35f),
-    Offset(0.60f, 0.45f), Offset(0.80f, 0.56f), Offset(0.42f, 0.19f)
+    Offset(0.60f, 0.45f), Offset(0.80f, 0.56f), Offset(0.42f, 0.19f),
+    Offset(0.86f, 0.40f), Offset(0.12f, 0.24f), Offset(0.36f, 0.33f),
+    Offset(0.70f, 0.12f), Offset(0.12f, 0.55f), Offset(0.50f, 0.56f)
 )
 
 private fun spotFor(i: Int): Offset =
@@ -407,6 +410,12 @@ internal fun sectGlyph(name: String): String = when {
     name.contains("Klasztor", true) || name.contains("Wadżr", true) -> "佛"
     name.contains("Cesar", true) -> "帝"
     name.contains("Ostrz", true) -> "刃"
+    name.contains("Gromów", true) -> "雷"
+    name.contains("Mórz", true) || name.contains("Smoczego Króla", true) -> "龙"
+    name.contains("Księżyc", true) || name.contains("Pijanego", true) -> "仙"
+    name.contains("Bestii", true) -> "兽"
+    name.contains("Lodow", true) -> "冰"
+    name.contains("Kości", true) -> "毒"
     name.contains("Gwiezd", true) || name.contains("Niebiań", true) -> "天"
     else -> "山"
 }
@@ -818,17 +827,24 @@ private enum class ItemKind { PILL, ORE, HERB, ARTIFACT }
 
 private data class VaultItem(val name: String, val count: Int, val kind: ItemKind, val rarity: String, val artifact: Artifact? = null)
 
+private val pillNames: Set<String> by lazy { com.example.game.WuxiaGenerator.getAlchemyRecipes().map { it.pillName }.toSet() }
+
 private fun kindOf(name: String): ItemKind = when {
-    name.contains("Pigułka", true) || name.contains("Eliksir", true) -> ItemKind.PILL
-    listOf("Żelazo", "Nefryt", "Kryształ", "Ruda", "Obsydian", "Piasek", "Metal").any { name.contains(it, true) } -> ItemKind.ORE
-    else -> ItemKind.HERB
+    name in pillNames || name.contains("Pigułka", true) || name.contains("Eliksir", true) -> ItemKind.PILL
+    ResourceCatalog.herbs.any { it.name == name } -> ItemKind.HERB
+    else -> ItemKind.ORE // rudy i trofea z bossów
 }
 
-private fun rarityOf(name: String): String = when {
-    name.contains("Pustki", true) || name.contains("Niebiańsk", true) -> "Legendarny"
-    name.contains("Kryształ", true) || name.contains("Lotos", true) || name.contains("Smoka", true) || name.contains("Fundament", true) -> "Epicki"
-    name.contains("Gwiezdne", true) || name.contains("Pigułka", true) -> "Rzadki"
-    else -> "Zwykły"
+private fun rarityOf(name: String): String {
+    val tier = (ResourceCatalog.herbs + ResourceCatalog.minerals).firstOrNull { it.name == name }?.tier
+        ?: com.example.game.WuxiaGenerator.getAlchemyRecipes().firstOrNull { it.pillName == name }?.tier
+        ?: 4 // trofea z bossów
+    return when {
+        tier >= 5 -> "Legendarny"
+        tier >= 4 -> "Epicki"
+        tier >= 2 -> "Rzadki"
+        else -> "Zwykły"
+    }
 }
 
 private fun itemColor(name: String, kind: ItemKind): Color {
@@ -982,6 +998,16 @@ fun VaultModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
                                 modifier = Modifier.height(36.dp),
                                 testTag = "vault_use_pill"
                             )
+                            sel.kind == ItemKind.PILL -> {
+                                // Pigułkę dostaje adept najbliżej przełomu (jeszcze niegotowy), a gdy wszyscy gotowi – czempion.
+                                val target = ui.disciples.filter { it.realmProgress < 100 }.maxByOrNull { it.realmProgress } ?: champ
+                                if (target != null) GoldCta(
+                                    "Podaj: ${target.name.substringBefore(" (").substringBefore(" ")}",
+                                    onClick = { WuxiaAudioEngine.playCauldronFlame(); viewModel.usePill(target.id, sel.name) },
+                                    modifier = Modifier.height(36.dp),
+                                    testTag = "vault_give_pill"
+                                )
+                            }
                         }
                     }
                 }

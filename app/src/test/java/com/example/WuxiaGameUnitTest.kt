@@ -47,7 +47,7 @@ class WuxiaGameUnitTest {
     @Test
     fun testWorldRegionsAndBeasts() {
         val regions = WuxiaGenerator.getInitialRegions()
-        assertEquals(6, regions.size)
+        assertEquals(12, regions.size)
         assertTrue(regions.all { it.bossBeast != null })
         assertTrue(regions.any { it.biome == BiomeType.KUNLUN_PEAK })
         assertTrue(regions.any { it.biome == BiomeType.LAVA_CHASM })
@@ -69,5 +69,54 @@ class WuxiaGameUnitTest {
         val readyDisciple = disciple.copy(realmProgress = 100)
         assertEquals(100, readyDisciple.realmProgress)
         assertEquals(CultivationRealm.QI_CONDENSATION_1, readyDisciple.realm)
+    }
+
+    @Test
+    fun testContentVolume() {
+        assertEquals(50, WuxiaGenerator.getRandomEvents().size)
+        assertEquals(24, WuxiaGenerator.getInitialTerritories().size)
+        assertEquals(16, WuxiaGenerator.getInitialRivalSects().size)
+        assertEquals(36, WuxiaGenerator.getAlchemyRecipes().size)
+        assertEquals(30, WuxiaGenerator.getForgingRecipes().size)
+        assertEquals(12, WuxiaGenerator.getInitialSectBeasts().size)
+        assertEquals(12, WuxiaGenerator.getGeocentricFlames().size)
+        assertTrue(WuxiaGenerator.getAllSkillNodes().size >= 80)
+    }
+
+    @Test
+    fun testContentIdsAreUnique() {
+        fun <T> assertUnique(label: String, ids: List<T>) =
+            assertEquals("Zdublowane id: $label", ids.size, ids.toSet().size)
+        assertUnique("zdarzenia", WuxiaGenerator.getRandomEvents().map { it.id })
+        assertUnique("techniki", WuxiaGenerator.getAllSkillNodes().map { it.id })
+        assertUnique("krainy", WuxiaGenerator.getInitialRegions().map { it.id })
+        assertUnique("terytoria", WuxiaGenerator.getInitialTerritories().map { it.id })
+        assertUnique("sekty", WuxiaGenerator.getInitialRivalSects().map { it.id })
+        assertUnique("receptury", WuxiaGenerator.getAlchemyRecipes().map { it.id })
+        assertUnique("kuźnia", WuxiaGenerator.getForgingRecipes().map { it.id })
+        assertUnique("bestie", WuxiaGenerator.getInitialSectBeasts().map { it.id })
+        assertUnique("płomienie", WuxiaGenerator.getGeocentricFlames().map { it.id })
+    }
+
+    @Test
+    fun testEveryIngredientIsObtainable() {
+        // Każdy składnik receptur i kuźni musi dać się zdobyć: zbieranie, krainy, łupy bossów lub nagrody zdarzeń.
+        val regions = WuxiaGenerator.getInitialRegions()
+        val obtainable = mutableSetOf<String>()
+        obtainable += com.example.game.content.ResourceCatalog.herbs.map { it.name }
+        obtainable += com.example.game.content.ResourceCatalog.minerals.map { it.name }
+        regions.forEach { r -> obtainable += r.mineralResource; obtainable += r.herbResource; r.bossBeast?.let { obtainable += it.dropItemName } }
+        val needed = WuxiaGenerator.getAlchemyRecipes().flatMap { listOfNotNull(it.requiredHerbName, it.secondaryHerbName) } +
+            WuxiaGenerator.getForgingRecipes().map { it.requiredMineralName }
+        val missing = needed.filter { it !in obtainable }.distinct()
+        assertTrue("Niedostępne składniki: $missing", missing.isEmpty())
+    }
+
+    @Test
+    fun testEventEligibility() {
+        val events = WuxiaGenerator.getRandomEvents()
+        val dayOne = events.filter { it.isEligible(day = 1, reputation = 180, time = TimeOfDay.DAY) }
+        assertTrue("Na start musi być z czego losować", dayOne.size >= 15)
+        assertTrue(events.any { it.requiredTimeOfDay == TimeOfDay.FULL_MOON })
     }
 }

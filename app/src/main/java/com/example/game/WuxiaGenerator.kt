@@ -584,7 +584,7 @@ object WuxiaGenerator {
             )
         )
 
-        return baseSkills + generateProceduralTechniques(30)
+        return baseSkills + com.example.game.content.TechniqueCatalog.techniques
     }
 
     fun generateProceduralTechniques(count: Int = 30): List<SkillNode> {
@@ -636,7 +636,7 @@ object WuxiaGenerator {
     }
 
     fun getGeocentricFlames(): List<GeocentricFlame> {
-        return listOf(
+        return com.example.game.content.WorldCatalog.extraFlames.let { extra -> listOf(
             GeocentricFlame("flame_1", "Błękitny Płomień Serca Lawy", "Ziemny Płomień", 25, 40, "Płomień wydobyty z głębi wulkanu. Wspomaga kucie ostrzy i alchemię."),
             GeocentricFlame("flame_2", "Mroźny Płomień Astralnego Lotosu", "Niebiański Płomień", 35, 65, "Płonie lodem, paraliżując ciepło i oczyszczając toksyny alchemiczne."),
             GeocentricFlame("flame_3", "Złoty Płomień Słonecznej Wrony", "Starożytny Płomień", 50, 95, "Pozostałość po legendarnym słońcu. Gwarantuje perfekcyjne wypalenie pigułek."),
@@ -645,7 +645,7 @@ object WuxiaGenerator {
             GeocentricFlame("flame_6", "Duchowy Płomień Tysiąca Bestii", "Płomień Bestialskiego Szału", 45, 110, "Zrodzony z dusz potężnych bestii. Drastycznie zwiększa siłę ataków adeptów."),
             GeocentricFlame("flame_7", "Cesarz Płomieni Złotego Słońca", "Najwyższy Płomień Czystego Yang", 65, 175, "Płomień czystego słońca potrafiący przetopić najtwardsze meteoryty niebios."),
             GeocentricFlame("flame_8", "Płomień Upadłego Serca Dantian", "Wewnętrzny Płomień Iluzji", 55, 130, "Płonie wprost w sercach wrogów, paraliżując ich zdolność skupienia Qi.")
-        )
+        ) + extra }
     }
 
     fun getInitialFacilities(): List<SectFacility> {
@@ -660,7 +660,7 @@ object WuxiaGenerator {
     }
 
     fun getInitialRegions(): List<WorldRegion> {
-        return listOf(
+        return com.example.game.content.WorldCatalog.extraRegions.let { extra -> listOf(
             WorldRegion(
                 id = "reg_1",
                 name = "Bambusowy Las Szmaragdowej Mgły",
@@ -727,11 +727,11 @@ object WuxiaGenerator {
                 herbResource = "Kwiat Niebiańskiego Zrozumienia",
                 bossBeast = MythicalBeast("Starożytny Błękitny Smok", "Władca Otchłani Pustki", 8000, 8000, 380, 210, "Boska Smocza Łuska", 3000, "🐉")
             )
-        )
+        ) + extra }
     }
 
     fun getInitialRivalSects(): List<RivalSect> {
-        return listOf(
+        return com.example.game.content.WorldCatalog.extraRivalSects.let { extra -> listOf(
             RivalSect(
                 id = "sect_wudang",
                 name = "Sekta Czystego Miecza Wudang",
@@ -902,11 +902,11 @@ object WuxiaGenerator {
                 cultivationBuffBonusPercent = 50,
                 controlledTerritoryIds = listOf("terr_10")
             )
-        )
+        ) + extra }
     }
 
     fun getInitialSectBeasts(): List<SectDivineBeast> {
-        return listOf(
+        return com.example.game.content.WorldCatalog.extraBeasts.let { extra -> listOf(
             SectDivineBeast(
                 id = "beast_qilin",
                 name = "Szmaragdowy Qilin Ziemi",
@@ -1027,11 +1027,11 @@ object WuxiaGenerator {
                 combatSkillDesc = "Połyka ataki wrogów odsyłając energię z powrotem do nadawcy",
                 favoriteHerb = "Starożytna Ruda Pustki"
             )
-        )
+        ) + extra }
     }
 
     fun getInitialTerritories(): List<TerritoryNode> {
-        return listOf(
+        return com.example.game.content.WorldCatalog.extraTerritories.let { extra -> listOf(
             TerritoryNode(
                 id = "terr_1",
                 name = "Dolina Stu Świętych Ziół",
@@ -1132,11 +1132,11 @@ object WuxiaGenerator {
                 yieldAmountPerCycle = 3,
                 garrisonDefensePower = 1100
             )
-        )
+        ) + extra }
     }
 
     fun getAlchemyRecipes(): List<AlchemyRecipe> {
-        return listOf(
+        return com.example.game.content.CraftCatalog.extraRecipes.let { extra -> listOf(
             // TIER 1 - Kondensacja Qi (Wymagana Sala Alchemii Poz. 1)
             AlchemyRecipe(
                 id = "rec_t1_1",
@@ -1394,7 +1394,7 @@ object WuxiaGenerator {
                 secondaryHerbName = "Kwiat Niebiańskiego Zrozumienia",
                 secondaryHerbCount = 3
             )
-        )
+        ) + extra }
     }
 
     fun generateProceduralIngredients(count: Int = 50): List<ResourceItem> {
@@ -1443,7 +1443,7 @@ object WuxiaGenerator {
     }
 
     fun getForgingRecipes(): List<ForgingRecipe> {
-        return listOf(
+        return com.example.game.content.CraftCatalog.extraForging.let { extra -> listOf(
             ForgingRecipe(
                 id = "forge_1",
                 artifactName = "Latający Miecz Szmaragdowego Wiatru",
@@ -1524,11 +1524,11 @@ object WuxiaGenerator {
                 requiredSpiritStones = 800,
                 artifactResult = Artifact("art_10", "Korona Cesarza Gwiazd Pustki", "Wieczne Dao", 160, 130, "Całkowita niewrażliwość na obrażenia krytyczne")
             )
-        )
+        ) + extra }
     }
 
     fun getRandomEvents(): List<RandomEvent> {
-        return listOf(
+        return com.example.game.content.EventCatalog.events.let { extra -> listOf(
             RandomEvent(
                 id = "ev_1",
                 title = "Odkrycie Starożytnego Grobowca Dao",
@@ -1567,7 +1567,7 @@ object WuxiaGenerator {
                     RandomEventChoice("Opatrz jego rany, lecz odeślij poza granice sekty", "Młodzieniec podziękował za ratunek i odszedł własną ścieżką.", stoneChange = 0, repChange = 5)
                 )
             )
-        )
+        ) + extra }
     }
 
     fun getMultiplayerRankings(): List<MultiplayerSectRanking> {

@@ -3,6 +3,7 @@ package com.example.game
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.model.*
+import com.example.game.content.ResourceCatalog
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -58,6 +59,8 @@ class WuxiaGameViewModel(
     val uiState: StateFlow<WuxiaUiState> = _uiState.asStateFlow()
 
     private var gameLoopJob: Job? = null
+    /** Ostatnio wylosowane zdarzenia – nie powtarzają się, dopóki nie minie 12 innych. */
+    private val recentEventIds = ArrayDeque<String>()
     private var combatJob: Job? = null
 
     init {
@@ -165,6 +168,7 @@ class WuxiaGameViewModel(
                     // 2. Disciples tick: Gain Qi & produce resources based on roles
                     var gatheredStones = 2 * state.disciples.size
                     val newInventory = state.inventory.toMutableMap()
+                    val exploredRegionIds = state.regions.filter { it.explorationProgress > 0 }.map { it.id }.toSet()
 
                     // Dochód z kontrolowanych terytoriów sekty
                     state.territories.filter { it.controllingSectId == "player" }.forEach { terr ->
@@ -253,15 +257,19 @@ class WuxiaGameViewModel(
                             }
                             DiscipleRole.HERB_GATHERING -> {
                                 if (Random.nextBoolean()) {
-                                    val herb = listOf("Trawa Wiecznej Wiosny", "Śnieżny Lotos Oświecenia", "Fioletowy Korzeń Skorpiona").random()
-                                    newInventory[herb] = (newInventory[herb] ?: 0) + 1
+                                    val pool = ResourceCatalog.gatherable(ResourceCatalog.herbs, exploredRegionIds)
+                                    ResourceCatalog.pickWeighted(pool)?.let { herb ->
+                                        newInventory[herb.name] = (newInventory[herb.name] ?: 0) + 1
+                                    }
                                 }
                                 disciple
                             }
                             DiscipleRole.MINING -> {
                                 if (Random.nextBoolean()) {
-                                    val mineral = listOf("Duchowy Nefryt", "Gwiezdne Żelazo").random()
-                                    newInventory[mineral] = (newInventory[mineral] ?: 0) + 1
+                                    val pool = ResourceCatalog.gatherable(ResourceCatalog.minerals, exploredRegionIds)
+                                    ResourceCatalog.pickWeighted(pool)?.let { mineral ->
+                                        newInventory[mineral.name] = (newInventory[mineral.name] ?: 0) + 1
+                                    }
                                 }
                                 disciple
                             }
@@ -306,7 +314,13 @@ class WuxiaGameViewModel(
                     // 4. Random Event Trigger (chance every 16 ticks if none active)
                     var currentEvent = state.activeRandomEvent
                     if (currentEvent == null && cycleTick % 16 == 0 && Random.nextInt(100) < 65) {
-                        currentEvent = WuxiaGenerator.getRandomEvents().random()
+                        val eligible = WuxiaGenerator.getRandomEvents()
+                            .filter { it.isEligible(newDay, state.sectReputation, nextTime) && it.id !in recentEventIds }
+                        currentEvent = eligible.randomOrNull()
+                        currentEvent?.let {
+                            recentEventIds.addLast(it.id)
+                            while (recentEventIds.size > 12) recentEventIds.removeFirst()
+                        }
                     }
 
                     // 5. Subtle ping jitter for low-latency multiplayer realism
@@ -1393,6 +1407,46 @@ class WuxiaGameViewModel(
 
     private fun showNotification(msg: String) {
         _uiState.update { it.copy(notificationMessage = msg) }
+    }
+
+    /**
+     * Zażycie pigułki z magazynu przez adepta: postęp Qi (breakthroughBonusPercent),
+     * leczenie (hpRestore) i punkty Dao (daoPointsBonus) wg receptury.
+     */
+    fun usePill(discipleId: String, pillName: String) {
+        val state = _uiState.value
+        val disciple = state.disciples.find { it.id == discipleId } ?: return
+        val count = state.inventory[pillName] ?: 0
+        if (count < 1) {
+            showNotification("Brak pigułki: $pillName w magazynie!")
+            return
+        }
+        val recipe = WuxiaGenerator.getAlchemyRecipes().find { it.pillName == pillName }
+        if (recipe == null) {
+            showNotification("$pillName nie jest pigułką do zażycia.")
+            return
+        }
+        val progress = (disciple.realmProgress + recipe.breakthroughBonusPercent).coerceAtMost(100)
+        val hp = (disciple.currentHp + recipe.hpRestore).coerceAtMost(disciple.maxHp)
+        val updated = disciple.copy(
+            realmProgress = progress,
+            currentHp = hp,
+            daoPoints = disciple.daoPoints + recipe.daoPointsBonus
+        )
+        val effects = buildList {
+            if (recipe.breakthroughBonusPercent > 0) add("Qi ${disciple.realmProgress}% → $progress%")
+            if (recipe.hpRestore > 0) add("HP ${disciple.currentHp} → $hp")
+            if (recipe.daoPointsBonus > 0) add("+${recipe.daoPointsBonus} pkt Dao")
+        }.joinToString(", ")
+        _uiState.update { current ->
+            val inv = current.inventory.toMutableMap()
+            inv[pillName] = count - 1
+            current.copy(
+                disciples = current.disciples.map { if (it.id == discipleId) updated else it },
+                inventory = inv,
+                notificationMessage = "💊 ${disciple.name.substringBefore(" (")} zażywa: $pillName. $effects"
+            )
+        }
     }
 
     fun clearNotification() {

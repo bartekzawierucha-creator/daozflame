@@ -307,7 +307,13 @@ enum class BiomeType(val polishName: String, val emoji: String) {
     LAVA_CHASM("Rozpadlina Płynnej Lawy", "🌋"),
     VENOM_SWAMP("Bagno Tysiąca Trucizn", "🐊"),
     SPIRIT_DESERT("Pustynia Złotych Piasków", "🏜️"),
-    DRAGON_ABYSS("Głębia Smoczej Otchłani", "🐉")
+    DRAGON_ABYSS("Głębia Smoczej Otchłani", "🐉"),
+    THUNDER_PLATEAU("Płaskowyż Wiecznej Burzy", "⚡"),
+    SUNKEN_PALACE("Zatopiony Pałac Głębin", "🌊"),
+    BONE_WASTES("Pustkowia Kości Bogów", "💀"),
+    CELESTIAL_ISLES("Niebiańskie Wyspy", "☁️"),
+    STAR_RUINS("Ruiny Gwiezdnego Pałacu", "✨"),
+    PRIMORDIAL_CHAOS("Morze Pierwotnego Chaosu", "🌀")
 }
 
 enum class EnvironmentalHazard(val polishName: String, val counterMeasure: String) {
@@ -433,8 +439,17 @@ data class RandomEvent(
     val id: String,
     val title: String,
     val description: String,
-    val choices: List<RandomEventChoice>
-)
+    val choices: List<RandomEventChoice>,
+    /** Zdarzenie wypada tylko w tej porze dnia (null = zawsze). */
+    val requiredTimeOfDay: TimeOfDay? = null,
+    /** Minimalna reputacja sekty, by zdarzenie mogło wypaść. */
+    val minReputation: Int = 0,
+    /** Najwcześniejszy dzień gry, w którym zdarzenie może wypaść. */
+    val minDay: Int = 0
+) {
+    fun isEligible(day: Int, reputation: Int, time: TimeOfDay): Boolean =
+        day >= minDay && reputation >= minReputation && (requiredTimeOfDay == null || requiredTimeOfDay == time)
+}
 
 data class CombatLogEntry(
     val round: Int,

@@ -96,6 +96,12 @@ fun PixelBiomeTile(
         BiomeType.VENOM_SWAMP -> Pair(Color(0xFF2E1065), Color(0xFFA855F7))
         BiomeType.SPIRIT_DESERT -> Pair(Color(0xFF451A03), Color(0xFFFBBF24))
         BiomeType.DRAGON_ABYSS -> Pair(Color(0xFF090D16), Color(0xFF38BDF8))
+        BiomeType.THUNDER_PLATEAU -> Pair(Color(0xFF1E1B4B), Color(0xFF93C5FD))
+        BiomeType.SUNKEN_PALACE -> Pair(Color(0xFF0C2A3D), Color(0xFF22D3EE))
+        BiomeType.BONE_WASTES -> Pair(Color(0xFF292524), Color(0xFFE7E5E4))
+        BiomeType.CELESTIAL_ISLES -> Pair(Color(0xFF1E3A5F), Color(0xFFFDE68A))
+        BiomeType.STAR_RUINS -> Pair(Color(0xFF0F0A2E), Color(0xFFC4B5FD))
+        BiomeType.PRIMORDIAL_CHAOS -> Pair(Color(0xFF1A0B14), Color(0xFFF472B6))
     }
 
     Box(
