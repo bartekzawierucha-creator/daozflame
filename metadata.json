@@ -1,0 +1,6 @@
+{
+  "name": "Wuxia Sect Master",
+  "description": "Proceduralny symulator sekty wuxia: uczniowie, kultywacja, linie krwi, alchemia, kuźnia, drzewka umiejętności, frakcje i otwarty świat.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

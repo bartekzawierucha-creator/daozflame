@@ -1,0 +1,66 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Ethereal Qi Aura Circle -->
+    <path
+        android:pathData="M54,26 A28,28 0 1,0 54,82 A28,28 0 1,0 54,26"
+        android:strokeColor="#4ECCA3"
+        android:strokeWidth="2"
+        android:fillColor="#00000000" />
+    
+    <!-- Outer Bagua Accents -->
+    <path
+        android:pathData="M54,22 L54,16 M54,86 L54,92 M22,54 L16,54 M86,54 L92,54 M31,31 L26,26 M77,77 L82,82 M31,77 L26,82 M77,31 L82,26"
+        android:strokeColor="#F59E0B"
+        android:strokeWidth="2"
+        android:strokeLineCap="round" />
+
+    <!-- Central Daoist Flying Sword -->
+    <!-- Blade tip to hilt -->
+    <path
+        android:pathData="M54,26 L58,40 L56,72 L54,76 L52,72 L50,40 Z"
+        android:fillColor="#E2E8F0" />
+    
+    <!-- Sword Blade Edge Highlight -->
+    <path
+        android:pathData="M54,26 L54,76"
+        android:strokeColor="#38BDF8"
+        android:strokeWidth="1.2" />
+
+    <!-- Sword Guard -->
+    <path
+        android:pathData="M44,72 Q54,68 64,72 L66,76 Q54,72 42,76 Z"
+        android:fillColor="#F59E0B" />
+
+    <!-- Sword Pommel & Tassel -->
+    <path
+        android:pathData="M52,76 L52,84 L56,84 L56,76 Z"
+        android:fillColor="#D97706" />
+    <path
+        android:pathData="M54,84 L54,92 M52,90 L56,90"
+        android:strokeColor="#EF4444"
+        android:strokeWidth="2"
+        android:strokeLineCap="round" />
+
+    <!-- Dragon / Phoenix Celestial Flames Wrapping the Sword -->
+    <path
+        android:pathData="M42,52 Q46,44 54,48 Q62,52 64,42 Q66,54 58,58 Q50,62 48,70 Q40,60 42,52 Z"
+        android:fillColor="#10B981" />
+    <path
+        android:pathData="M66,56 Q62,48 54,52 Q46,56 44,46 Q42,58 50,62 Q58,66 60,74 Q68,64 66,56 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="44"
+                android:startY="46"
+                android:endX="68"
+                android:endY="74"
+                android:type="linear">
+                <item android:color="#F59E0B" android:offset="0.0" />
+                <item android:color="#EF4444" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>
