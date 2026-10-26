@@ -123,7 +123,7 @@ fun ManhwaSchoolAvatar(
     val schoolColor = when (school) {
         MartialSchool.SWORD_IMMORTAL -> Color(0xFF00E5FF)
         MartialSchool.BODY_ASURA -> Color(0xFFFF5252)
-        MartialSchool.ELEMENTAL_TAOIST -> Color(0xFFFFD54F)
+        MartialSchool.ELEMENTAL_TAOIST -> Color(0xFFEBCB7A)
         MartialSchool.SHADOW_VIPER -> Color(0xFFE040FB)
     }
 
@@ -171,7 +171,7 @@ fun ManhwaSchoolAvatar(
                         width = 1.5.dp,
                         brush = Brush.linearGradient(
                             colors = listOf(
-                                Color(0xFFFFD700),
+                                Color(0xFFE8C37E),
                                 schoolColor,
                                 Color(0xFF8B6508)
                             )
@@ -208,7 +208,7 @@ fun ManhwaHeroBanner(
             .height(height)
             .shadow(8.dp, RoundedCornerShape(14.dp)),
         backgroundColor = Color(0xFF0F0B18),
-        borderColor = Color(0xFFFFD700)
+        borderColor = Color(0xFFE8C37E)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             if (bitmap != null) {
@@ -229,7 +229,7 @@ fun ManhwaHeroBanner(
                             colors = listOf(
                                 Color.Black.copy(alpha = 0.25f),
                                 Color.Black.copy(alpha = 0.5f),
-                                Color(0xFF0D0814).copy(alpha = 0.95f)
+                                Color(0xFF0E0B10).copy(alpha = 0.95f)
                             )
                         )
                     )
@@ -245,7 +245,7 @@ fun ManhwaHeroBanner(
                     Box(
                         modifier = Modifier
                             .size(6.dp, 18.dp)
-                            .background(Color(0xFFFFD700), RoundedCornerShape(2.dp))
+                            .background(Color(0xFFE8C37E), RoundedCornerShape(2.dp))
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
@@ -265,7 +265,7 @@ fun ManhwaHeroBanner(
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
                     ),
-                    color = Color(0xFFFFE082).copy(alpha = 0.9f)
+                    color = Color(0xFFF3DDA6).copy(alpha = 0.9f)
                 )
             }
         }

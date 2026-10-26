@@ -29,6 +29,7 @@ import com.example.ui.components.WuxiaBadge
 import com.example.ui.components.WuxiaCard
 import com.example.ui.graphics.*
 import com.example.ui.theme.*
+import com.example.ui.aaa.*
 
 @Composable
 fun MultiplayerScreen(
@@ -87,28 +88,12 @@ fun MultiplayerScreen(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Tabs
-        TabRow(
-            selectedTabIndex = selectedTab,
-            containerColor = InkSurfaceVariant,
-            contentColor = TextGold
-        ) {
-            Tab(
-                selected = selectedTab == 0,
-                onClick = { selectedTab = 0 },
-                text = { Text("⚔️ Arena PVP", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
-            )
-            Tab(
-                selected = selectedTab == 1,
-                onClick = { selectedTab = 1 },
-                text = { Text("🐲 Rajd Świata", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
-            )
-            Tab(
-                selected = selectedTab == 2,
-                onClick = { selectedTab = 2 },
-                text = { Text("🏆 Ranking Sekt", fontSize = 11.sp, fontWeight = FontWeight.Bold) }
-            )
-        }
+        AaaSegmentedTabs(
+            items = listOf("Arena PvP", "Rajd Świata", "Ranking Sekt"),
+            selectedIndex = selectedTab,
+            onSelect = { selectedTab = it },
+            testTags = listOf("mp_tab_arena", "mp_tab_raid", "mp_tab_ranking")
+        )
 
         Spacer(modifier = Modifier.height(12.dp))
 

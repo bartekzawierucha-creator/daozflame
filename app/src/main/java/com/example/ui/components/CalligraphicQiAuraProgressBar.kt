@@ -96,7 +96,7 @@ fun CalligraphicQiAuraProgressBar(
             val colors = listOf(
                 Color(0xFF34D399), // Szmaragd
                 Color(0xFF67E8F9), // Cyjan
-                Color(0xFFFFD700), // Złoto Dao
+                Color(0xFFE8C37E), // Złoto Dao
                 Color(0xFFA7F3D0)  // Czyste Qi
             )
             QiParticle(
@@ -149,14 +149,14 @@ fun CalligraphicQiAuraProgressBar(
                 Column {
                     Text(
                         text = if (isReady) "⚡ DANTIAN PRZEPEŁNIONY (GOTOWY NA PRZEŁOM)" else label,
-                        color = if (isReady) Color(0xFFFFD700) else Color(0xFFE2E8F0),
+                        color = if (isReady) Color(0xFFE8C37E) else Color(0xFFEDE4CF),
                         fontSize = 11.sp,
                         fontWeight = if (isReady) FontWeight.Black else FontWeight.SemiBold
                     )
                     if (subLabel != null) {
                         Text(
                             text = subLabel,
-                            color = Color(0xFF94A3B8),
+                            color = Color(0xFFB0A592),
                             fontSize = 9.sp
                         )
                     }
@@ -167,7 +167,7 @@ fun CalligraphicQiAuraProgressBar(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = "$clampedProgress%",
-                    color = if (isReady) Color(0xFFFFD700) else Color(0xFF67E8F9),
+                    color = if (isReady) Color(0xFFE8C37E) else Color(0xFF67E8F9),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Black
                 )
@@ -207,16 +207,16 @@ fun CalligraphicQiAuraProgressBar(
                     val qiBrush = Brush.horizontalGradient(
                         colors = if (isReady) {
                             listOf(
-                                Color(0xFFB45309),
-                                Color(0xFFFFD700),
+                                Color(0xFF9A6B2C),
+                                Color(0xFFE8C37E),
                                 Color(0xFFFFFBEB),
-                                Color(0xFFFFD700)
+                                Color(0xFFE8C37E)
                             )
                         } else {
                             listOf(
                                 auraColor.copy(alpha = 0.85f),
                                 secondaryAuraColor,
-                                Color(0xFFFFD700).copy(alpha = 0.9f)
+                                Color(0xFFE8C37E).copy(alpha = 0.9f)
                             )
                         },
                         startX = 0f,

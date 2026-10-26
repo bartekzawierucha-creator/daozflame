@@ -36,6 +36,7 @@ import com.example.ui.components.WuxiaCard
 import com.example.ui.graphics.*
 import com.example.ui.pixelart.*
 import com.example.ui.theme.*
+import com.example.ui.aaa.*
 
 @Composable
 fun CraftingScreen(
@@ -55,55 +56,22 @@ fun CraftingScreen(
     ) {
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Navigation Tabs (Imperial Lacquer Bar)
-        Surface(
-            color = Color(0xFF0F0918),
-            shape = RoundedCornerShape(12.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700)),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            ScrollableTabRow(
-                selectedTabIndex = selectedTab,
-                containerColor = Color(0xFF0F0918),
-                contentColor = Color(0xFFFFD700),
-                edgePadding = 6.dp,
-                indicator = {}
-            ) {
-                listOf(
-                    "⚗️ Kocioł Alchemii" to 0,
-                    "🔨 Boska Kuźnia" to 1,
-                    "🔥 SYSTEM PŁOMIENI" to 2,
-                    "🐉 Bestie Sekty" to 3,
-                    "📦 Magazyn Sekty" to 4
-                ).forEach { (label, idx) ->
-                    val isSel = selectedTab == idx
-                    Tab(
-                        selected = isSel,
-                        onClick = {
-                            if (selectedTab != idx) {
-                                when (idx) {
-                                    0 -> WuxiaAudioEngine.playCauldronFlame()
-                                    1 -> WuxiaAudioEngine.playSwordClash()
-                                    2 -> WuxiaAudioEngine.playCauldronFlame()
-                                    3 -> WuxiaAudioEngine.playDivineGong()
-                                    else -> WuxiaAudioEngine.playDivineGong()
-                                }
-                                selectedTab = idx
-                            }
-                        },
-                        text = {
-                            Text(
-                                text = label,
-                                fontSize = 11.sp,
-                                fontWeight = if (isSel) FontWeight.Black else FontWeight.Medium,
-                                color = if (isSel) Color(0xFFFFE082) else Color(0xFF94A3B8)
-                            )
-                        },
-                        modifier = if (isSel) Modifier.background(Color(0xFFB45309).copy(alpha = 0.4f)) else Modifier
-                    )
+        // Nawigacja – segmentowy przełącznik AAA
+        AaaSegmentedTabs(
+            items = listOf("Alchemia", "Kuźnia", "Płomienie", "Bestie", "Magazyn"),
+            selectedIndex = selectedTab,
+            onSelect = { idx ->
+                if (selectedTab != idx) {
+                    when (idx) {
+                        0, 2 -> WuxiaAudioEngine.playCauldronFlame()
+                        1 -> WuxiaAudioEngine.playSwordClash()
+                        else -> WuxiaAudioEngine.playDivineGong()
+                    }
+                    selectedTab = idx
                 }
-            }
-        }
+            },
+            testTags = listOf("crafting_tab_alchemy", "crafting_tab_forge", "crafting_tab_flames", "crafting_tab_beasts", "crafting_tab_vault")
+        )
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -275,7 +243,7 @@ fun AlchemyTabContent(
             val pillImg = rememberWuxiaGraphic("item_pill_breakthrough")
 
             WuxiaCard(
-                borderColor = if (!isUnlocked) Color(0xFF475569) else if (canAfford) JadeSpiritLight else DaoGoldDark,
+                borderColor = if (!isUnlocked) Color(0xFF6E6557) else if (canAfford) JadeSpiritLight else DaoGoldDark,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -302,11 +270,11 @@ fun AlchemyTabContent(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(text = recipe.pillName, color = if (isUnlocked) TextGold else Color(0xFF94A3B8), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            Text(text = recipe.pillName, color = if (isUnlocked) TextGold else Color(0xFFB0A592), fontSize = 13.sp, fontWeight = FontWeight.Bold)
                             WuxiaBadge(
                                 text = recipe.tierName,
-                                containerColor = if (isUnlocked) DaoGoldDark.copy(alpha = 0.3f) else Color(0xFF334155),
-                                contentColor = if (isUnlocked) DaoGoldLight else Color(0xFF94A3B8)
+                                containerColor = if (isUnlocked) DaoGoldDark.copy(alpha = 0.3f) else Color(0xFF4A4239),
+                                contentColor = if (isUnlocked) DaoGoldLight else Color(0xFFB0A592)
                             )
                         }
                         Text(text = recipe.effectDescription, color = TextSecondary, fontSize = 11.sp)
@@ -391,8 +359,8 @@ fun ForgingTabContent(
 
         item {
             WuxiaCard(
-                borderColor = Color(0xFFFFD700),
-                backgroundColor = Color(0xFF130D20),
+                borderColor = Color(0xFFE8C37E),
+                backgroundColor = Color(0xFF16111A),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -400,16 +368,16 @@ fun ForgingTabContent(
                         modifier = Modifier
                             .size(44.dp)
                             .clip(RoundedCornerShape(8.dp))
-                            .background(Color(0xFFB45309).copy(alpha = 0.2f))
-                            .border(1.dp, Color(0xFFFFD700), RoundedCornerShape(8.dp)),
+                            .background(Color(0xFF9A6B2C).copy(alpha = 0.2f))
+                            .border(1.dp, Color(0xFFE8C37E), RoundedCornerShape(8.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Text("🔨", fontSize = 22.sp)
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
-                        Text(text = "RYTMICZNE WYKUWANIE ARTEFAKTÓW", color = Color(0xFFFFE8A3), fontSize = 13.sp, fontWeight = FontWeight.Black)
-                        Text(text = "Dotykaj kowadła w rytm iskier, aby podtrzymać żar kucia i wytwarzać broń o statusie Boskim.", color = Color(0xFF94A3B8), fontSize = 10.sp)
+                        Text(text = "RYTMICZNE WYKUWANIE ARTEFAKTÓW", color = Color(0xFFF6E6BE), fontSize = 13.sp, fontWeight = FontWeight.Black)
+                        Text(text = "Dotykaj kowadła w rytm iskier, aby podtrzymać żar kucia i wytwarzać broń o statusie Boskim.", color = Color(0xFFB0A592), fontSize = 10.sp)
                     }
                 }
             }
@@ -799,7 +767,7 @@ fun BeastsTabContent(
                             .fillMaxWidth()
                             .height(6.dp)
                             .clip(RoundedCornerShape(3.dp))
-                            .background(Color(0xFF1E142B))
+                            .background(Color(0xFF1D1720))
                     ) {
                         Box(
                             modifier = Modifier

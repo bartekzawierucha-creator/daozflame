@@ -61,7 +61,7 @@ fun Wuxia2dForgeInteractive(
             .height(200.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(Color(0xFF0B0710))
-            .border(2.dp, Color(0xFFFFD700), RoundedCornerShape(12.dp))
+            .border(2.dp, Color(0xFFE8C37E), RoundedCornerShape(12.dp))
     ) {
         // Tło Manhwa Świętej Kuźni
         if (forgeBg != null) {
@@ -103,12 +103,12 @@ fun Wuxia2dForgeInteractive(
             )
 
             // Kowadło z rzeźbionego gwiezdnego żelaza
-            drawRect(color = Color(0xFF334155), topLeft = Offset(cx - 40f, cy + 5f), size = Size(80f, 35f))
-            drawRect(color = Color(0xFF475569), topLeft = Offset(cx - 50f, cy - 8f), size = Size(100f, 15f))
+            drawRect(color = Color(0xFF4A4239), topLeft = Offset(cx - 40f, cy + 5f), size = Size(80f, 35f))
+            drawRect(color = Color(0xFF6E6557), topLeft = Offset(cx - 50f, cy - 8f), size = Size(100f, 15f))
 
             // Rozżarzone do białości ostrze miecza
             drawRect(
-                brush = Brush.horizontalGradient(listOf(Color(0xFFFFFBEB), Color(0xFFFBBF24), Color(0xFFEF4444))),
+                brush = Brush.horizontalGradient(listOf(Color(0xFFFFFBEB), Color(0xFFE9C06A), Color(0xFFEF4444))),
                 topLeft = Offset(cx - 30f, cy - 14f),
                 size = Size(60f, 7f)
             )
@@ -128,14 +128,14 @@ fun Wuxia2dForgeInteractive(
 
             drawLine(color = Color(0xFF78350F), start = Offset(hammerPivotX, hammerPivotY), end = Offset(headX, headY), strokeWidth = 5f)
             drawRect(
-                brush = Brush.verticalGradient(listOf(Color(0xFFE2E8F0), Color(0xFF64748B))),
+                brush = Brush.verticalGradient(listOf(Color(0xFFEDE4CF), Color(0xFF64748B))),
                 topLeft = Offset(headX - 12f, headY - 8f),
                 size = Size(24f, 16f)
             )
 
             // Kaskada złotych iskier przy uderzeniu
             if (isImpact) {
-                val sparkColors = listOf(Color(0xFFFFFBEB), Color(0xFFFBBF24), Color(0xFFF97316), Color(0xFFEF4444))
+                val sparkColors = listOf(Color(0xFFFFFBEB), Color(0xFFE9C06A), Color(0xFFF97316), Color(0xFFEF4444))
                 for (i in 0 until 18) {
                     val angle = (i * 20) * (Math.PI / 180f)
                     val dist = Random.nextFloat() * 45f + 15f
@@ -154,14 +154,14 @@ fun Wuxia2dForgeInteractive(
         ) {
             Text(
                 text = "🔨 ŚWIĘTA KUŹNIA ARTEFAKTÓW DAO",
-                color = Color(0xFFFFE082),
+                color = Color(0xFFF3DDA6),
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
                 fontSize = 11.sp
             )
             Text(
                 text = "Nasycanie Gwiezdnego Żelaza Pieczęciami Dusz",
-                color = Color(0xFF94A3B8),
+                color = Color(0xFFB0A592),
                 fontSize = 10.sp
             )
         }
