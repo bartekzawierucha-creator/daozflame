@@ -42,7 +42,8 @@ import com.example.model.TerritoryNode
 fun WorldMapScreen(
     viewModel: WuxiaGameViewModel,
     uiState: WuxiaUiState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showCombatOverlay: Boolean = true
 ) {
     var selectedWorldTab by remember { mutableStateOf(0) } // 0: Regiony, 1: Terytoria Sekty
     var selectedRegionForExpedition by remember { mutableStateOf<WorldRegion?>(null) }
@@ -314,7 +315,7 @@ fun WorldMapScreen(
     }
 
     // Active Combat Dialog
-    if (uiState.combatState.active) {
+    if (showCombatOverlay && uiState.combatState.active) {
         CombatScreenModal(
             combatState = uiState.combatState,
             onManualAttack = { viewModel.combatManualAttack() },
