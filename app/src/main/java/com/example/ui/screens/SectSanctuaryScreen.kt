@@ -36,6 +36,7 @@ import com.example.ui.components.WuxiaCard
 import com.example.ui.graphics.*
 import com.example.ui.pixelart.*
 import com.example.ui.theme.*
+import com.example.ui.aaa.*
 
 /**
  * Zakładki nawigacyjne Kampusu Sekty (Sect Campus Navigation)
@@ -95,73 +96,31 @@ fun SectSanctuaryScreen(
             )
         }
 
-        // 2. Base Navigation Layout: Segmented Tab Switcher for Sect Campus
+        // 2. Nawigacja kampusu – segmentowy przełącznik AAA
         item {
-            Surface(
-                color = InkSurfaceVariant,
-                shape = RoundedCornerShape(12.dp),
-                border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFFFD700)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("campus_navigation_bar")
-            ) {
-                TabRow(
-                    selectedTabIndex = selectedCampusTab.ordinal,
-                    containerColor = Color(0xFF0D0814),
-                    contentColor = Color(0xFFFFD700),
-                    modifier = Modifier.testTag("campus_tab_row")
-                ) {
-                    SectCampusTab.values().forEach { tab ->
-                        val isSelected = selectedCampusTab == tab
-                        val badgeText = when (tab) {
-                            SectCampusTab.PAVILION -> "${uiState.availableRecruits.size}"
-                            SectCampusTab.ALCHEMY_LAB -> "⚗️"
-                            SectCampusTab.CULTIVATION_HALL -> if (readyBreakthroughCount > 0) "⚡$readyBreakthroughCount" else "${uiState.disciples.size}"
-                        }
-
-                        Tab(
-                            selected = isSelected,
-                            onClick = {
-                                selectedCampusTab = tab
-                                when (tab) {
-                                    SectCampusTab.PAVILION -> WuxiaAudioEngine.playDivineGong()
-                                    SectCampusTab.ALCHEMY_LAB -> WuxiaAudioEngine.playCauldronFlame()
-                                    SectCampusTab.CULTIVATION_HALL -> WuxiaAudioEngine.playThunderStrike()
-                                }
-                            },
-                            text = {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(text = tab.icon, fontSize = 13.sp)
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(
-                                        text = tab.title,
-                                        fontSize = 11.sp,
-                                        fontWeight = if (isSelected) FontWeight.Black else FontWeight.Medium,
-                                        color = if (isSelected) Color(0xFFFFE082) else TextSecondary
-                                    )
-                                    Spacer(Modifier.width(4.dp))
-                                    Surface(
-                                        color = if (isSelected) Color(0xFFB45309) else Color(0xFF1E1B4B),
-                                        shape = RoundedCornerShape(4.dp)
-                                    ) {
-                                        Text(
-                                            text = badgeText,
-                                            fontSize = 9.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = if (isSelected) Color.White else Color(0xFFA5B4FC),
-                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
-                                        )
-                                    }
-                                }
-                            },
-                            modifier = Modifier.testTag(tab.testTag)
-                        )
+            AaaSegmentedTabs(
+                items = SectCampusTab.values().map { it.title },
+                selectedIndex = selectedCampusTab.ordinal,
+                onSelect = { idx ->
+                    val tab = SectCampusTab.values()[idx]
+                    selectedCampusTab = tab
+                    when (tab) {
+                        SectCampusTab.PAVILION -> WuxiaAudioEngine.playDivineGong()
+                        SectCampusTab.ALCHEMY_LAB -> WuxiaAudioEngine.playCauldronFlame()
+                        SectCampusTab.CULTIVATION_HALL -> WuxiaAudioEngine.playThunderStrike()
                     }
-                }
-            }
+                },
+                badges = listOf(
+                    if (uiState.availableRecruits.isNotEmpty()) "${uiState.availableRecruits.size}" else null,
+                    null,
+                    if (readyBreakthroughCount > 0) "$readyBreakthroughCount" else null
+                ),
+                testTags = SectCampusTab.values().map { it.testTag },
+                modifier = Modifier.testTag("campus_navigation_bar")
+            )
         }
 
-        // 3. Dynamic Zone Content based on Selected Campus Tab
+        // 3. Dynamic Zone Content        // 3. Dynamic Zone Content based on Selected Campus Tab
         when (selectedCampusTab) {
             SectCampusTab.PAVILION -> {
                 item {
@@ -187,7 +146,7 @@ fun SectSanctuaryScreen(
                         ) {
                             Text(
                                 text = "Wznoś pagody i umacniaj pozycję w świecie kultywacji:",
-                                color = Color(0xFFCBD5E1),
+                                color = Color(0xFFD6CCB6),
                                 fontSize = 11.sp
                             )
                             uiState.facilities.forEach { facility ->
@@ -327,7 +286,7 @@ fun PavilionHeroCard(
                     modifier = Modifier
                         .size(68.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .border(1.5.dp, Color(0xFFFFD700), RoundedCornerShape(12.dp))
+                        .border(1.5.dp, Color(0xFFE8C37E), RoundedCornerShape(12.dp))
                         .background(Color(0xFF0F0B18)),
                     contentAlignment = Alignment.Center
                 ) {
@@ -353,18 +312,18 @@ fun PavilionHeroCard(
                     ) {
                         Text(
                             text = leader.name,
-                            color = Color(0xFFFFE8A3),
+                            color = Color(0xFFF6E6BE),
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Black
                         )
                         Surface(
                             color = Color(0xFF78350F),
                             shape = RoundedCornerShape(6.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700))
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE8C37E))
                         ) {
                             Text(
                                 text = "PRESTIŻ: POZ. ${leader.prestigeLevel}",
-                                color = Color(0xFFFFD700),
+                                color = Color(0xFFE8C37E),
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.Black,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -375,7 +334,7 @@ fun PavilionHeroCard(
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = "🏰 ${leader.ancientClan.name} • ${leader.ancientClan.reputationTitle}",
-                        color = Color(0xFFFFD54F),
+                        color = Color(0xFFEBCB7A),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -387,7 +346,7 @@ fun PavilionHeroCard(
                     )
                     Text(
                         text = "⚡ Sfera: ${leader.realm} • Autorytet: ${leader.divineAuthority} pkt",
-                        color = Color(0xFFCBD5E1),
+                        color = Color(0xFFD6CCB6),
                         fontSize = 10.sp
                     )
                 }
@@ -401,7 +360,7 @@ fun PavilionHeroCard(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(8.dp))
                     .background(Color(0xFF261B3D))
-                    .border(1.dp, Color(0xFFFFD700).copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                    .border(1.dp, Color(0xFFE8C37E).copy(alpha = 0.4f), RoundedCornerShape(8.dp))
                     .padding(horizontal = 10.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -409,13 +368,13 @@ fun PavilionHeroCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "👑 Autorytet i Prestiż Sekty",
-                        color = Color(0xFFFFE082),
+                        color = Color(0xFFF3DDA6),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
                         text = "Bonus kultywacji adeptów: +${leader.prestigeLevel * 5}%",
-                        color = Color(0xFF94A3B8),
+                        color = Color(0xFFB0A592),
                         fontSize = 9.sp
                     )
                 }
@@ -425,7 +384,7 @@ fun PavilionHeroCard(
                         WuxiaAudioEngine.playDivineGong()
                         viewModel?.upgradePatriarchPrestige()
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB45309)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9A6B2C)),
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                     shape = RoundedCornerShape(6.dp),
                     modifier = Modifier.testTag("upgrade_prestige_button")
@@ -444,7 +403,7 @@ fun PavilionHeroCard(
             // Dekrety Sekty (Sect Decrees)
             Text(
                 text = "📜 Święte Dekrety Sekty (Wpływ Patriarchy):",
-                color = Color(0xFFFFE8A3),
+                color = Color(0xFFF6E6BE),
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Black
             )
@@ -456,7 +415,7 @@ fun PavilionHeroCard(
                     shape = RoundedCornerShape(6.dp),
                     border = androidx.compose.foundation.BorderStroke(
                         1.dp,
-                        if (decree.isActive) Color(0xFFFFD700) else Color(0xFF3B284C)
+                        if (decree.isActive) Color(0xFFE8C37E) else Color(0xFF3A2E35)
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -475,13 +434,13 @@ fun PavilionHeroCard(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "${decree.icon} ${decree.title}",
-                                color = if (decree.isActive) Color(0xFFFFE8A3) else Color(0xFFCBD5E1),
+                                color = if (decree.isActive) Color(0xFFF6E6BE) else Color(0xFFD6CCB6),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
                                 text = decree.effectDescription,
-                                color = if (decree.isActive) Color(0xFFFDE68A) else Color(0xFF94A3B8),
+                                color = if (decree.isActive) Color(0xFFF3E0A8) else Color(0xFFB0A592),
                                 fontSize = 9.sp
                             )
                         }
@@ -507,7 +466,7 @@ fun PavilionHeroCard(
             Surface(
                 color = Color(0xFF1B1228),
                 shape = RoundedCornerShape(8.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.35f)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE8C37E).copy(alpha = 0.35f)),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -518,13 +477,13 @@ fun PavilionHeroCard(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "⚡ Automatyczny Przełom Dantian",
-                            color = Color(0xFFFFE082),
+                            color = Color(0xFFF3DDA6),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
                             text = if (uiState.autoBreakthroughEnabled) "Adeptowie przy 100% Qi przełamują się na bieżąco" else "Wymagany ręczny rytuał Niebiańskiej Kary",
-                            color = Color(0xFF94A3B8),
+                            color = Color(0xFFB0A592),
                             fontSize = 9.sp
                         )
                     }
@@ -533,8 +492,8 @@ fun PavilionHeroCard(
                         checked = uiState.autoBreakthroughEnabled,
                         onCheckedChange = { onToggleAutoBreakthrough() },
                         colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color(0xFFFFD700),
-                            checkedTrackColor = Color(0xFFB45309)
+                            checkedThumbColor = Color(0xFFE8C37E),
+                            checkedTrackColor = Color(0xFF9A6B2C)
                         ),
                         modifier = Modifier.testTag("toggle_auto_breakthrough_sanctuary")
                     )
@@ -553,12 +512,12 @@ fun PavilionHeroCard(
                     modifier = Modifier
                         .weight(1f)
                         .testTag("recruit_ceremony_button"),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB45309)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9A6B2C)),
                     shape = RoundedCornerShape(10.dp)
                 ) {
-                    Icon(Icons.Filled.PersonAdd, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color(0xFFFFD700))
+                    Icon(Icons.Filled.PersonAdd, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color(0xFFE8C37E))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Nabór Uczniów", color = Color(0xFFFFE082), fontSize = 12.sp, fontWeight = FontWeight.Black)
+                    Text("Nabór Uczniów", color = Color(0xFFF3DDA6), fontSize = 12.sp, fontWeight = FontWeight.Black)
                 }
 
                 OutlinedButton(
@@ -566,12 +525,12 @@ fun PavilionHeroCard(
                     modifier = Modifier
                         .weight(1f)
                         .testTag("manage_disciples_button"),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE8C37E)),
                     shape = RoundedCornerShape(10.dp)
                 ) {
                     Icon(Icons.Filled.Groups, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color(0xFF00E5FF))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Adeptowie (${uiState.disciples.size})", color = Color(0xFFFFE082), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("Adeptowie (${uiState.disciples.size})", color = Color(0xFFF3DDA6), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -721,7 +680,7 @@ fun CultivationHallOverviewCard(
     onNavigateToDisciples: () -> Unit
 ) {
     WuxiaCard(
-        borderColor = if (readyCount > 0) Color(0xFFFFD700) else InkCardBorder,
+        borderColor = if (readyCount > 0) Color(0xFFE8C37E) else InkCardBorder,
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -804,7 +763,7 @@ fun CultivationHallDiscipleCard(
     val isReady = disciple.realmProgress >= 100
 
     WuxiaCard(
-        borderColor = if (isReady) Color(0xFFFFD700) else InkCardBorder,
+        borderColor = if (isReady) Color(0xFFE8C37E) else InkCardBorder,
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onOpenChamber)
@@ -830,7 +789,7 @@ fun CultivationHallDiscipleCard(
                     WuxiaBadge(
                         text = disciple.realm.polishName,
                         containerColor = if (isReady) Color(0xFF991B1B).copy(alpha = 0.5f) else JadeSpiritDark.copy(alpha = 0.4f),
-                        contentColor = if (isReady) Color(0xFFFFD700) else JadeSpiritLight
+                        contentColor = if (isReady) Color(0xFFE8C37E) else JadeSpiritLight
                     )
                 }
 
@@ -876,7 +835,7 @@ fun CampusSectionHeader(title: String, subtitle: String) {
     Column(modifier = Modifier.padding(top = 4.dp)) {
         Text(
             text = title,
-            color = Color(0xFFFFE082),
+            color = Color(0xFFF3DDA6),
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = FontFamily.Monospace
@@ -899,7 +858,7 @@ fun FacilityItemCard(
         FacilityType.CULTIVATION_PAVILION -> Icons.Filled.Spa to Color(0xFF00E5FF)
         FacilityType.ALCHEMY_CHAMBER -> Icons.Filled.Science to Color(0xFFFF5252)
         FacilityType.DIVINE_FORGE -> Icons.Filled.Fireplace to Color(0xFFFF9100)
-        FacilityType.MARTIAL_ARCHIVES -> Icons.Filled.MenuBook to Color(0xFFFFD700)
+        FacilityType.MARTIAL_ARCHIVES -> Icons.Filled.MenuBook to Color(0xFFE8C37E)
         FacilityType.MISSION_HALL -> Icons.Filled.Explore to Color(0xFF10B981)
         FacilityType.DIPLOMACY_HALL -> Icons.Filled.Handshake to Color(0xFFE040FB)
     }
@@ -907,8 +866,8 @@ fun FacilityItemCard(
     val canAfford = currentStones >= facility.upgradeCostStones
 
     WuxiaCard(
-        borderColor = if (canAfford) Color(0xFFFFD700).copy(alpha = 0.8f) else Color(0xFF332042),
-        backgroundColor = Color(0xFF130D20),
+        borderColor = if (canAfford) Color(0xFFE8C37E).copy(alpha = 0.8f) else Color(0xFF332042),
+        backgroundColor = Color(0xFF16111A),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -933,7 +892,7 @@ fun FacilityItemCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = facility.type.polishName,
-                        color = Color(0xFFFFE8A3),
+                        color = Color(0xFFF6E6BE),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Black
                     )
@@ -941,11 +900,11 @@ fun FacilityItemCard(
                     Surface(
                         color = Color(0xFF451A03),
                         shape = RoundedCornerShape(4.dp),
-                        border = androidx.compose.foundation.BorderStroke(0.5.dp, Color(0xFFFFD700))
+                        border = androidx.compose.foundation.BorderStroke(0.5.dp, Color(0xFFE8C37E))
                     ) {
                         Text(
                             text = "POZ. ${facility.level}",
-                            color = Color(0xFFFFD700),
+                            color = Color(0xFFE8C37E),
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Black,
                             modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
@@ -955,7 +914,7 @@ fun FacilityItemCard(
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = facility.effectDescription,
-                    color = Color(0xFF94A3B8),
+                    color = Color(0xFFB0A592),
                     fontSize = 11.sp,
                     lineHeight = 15.sp
                 )
@@ -968,7 +927,7 @@ fun FacilityItemCard(
                 enabled = canAfford,
                 modifier = Modifier.testTag("upgrade_${facility.type.name}"),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFB45309),
+                    containerColor = Color(0xFF9A6B2C),
                     disabledContainerColor = Color(0xFF261D33)
                 ),
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
@@ -978,7 +937,7 @@ fun FacilityItemCard(
                     Text(
                         "Ulepsz",
                         fontSize = 11.sp,
-                        color = if (canAfford) Color(0xFFFFE082) else Color(0xFF71717A),
+                        color = if (canAfford) Color(0xFFF3DDA6) else Color(0xFF71717A),
                         fontWeight = FontWeight.Black
                     )
                     Text(
@@ -1007,7 +966,7 @@ fun RecruitmentDialog(
                 Spacer(Modifier.width(8.dp))
                 Text(
                     text = "Ceremonia Naboru Uczniów Sekty",
-                    color = Color(0xFFFFE8A3),
+                    color = Color(0xFFF6E6BE),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Black
                 )
@@ -1017,7 +976,7 @@ fun RecruitmentDialog(
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
                     text = "Kandydaci z odległych prowincji oczekują przed bramą sekty na próbę czystości meridianów:",
-                    color = Color(0xFFCBD5E1),
+                    color = Color(0xFFD6CCB6),
                     fontSize = 12.sp
                 )
 
@@ -1025,7 +984,7 @@ fun RecruitmentDialog(
                     Surface(
                         color = Color(0xFF140D20),
                         shape = RoundedCornerShape(10.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.5f)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE8C37E).copy(alpha = 0.5f)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
@@ -1048,13 +1007,13 @@ fun RecruitmentDialog(
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
                                             text = recruit.name,
-                                            color = Color(0xFFFFE082),
+                                            color = Color(0xFFF3DDA6),
                                             fontWeight = FontWeight.Black,
                                             fontSize = 13.sp
                                         )
                                         Spacer(Modifier.width(6.dp))
                                         val (gradeColor, gradeBg) = when (recruit.talentGrade) {
-                                            com.example.model.TalentGrade.SSS -> Color(0xFFFFD700) to Color(0xFF78350F)
+                                            com.example.model.TalentGrade.SSS -> Color(0xFFE8C37E) to Color(0xFF78350F)
                                             com.example.model.TalentGrade.SS -> Color(0xFFF43F5E) to Color(0xFF881337)
                                             com.example.model.TalentGrade.S -> Color(0xFF00E5FF) to Color(0xFF164E63)
                                             com.example.model.TalentGrade.A -> Color(0xFF34D399) to Color(0xFF064E3B)
@@ -1076,7 +1035,7 @@ fun RecruitmentDialog(
                                     }
                                     Text(
                                         text = "🏰 ${recruit.ancientClan.name} • ${recruit.ancientClan.reputationTitle}",
-                                        color = Color(0xFFFFD54F),
+                                        color = Color(0xFFEBCB7A),
                                         fontSize = 10.sp,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -1094,7 +1053,7 @@ fun RecruitmentDialog(
                                     if (recruit.fatedTraits.isNotEmpty()) {
                                         Text(
                                             text = "✦ Przeznaczenie: ${recruit.fatedTraits.joinToString(", ") { it.name }}",
-                                            color = Color(0xFFFDE047),
+                                            color = Color(0xFFF2D58A),
                                             fontSize = 9.sp
                                         )
                                     }
@@ -1131,7 +1090,7 @@ fun RecruitmentDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag("recruit_all_button"),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB45309)),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9A6B2C)),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
@@ -1151,18 +1110,18 @@ fun RecruitmentDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("refresh_recruits_button"),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE8C37E)),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("Zwołaj próbę (6 adeptów) (60 💎)", fontSize = 11.sp, color = Color(0xFFFFE082), fontWeight = FontWeight.Bold)
+                    Text("Zwołaj próbę (6 adeptów) (60 💎)", fontSize = 11.sp, color = Color(0xFFF3DDA6), fontWeight = FontWeight.Bold)
                 }
             }
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Zamknij", color = Color(0xFFFFD700), fontWeight = FontWeight.Bold)
+                Text("Zamknij", color = Color(0xFFE8C37E), fontWeight = FontWeight.Bold)
             }
         },
-        containerColor = Color(0xFF0F0918)
+        containerColor = Color(0xFF100C12)
     )
 }

@@ -34,6 +34,7 @@ import com.example.ui.components.WuxiaCard
 import com.example.ui.graphics.*
 import com.example.ui.pixelart.*
 import com.example.ui.theme.*
+import com.example.ui.aaa.*
 
 import com.example.model.TerritoryNode
 
@@ -54,45 +55,17 @@ fun WorldMapScreen(
     ) {
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Navigation Tabs (Imperial Lacquer Bar)
-        Surface(
-            color = Color(0xFF0F0918),
-            shape = RoundedCornerShape(12.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700)),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            TabRow(
-                selectedTabIndex = selectedWorldTab,
-                containerColor = Color(0xFF0F0918),
-                contentColor = Color(0xFFFFD700),
-                indicator = {}
-            ) {
-                listOf(
-                    "🗺️ Regiony i Wyprawy" to 0,
-                    "🚩 Terytoria i Posterunki" to 1
-                ).forEach { (label, idx) ->
-                    val isSel = selectedWorldTab == idx
-                    Tab(
-                        selected = isSel,
-                        onClick = {
-                            if (selectedWorldTab != idx) {
-                                WuxiaAudioEngine.playDivineGong()
-                                selectedWorldTab = idx
-                            }
-                        },
-                        text = {
-                            Text(
-                                text = label,
-                                fontSize = 11.sp,
-                                fontWeight = if (isSel) FontWeight.Black else FontWeight.Medium,
-                                color = if (isSel) Color(0xFFFFE082) else Color(0xFF94A3B8)
-                            )
-                        },
-                        modifier = if (isSel) Modifier.background(Color(0xFFB45309).copy(alpha = 0.4f)) else Modifier
-                    )
+        AaaSegmentedTabs(
+            items = listOf("Regiony i Wyprawy", "Terytoria"),
+            selectedIndex = selectedWorldTab,
+            onSelect = { idx ->
+                if (selectedWorldTab != idx) {
+                    WuxiaAudioEngine.playDivineGong()
+                    selectedWorldTab = idx
                 }
-            }
-        }
+            },
+            testTags = listOf("world_tab_regions", "world_tab_territories")
+        )
 
         Spacer(modifier = Modifier.height(10.dp))
 
@@ -451,8 +424,8 @@ fun RegionCard(
     val isDangerous = region.dangerLevel > 5
 
     WuxiaCard(
-        borderColor = if (isDangerous) Color(0xFFFF5252) else Color(0xFFFFD700),
-        backgroundColor = Color(0xFF130D20),
+        borderColor = if (isDangerous) Color(0xFFFF5252) else Color(0xFFE8C37E),
+        backgroundColor = Color(0xFF16111A),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -467,7 +440,7 @@ fun RegionCard(
                     .background(Color(0xFF1F142D))
                     .border(
                         1.5.dp,
-                        if (isDangerous) Color(0xFFFF5252) else Color(0xFFFFD700),
+                        if (isDangerous) Color(0xFFFF5252) else Color(0xFFE8C37E),
                         RoundedCornerShape(12.dp)
                     ),
                 contentAlignment = Alignment.Center
@@ -494,18 +467,18 @@ fun RegionCard(
                 ) {
                     Text(
                         text = region.name,
-                        color = Color(0xFFFFE8A3),
+                        color = Color(0xFFF6E6BE),
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Black
                     )
                     Surface(
                         color = if (isDangerous) Color(0xFF831843) else Color(0xFF451A03),
                         shape = RoundedCornerShape(6.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, if (isDangerous) Color(0xFFFF5252) else Color(0xFFFFD700))
+                        border = androidx.compose.foundation.BorderStroke(1.dp, if (isDangerous) Color(0xFFFF5252) else Color(0xFFE8C37E))
                     ) {
                         Text(
                             text = "POZ. ${region.dangerLevel}",
-                            color = if (isDangerous) Color(0xFFFCA5A5) else Color(0xFFFFD700),
+                            color = if (isDangerous) Color(0xFFFCA5A5) else Color(0xFFE8C37E),
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Black,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -540,14 +513,14 @@ fun RegionCard(
 
                 Text(
                     text = "Surowce: 🌿 ${region.herbResource} • 💎 ${region.mineralResource}",
-                    color = Color(0xFFE2E8F0),
+                    color = Color(0xFFEDE4CF),
                     fontSize = 10.sp
                 )
 
                 if (region.bossBeast != null) {
                     Text(
                         text = "Mityczna Bestia: ${region.bossBeast.emoji} ${region.bossBeast.name}",
-                        color = Color(0xFFFFD700),
+                        color = Color(0xFFE8C37E),
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -573,12 +546,12 @@ fun RegionCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("expedition_${region.id}"),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB45309)),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9A6B2C)),
             shape = RoundedCornerShape(8.dp)
         ) {
-            Icon(Icons.Filled.Explore, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color(0xFFFFD700))
+            Icon(Icons.Filled.Explore, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color(0xFFE8C37E))
             Spacer(modifier = Modifier.width(6.dp))
-            Text("Wyślij Adepta na Ekspedycję", color = Color(0xFFFFE082), fontSize = 12.sp, fontWeight = FontWeight.Black)
+            Text("Wyślij Adepta na Ekspedycję", color = Color(0xFFF3DDA6), fontSize = 12.sp, fontWeight = FontWeight.Black)
         }
     }
 }

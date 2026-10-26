@@ -89,7 +89,7 @@ fun Wuxia2dSanctuaryCanvas(
             .height(290.dp)
             .clip(RoundedCornerShape(14.dp))
             .background(Color(0xFF090610))
-            .border(2.dp, Color(0xFFFFD700), RoundedCornerShape(14.dp))
+            .border(2.dp, Color(0xFFE8C37E), RoundedCornerShape(14.dp))
     ) {
         // Tło Manhwa Góry Sekty
         if (bgManhwa != null) {
@@ -181,7 +181,7 @@ fun Wuxia2dSanctuaryCanvas(
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 12.dp)
                 .background(Color.Black.copy(alpha = 0.85f), RoundedCornerShape(8.dp))
-                .border(1.dp, Color(0xFFFFD700), RoundedCornerShape(8.dp))
+                .border(1.dp, Color(0xFFE8C37E), RoundedCornerShape(8.dp))
                 .padding(horizontal = 10.dp, vertical = 5.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -189,7 +189,7 @@ fun Wuxia2dSanctuaryCanvas(
                 Spacer(Modifier.width(6.dp))
                 Text(
                     text = discipleQuotes[quoteIndex],
-                    color = Color(0xFFFFE082),
+                    color = Color(0xFFF3DDA6),
                     fontSize = 10.sp,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Medium
@@ -203,13 +203,13 @@ fun Wuxia2dSanctuaryCanvas(
                 .align(Alignment.TopStart)
                 .padding(8.dp)
                 .background(Color.Black.copy(alpha = 0.75f), RoundedCornerShape(6.dp))
-                .border(1.dp, Color(0xFFFFD700), RoundedCornerShape(6.dp))
+                .border(1.dp, Color(0xFFE8C37E), RoundedCornerShape(6.dp))
                 .padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = "🏯 GÓRA ŚWIĘTEGO SMOKA (KLIKNIJ BUDYNEK NA WZGÓRZU)",
-                color = Color(0xFFFFE082),
+                color = Color(0xFFF3DDA6),
                 fontSize = 10.sp,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold
@@ -222,12 +222,12 @@ fun Wuxia2dSanctuaryCanvas(
                     .align(Alignment.TopEnd)
                     .padding(8.dp)
                     .background(Color(0xFF991B1B).copy(alpha = 0.9f), RoundedCornerShape(6.dp))
-                    .border(1.dp, Color(0xFFFFD700), RoundedCornerShape(6.dp))
+                    .border(1.dp, Color(0xFFE8C37E), RoundedCornerShape(6.dp))
                     .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 Text(
                     text = "⚡ GOTOWYCH DO PRZEŁOMU: $readyBreakthroughCount",
-                    color = Color(0xFFFFE082),
+                    color = Color(0xFFF3DDA6),
                     fontSize = 9.sp,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold
@@ -239,11 +239,11 @@ fun Wuxia2dSanctuaryCanvas(
 
 private fun DrawScope.draw2dSky(w: Float, h: Float, timeOfDay: TimeOfDay, timeAnim: Float) {
     val skyColors = when (timeOfDay) {
-        TimeOfDay.DAWN -> listOf(Color(0xFF831843), Color(0xFFC2410C), Color(0xFF1E1B4B))
+        TimeOfDay.DAWN -> listOf(Color(0xFF831843), Color(0xFFC2410C), Color(0xFF1D1720))
         TimeOfDay.DAY -> listOf(Color(0xFF0369A1), Color(0xFF0284C7), Color(0xFF0C4A6E))
-        TimeOfDay.DUSK -> listOf(Color(0xFF4C1D95), Color(0xFF991B1B), Color(0xFF1E1B4B))
+        TimeOfDay.DUSK -> listOf(Color(0xFF4C1D95), Color(0xFF991B1B), Color(0xFF1D1720))
         TimeOfDay.NIGHT -> listOf(Color(0xFF090D16), Color(0xFF0B132B), Color(0xFF1C2541))
-        TimeOfDay.FULL_MOON -> listOf(Color(0xFF1E1B4B), Color(0xFF2E1065), Color(0xFF0A0A1A))
+        TimeOfDay.FULL_MOON -> listOf(Color(0xFF1D1720), Color(0xFF2E1065), Color(0xFF0A0A1A))
     }
 
     drawRect(
@@ -279,14 +279,14 @@ private fun DrawScope.drawCelestialBody(w: Float, h: Float, timeOfDay: TimeOfDay
         // Outer radiant glow rings
         drawCircle(
             brush = Brush.radialGradient(
-                listOf(Color(0xFFFDE68A).copy(alpha = 0.6f), Color.Transparent),
+                listOf(Color(0xFFF3E0A8).copy(alpha = 0.6f), Color.Transparent),
                 center = sunCenter,
                 radius = 45f
             ),
             radius = 45f,
             center = sunCenter
         )
-        drawCircle(color = Color(0xFFFBBF24), radius = 18f, center = sunCenter)
+        drawCircle(color = Color(0xFFE9C06A), radius = 18f, center = sunCenter)
     } else {
         // Celestial Jade Moon
         val moonCenter = Offset(w * 0.8f, h * 0.18f)
@@ -367,7 +367,7 @@ private fun DrawScope.drawSanctuaryPavilions(w: Float, h: Float, timeAnim: Float
 
     // Pagoda Foundation Terrace
     drawRoundRect(
-        color = Color(0xFF334155),
+        color = Color(0xFF4A4239),
         topLeft = Offset(pagodaCenterX - 55f, pagodaBaseY),
         size = Size(110f, 35f),
         cornerRadius = CornerRadius(4f, 4f)
@@ -378,7 +378,7 @@ private fun DrawScope.drawSanctuaryPavilions(w: Float, h: Float, timeAnim: Float
 
     // Pagoda Tier 2 Body
     drawRect(
-        color = Color(0xFFB45309),
+        color = Color(0xFF9A6B2C),
         topLeft = Offset(pagodaCenterX - 35f, pagodaBaseY - 45f),
         size = Size(70f, 35f)
     )
@@ -390,7 +390,7 @@ private fun DrawScope.drawSanctuaryPavilions(w: Float, h: Float, timeAnim: Float
 
     // Golden Spire on Top
     drawLine(
-        color = Color(0xFFFDE68A),
+        color = Color(0xFFF3E0A8),
         start = Offset(pagodaCenterX, pagodaBaseY - 55f),
         end = Offset(pagodaCenterX, pagodaBaseY - 78f),
         strokeWidth = 4f
@@ -414,7 +414,7 @@ private fun DrawScope.drawSanctuaryPavilions(w: Float, h: Float, timeAnim: Float
     // 4. Bottom Left: Divine Forge
     val forgeX = w * 0.25f
     val forgeY = h * 0.78f
-    drawRect(color = Color(0xFF475569), topLeft = Offset(forgeX - 25f, forgeY), size = Size(50f, 30f))
+    drawRect(color = Color(0xFF6E6557), topLeft = Offset(forgeX - 25f, forgeY), size = Size(50f, 30f))
     drawPagodaRoof(forgeX, forgeY - 6f, width = 65f, height = 14f, roofColor = Color(0xFF991B1B))
     // Glowing Forge window
     drawRect(color = Color(0xFFF97316), topLeft = Offset(forgeX - 8f, forgeY + 8f), size = Size(16f, 14f))
@@ -449,12 +449,12 @@ private fun DrawScope.drawDisciplesInScene(w: Float, h: Float, bounce: Float, re
     drawCircle(color = Color(0xFF38BDF8).copy(alpha = 0.4f), radius = 14f, center = d1Center)
     drawCircle(color = Color(0xFF38BDF8), radius = 14f, center = d1Center, style = Stroke(width = 1.5f))
     // Meditating disciple silhouette
-    drawCircle(color = Color(0xFFF1F5F9), radius = 4f, center = Offset(d1Center.x, d1Center.y - 4f))
+    drawCircle(color = Color(0xFFF7EFDD), radius = 4f, center = Offset(d1Center.x, d1Center.y - 4f))
     drawRect(color = Color(0xFF0F766E), topLeft = Offset(d1Center.x - 5f, d1Center.y), size = Size(10f, 6f))
 
     // Disciple 2: Training on Martial Grounds with flying sword
     val d2Center = Offset(w * 0.74f, h * 0.81f)
-    drawCircle(color = Color(0xFFF1F5F9), radius = 4f, center = Offset(d2Center.x, d2Center.y - 7f))
+    drawCircle(color = Color(0xFFF7EFDD), radius = 4f, center = Offset(d2Center.x, d2Center.y - 7f))
     drawRect(color = Color(0xFF3B82F6), topLeft = Offset(d2Center.x - 4f, d2Center.y - 3f), size = Size(8f, 10f))
 
     // Animated Flying Sword circulating above the swordsman
@@ -470,7 +470,7 @@ private fun DrawScope.drawDisciplesInScene(w: Float, h: Float, bounce: Float, re
 
     // Disciple 3: Near Grand Hall
     val d3Center = Offset(w * 0.44f, h * 0.80f)
-    drawCircle(color = Color(0xFFF1F5F9), radius = 4f, center = Offset(d3Center.x, d3Center.y - 7f))
+    drawCircle(color = Color(0xFFF7EFDD), radius = 4f, center = Offset(d3Center.x, d3Center.y - 7f))
     drawRect(color = Color(0xFFD97706), topLeft = Offset(d3Center.x - 4f, d3Center.y - 3f), size = Size(8f, 10f))
 
     // Glowing breakthrough pillar if disciples are ready

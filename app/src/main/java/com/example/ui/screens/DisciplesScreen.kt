@@ -31,6 +31,7 @@ import com.example.ui.components.WuxiaCard
 import com.example.ui.graphics.*
 import com.example.ui.pixelart.*
 import com.example.ui.theme.*
+import com.example.ui.aaa.*
 import com.example.ui.audio.WuxiaAudioEngine
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -85,13 +86,13 @@ fun DisciplesScreen(
             ) {
                 Text(
                     text = "Adeptowie Sekty (${uiState.disciples.size})",
-                    color = Color(0xFFFFE8A3),
+                    color = Color(0xFFF6E6BE),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Black
                 )
                 Text(
                     text = "Filtruj według Szkoły",
-                    color = Color(0xFF94A3B8),
+                    color = Color(0xFFB0A592),
                     fontSize = 11.sp
                 )
             }
@@ -102,14 +103,14 @@ fun DisciplesScreen(
                 item {
                     val isAll = selectedSchoolFilter == null
                     Surface(
-                        color = if (isAll) Color(0xFFB45309) else Color(0xFF191124),
+                        color = if (isAll) Color(0xFF9A6B2C) else Color(0xFF191124),
                         shape = RoundedCornerShape(8.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, if (isAll) Color(0xFFFFD700) else Color(0xFF3B284C)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, if (isAll) Color(0xFFE8C37E) else Color(0xFF3A2E35)),
                         modifier = Modifier.clickable { selectedSchoolFilter = null }
                     ) {
                         Text(
                             text = "☯️ Wszyscy",
-                            color = if (isAll) Color(0xFFFFE082) else Color(0xFFCBD5E1),
+                            color = if (isAll) Color(0xFFF3DDA6) else Color(0xFFD6CCB6),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
@@ -121,13 +122,13 @@ fun DisciplesScreen(
                     val (icon, col) = when (school) {
                         MartialSchool.SWORD_IMMORTAL -> "🗡️" to Color(0xFF00E5FF)
                         MartialSchool.BODY_ASURA -> "👊" to Color(0xFFFF5252)
-                        MartialSchool.ELEMENTAL_TAOIST -> "⚡" to Color(0xFFFFD54F)
+                        MartialSchool.ELEMENTAL_TAOIST -> "⚡" to Color(0xFFEBCB7A)
                         MartialSchool.SHADOW_VIPER -> "🐍" to Color(0xFFE040FB)
                     }
                     Surface(
                         color = if (isSel) col.copy(alpha = 0.25f) else Color(0xFF191124),
                         shape = RoundedCornerShape(8.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, if (isSel) col else Color(0xFF3B284C)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, if (isSel) col else Color(0xFF3A2E35)),
                         modifier = Modifier.clickable {
                             selectedSchoolFilter = if (selectedSchoolFilter == school) null else school
                         }
@@ -140,7 +141,7 @@ fun DisciplesScreen(
                             Spacer(Modifier.width(4.dp))
                             Text(
                                 text = school.polishName,
-                                color = if (isSel) col else Color(0xFFCBD5E1),
+                                color = if (isSel) col else Color(0xFFD6CCB6),
                                 fontSize = 11.sp,
                                 fontWeight = if (isSel) FontWeight.Black else FontWeight.Medium
                             )
@@ -154,8 +155,8 @@ fun DisciplesScreen(
         item {
             val readyDisciplesCount = uiState.disciples.count { it.realmProgress >= 100 }
             WuxiaCard(
-                borderColor = if (readyDisciplesCount > 0) Color(0xFFFFD700) else Color(0xFF3B284C),
-                backgroundColor = Color(0xFF130D20),
+                borderColor = if (readyDisciplesCount > 0) Color(0xFFE8C37E) else Color(0xFF3A2E35),
+                backgroundColor = Color(0xFF16111A),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -167,14 +168,14 @@ fun DisciplesScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = "⚡ AUTOMATYCZNY PRZEŁOM DAO",
-                                color = Color(0xFFFFE8A3),
+                                color = Color(0xFFF6E6BE),
                                 fontWeight = FontWeight.Black,
                                 fontSize = 13.sp
                             )
                         }
                         Text(
                             text = if (uiState.autoBreakthroughEnabled) "Uczniowie przy 100% Qi automatycznie przechodzą próbę" else "Wstrzymano próby przełomu (wymagany ręczny rytuał)",
-                            color = Color(0xFF94A3B8),
+                            color = Color(0xFFB0A592),
                             fontSize = 11.sp
                         )
                     }
@@ -183,8 +184,8 @@ fun DisciplesScreen(
                         checked = uiState.autoBreakthroughEnabled,
                         onCheckedChange = { viewModel.toggleAutoBreakthrough(it) },
                         colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color(0xFFFFD700),
-                            checkedTrackColor = Color(0xFFB45309)
+                            checkedThumbColor = Color(0xFFE8C37E),
+                            checkedTrackColor = Color(0xFF9A6B2C)
                         ),
                         modifier = Modifier.testTag("toggle_auto_breakthrough")
                     )
@@ -199,7 +200,7 @@ fun DisciplesScreen(
                 ) {
                     Text(
                         text = "💊 Automatycznie zużywaj Pigułki Qi (+35% sukcesu):",
-                        color = Color(0xFFE2E8F0),
+                        color = Color(0xFFEDE4CF),
                         fontSize = 11.sp
                     )
                     Switch(
@@ -223,7 +224,7 @@ fun DisciplesScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag("breakthrough_all_button"),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB45309)),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9A6B2C)),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
@@ -270,8 +271,8 @@ fun DiscipleCard(
     val isReadyForBreakthrough = disciple.realmProgress >= 100
 
     WuxiaCard(
-        borderColor = if (isReadyForBreakthrough) Color(0xFFFFD700) else Color(0xFF332042),
-        backgroundColor = Color(0xFF130D20),
+        borderColor = if (isReadyForBreakthrough) Color(0xFFE8C37E) else Color(0xFF332042),
+        backgroundColor = Color(0xFF16111A),
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
@@ -300,13 +301,13 @@ fun DiscipleCard(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = disciple.name,
-                            color = Color(0xFFFFE8A3),
+                            color = Color(0xFFF6E6BE),
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Black
                         )
                         Spacer(Modifier.width(6.dp))
                         val (gradeColor, gradeBg) = when (disciple.talentGrade) {
-                            TalentGrade.SSS -> Color(0xFFFFD700) to Color(0xFF78350F)
+                            TalentGrade.SSS -> Color(0xFFE8C37E) to Color(0xFF78350F)
                             TalentGrade.SS -> Color(0xFFF43F5E) to Color(0xFF881337)
                             TalentGrade.S -> Color(0xFF00E5FF) to Color(0xFF164E63)
                             TalentGrade.A -> Color(0xFF34D399) to Color(0xFF064E3B)
@@ -331,12 +332,12 @@ fun DiscipleCard(
                         shape = RoundedCornerShape(6.dp),
                         border = androidx.compose.foundation.BorderStroke(
                             1.dp,
-                            if (isReadyForBreakthrough) Color(0xFFFFD700) else Color(0xFFA855F7)
+                            if (isReadyForBreakthrough) Color(0xFFE8C37E) else Color(0xFFA855F7)
                         )
                     ) {
                         Text(
                             text = disciple.realm.polishName,
-                            color = if (isReadyForBreakthrough) Color(0xFFFFD700) else Color(0xFFE9D5FF),
+                            color = if (isReadyForBreakthrough) Color(0xFFE8C37E) else Color(0xFFE9D5FF),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Black,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -346,7 +347,7 @@ fun DiscipleCard(
 
                 Text(
                     text = "🏰 ${disciple.ancientClan.name} • ${disciple.ancientClan.reputationTitle}",
-                    color = Color(0xFFFFD54F),
+                    color = Color(0xFFEBCB7A),
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -364,7 +365,7 @@ fun DiscipleCard(
                     )
                     Text(
                         text = "⚔️ ${disciple.combatPower} CP",
-                        color = Color(0xFFFFD700),
+                        color = Color(0xFFE8C37E),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Black
                     )
@@ -407,7 +408,7 @@ fun DiscipleCard(
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = "✦ Cechy: ${disciple.fatedTraits.joinToString(" • ") { it.name }}",
-                        color = Color(0xFFFDE047),
+                        color = Color(0xFFF2D58A),
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -426,9 +427,9 @@ fun DiscipleCard(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(text = "⚔️ Atak: ${disciple.attack}", color = Color(0xFFFFD700), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text(text = "⚔️ Atak: ${disciple.attack}", color = Color(0xFFE8C37E), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     Text(text = "🛡️ Obrona: ${disciple.defense}", color = Color(0xFF00E5FF), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    Text(text = "✨ Dao: ${disciple.daoPoints} pkt", color = Color(0xFFFDE047), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text(text = "✨ Dao: ${disciple.daoPoints} pkt", color = Color(0xFFF2D58A), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -439,7 +440,7 @@ fun DiscipleCard(
                         .fillMaxWidth()
                         .height(6.dp)
                         .clip(RoundedCornerShape(3.dp))
-                        .background(Color(0xFF1E142B))
+                        .background(Color(0xFF1D1720))
                 ) {
                     val hpFrac = (disciple.currentHp.toFloat() / disciple.maxHp.coerceAtLeast(1)).coerceIn(0f, 1f)
                     Box(
@@ -456,14 +457,14 @@ fun DiscipleCard(
                 QiProgressBar(
                     progressPercent = disciple.realmProgress,
                     label = if (isReadyForBreakthrough) "⚡ DANTIAN PRZEPEŁNIONY ENERGIĄ QI!" else "Nasycenie Meridianów Qi",
-                    barColor = if (isReadyForBreakthrough) Color(0xFFFFD700) else Color(0xFF10B981)
+                    barColor = if (isReadyForBreakthrough) Color(0xFFE8C37E) else Color(0xFF10B981)
                 )
 
                 if (isReadyForBreakthrough) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Button(
                         onClick = onQuickBreakthrough,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB45309)),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9A6B2C)),
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -521,23 +522,12 @@ fun DiscipleDetailModal(
                     .fillMaxWidth()
                     .heightIn(max = 520.dp)
             ) {
-                // Tab Row
-                TabRow(
-                    selectedTabIndex = selectedTab,
-                    containerColor = InkSurfaceVariant,
-                    contentColor = TextGold
-                ) {
-                    Tab(
-                        selected = selectedTab == 0,
-                        onClick = { selectedTab = 0 },
-                        text = { Text("Kultywacja", fontSize = 12.sp) }
-                    )
-                    Tab(
-                        selected = selectedTab == 1,
-                        onClick = { selectedTab = 1 },
-                        text = { Text("Drzewo Dao (${disciple.daoPoints} pkt)", fontSize = 12.sp) }
-                    )
-                }
+                AaaSegmentedTabs(
+                    items = listOf("Kultywacja", "Drzewo Dao"),
+                    selectedIndex = selectedTab,
+                    onSelect = { selectedTab = it },
+                    badges = listOf(null, if (disciple.daoPoints > 0) "${disciple.daoPoints}" else null)
+                )
 
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -616,7 +606,7 @@ fun DiscipleCultivationTab(
                     .fillMaxWidth()
                     .height(240.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .border(2.dp, Color(0xFFFFD700), RoundedCornerShape(12.dp))
+                    .border(2.dp, Color(0xFFE8C37E), RoundedCornerShape(12.dp))
                     .background(Color(0xFF090611))
             ) {
                 // Manhwa Character Standee
@@ -654,7 +644,7 @@ fun DiscipleCultivationTab(
                     // Główny kanał witalny Du Mai / Ren Mai
                     drawLine(
                         brush = Brush.verticalGradient(
-                            listOf(Color(0xFF00E5FF).copy(alpha = 0.7f), Color(0xFFFFD700).copy(alpha = 0.9f))
+                            listOf(Color(0xFF00E5FF).copy(alpha = 0.7f), Color(0xFFE8C37E).copy(alpha = 0.9f))
                         ),
                         start = Offset(cx, h * 0.22f),
                         end = Offset(cx, h * 0.82f),
@@ -679,7 +669,7 @@ fun DiscipleCultivationTab(
                     val dantianRadius = 18f * dantianPulse
                     drawCircle(
                         brush = Brush.radialGradient(
-                            listOf(Color(0xFFFFD700), Color(0xFF00E5FF).copy(alpha = 0.6f), Color.Transparent),
+                            listOf(Color(0xFFE8C37E), Color(0xFF00E5FF).copy(alpha = 0.6f), Color.Transparent),
                             center = Offset(cx, cy),
                             radius = dantianRadius * 1.8f
                         ),
@@ -713,14 +703,14 @@ fun DiscipleCultivationTab(
                 Surface(
                     color = Color.Black.copy(alpha = 0.8f),
                     shape = RoundedCornerShape(6.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE8C37E)),
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .padding(8.dp)
                 ) {
                     Text(
                         text = "8 MERIDIANÓW • DANTIAN QI: ${disciple.realmProgress}%",
-                        color = Color(0xFFFFE082),
+                        color = Color(0xFFF3DDA6),
                         fontSize = 9.sp,
                         fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                         fontWeight = FontWeight.Bold,
@@ -733,7 +723,7 @@ fun DiscipleCultivationTab(
                     Surface(
                         color = Color(0xFF065F46).copy(alpha = 0.9f),
                         shape = RoundedCornerShape(8.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFFFD700)),
+                        border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFE8C37E)),
                         modifier = Modifier
                             .align(Alignment.Center)
                             .padding(16.dp)
@@ -742,7 +732,7 @@ fun DiscipleCultivationTab(
                             modifier = Modifier.padding(12.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text(text = "⚡ PRZEŁOM NIEBIAŃSKI!", color = Color(0xFFFFD700), fontSize = 14.sp, fontWeight = FontWeight.Black)
+                            Text(text = "⚡ PRZEŁOM NIEBIAŃSKI!", color = Color(0xFFE8C37E), fontSize = 14.sp, fontWeight = FontWeight.Black)
                             Text(text = "Meridiany poszerzone • Rezerwuar Qi wzmocniony", color = Color.White, fontSize = 10.sp)
                         }
                     }
@@ -755,7 +745,7 @@ fun DiscipleCultivationTab(
             Surface(
                 color = InkSurfaceVariant,
                 shape = RoundedCornerShape(8.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.5f)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE8C37E).copy(alpha = 0.5f)),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
@@ -766,12 +756,12 @@ fun DiscipleCultivationTab(
                     ) {
                         Text(
                             text = "🏰 ${disciple.ancientClan.name} • ${disciple.ancientClan.reputationTitle}",
-                            color = Color(0xFFFFE8A3),
+                            color = Color(0xFFF6E6BE),
                             fontWeight = FontWeight.Black,
                             fontSize = 13.sp
                         )
                         val (gCol, gBg) = when (disciple.talentGrade) {
-                            TalentGrade.SSS -> Color(0xFFFFD700) to Color(0xFF78350F)
+                            TalentGrade.SSS -> Color(0xFFE8C37E) to Color(0xFF78350F)
                             TalentGrade.SS -> Color(0xFFF43F5E) to Color(0xFF881337)
                             TalentGrade.S -> Color(0xFF00E5FF) to Color(0xFF164E63)
                             TalentGrade.A -> Color(0xFF34D399) to Color(0xFF064E3B)
@@ -794,13 +784,13 @@ fun DiscipleCultivationTab(
 
                     Text(
                         text = disciple.ancientClan.buffDescription,
-                        color = Color(0xFFFFD54F),
+                        color = Color(0xFFEBCB7A),
                         fontSize = 10.sp
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "⚔️ Całkowita Siła Bojowa: ${disciple.combatPower} CP",
-                        color = Color(0xFFFFD700),
+                        color = Color(0xFFE8C37E),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Black
                     )
@@ -827,14 +817,14 @@ fun DiscipleCultivationTab(
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             text = "✦ Cechy Przeznaczenia:",
-                            color = Color(0xFFFFE8A3),
+                            color = Color(0xFFF6E6BE),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold
                         )
                         disciple.fatedTraits.forEach { trait ->
                             Text(
                                 text = " • ${trait.name}: ${trait.description}",
-                                color = Color(0xFFFDE047),
+                                color = Color(0xFFF2D58A),
                                 fontSize = 9.sp
                             )
                         }
@@ -848,7 +838,7 @@ fun DiscipleCultivationTab(
             Surface(
                 color = InkSurfaceVariant,
                 shape = RoundedCornerShape(8.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE8C37E)),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(10.dp)) {
@@ -865,7 +855,7 @@ fun DiscipleCultivationTab(
                         )
                         Text(
                             text = "${disciple.realmProgress}/100% Qi",
-                            color = if (disciple.realmProgress >= 100) Color(0xFFFFD700) else TextSecondary,
+                            color = if (disciple.realmProgress >= 100) Color(0xFFE8C37E) else TextSecondary,
                             fontWeight = FontWeight.Bold,
                             fontSize = 11.sp
                         )

@@ -135,7 +135,7 @@ fun Wuxia2dCauldronInteractive(
         modifier = modifier
             .fillMaxWidth()
             .background(Color(0xFF0B0713))
-            .border(2.dp, Color(0xFFFFD700), RoundedCornerShape(14.dp))
+            .border(2.dp, Color(0xFFE8C37E), RoundedCornerShape(14.dp))
             .padding(10.dp)
     ) {
         // Tytuł i Stan Pieca
@@ -150,7 +150,7 @@ fun Wuxia2dCauldronInteractive(
                 Column {
                     Text(
                         text = "KOCIOŁ GEOCENTRYCZNEJ FUZJI",
-                        color = Color(0xFFFFE082),
+                        color = Color(0xFFF3DDA6),
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.Bold,
                         fontSize = 12.sp
@@ -165,13 +165,13 @@ fun Wuxia2dCauldronInteractive(
 
             Surface(
                 color = when (fusionPhase) {
-                    AlchemyFusionPhase.IDLE -> Color(0xFF1E1B4B)
-                    AlchemyFusionPhase.HEATING_SEAL -> Color(0xFFB45309)
+                    AlchemyFusionPhase.IDLE -> Color(0xFF1D1720)
+                    AlchemyFusionPhase.HEATING_SEAL -> Color(0xFF9A6B2C)
                     AlchemyFusionPhase.CONDENSATION_VORTEX -> Color(0xFF7C2D12)
                     AlchemyFusionPhase.BREAKTHROUGH_REVEAL -> Color(0xFF065F46)
                 },
                 shape = RoundedCornerShape(6.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700))
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE8C37E))
             ) {
                 Text(
                     text = when (fusionPhase) {
@@ -227,7 +227,7 @@ fun Wuxia2dCauldronInteractive(
                 drawPath(
                     path = flamePath,
                     brush = Brush.verticalGradient(
-                        listOf(Color(0xFFFDE047), Color(0xFFF97316), Color(0xFFDC2626)),
+                        listOf(Color(0xFFF2D58A), Color(0xFFF97316), Color(0xFFDC2626)),
                         startY = cy + 50f - flameH * 1.2f,
                         endY = cy + 50f
                     )
@@ -241,7 +241,7 @@ fun Wuxia2dCauldronInteractive(
                         val px = cx + cos(angle) * dist
                         val py = cy + sin(angle) * dist * 0.55f
                         drawCircle(
-                            color = if (i % 2 == 0) Color(0xFF00E5FF) else Color(0xFFFFD700),
+                            color = if (i % 2 == 0) Color(0xFF00E5FF) else Color(0xFFE8C37E),
                             radius = 4f,
                             center = Offset(px, py)
                         )
@@ -251,7 +251,7 @@ fun Wuxia2dCauldronInteractive(
                 // Ciało z brązu/nefrytu kotła
                 drawOval(
                     brush = Brush.radialGradient(
-                        listOf(Color(0xFFB45309), Color(0xFF78350F), Color(0xFF1E0B02)),
+                        listOf(Color(0xFF9A6B2C), Color(0xFF78350F), Color(0xFF1E0B02)),
                         center = Offset(cx - 15f, cy - 5f)
                     ),
                     topLeft = Offset(cx - 55f, cy - 25f),
@@ -260,20 +260,20 @@ fun Wuxia2dCauldronInteractive(
 
                 // Złote runy pieca Bagua
                 drawCircle(
-                    color = Color(0xFFFFD700).copy(alpha = if (fusionPhase != AlchemyFusionPhase.IDLE) 0.9f else 0.5f),
+                    color = Color(0xFFE8C37E).copy(alpha = if (fusionPhase != AlchemyFusionPhase.IDLE) 0.9f else 0.5f),
                     radius = 18f,
                     center = Offset(cx, cy + 5f),
                     style = Stroke(width = 2.5f)
                 )
 
                 // Nogi trójnogu
-                drawLine(color = Color(0xFF475569), start = Offset(cx - 40f, cy + 25f), end = Offset(cx - 55f, cy + 60f), strokeWidth = 6f, cap = StrokeCap.Round)
-                drawLine(color = Color(0xFF475569), start = Offset(cx + 40f, cy + 25f), end = Offset(cx + 55f, cy + 60f), strokeWidth = 6f, cap = StrokeCap.Round)
-                drawLine(color = Color(0xFF334155), start = Offset(cx, cy + 30f), end = Offset(cx, cy + 62f), strokeWidth = 6f, cap = StrokeCap.Round)
+                drawLine(color = Color(0xFF6E6557), start = Offset(cx - 40f, cy + 25f), end = Offset(cx - 55f, cy + 60f), strokeWidth = 6f, cap = StrokeCap.Round)
+                drawLine(color = Color(0xFF6E6557), start = Offset(cx + 40f, cy + 25f), end = Offset(cx + 55f, cy + 60f), strokeWidth = 6f, cap = StrokeCap.Round)
+                drawLine(color = Color(0xFF4A4239), start = Offset(cx, cy + 30f), end = Offset(cx, cy + 62f), strokeWidth = 6f, cap = StrokeCap.Round)
 
                 // Uszy kotła
                 drawArc(
-                    color = Color(0xFFB45309),
+                    color = Color(0xFF9A6B2C),
                     startAngle = 140f,
                     sweepAngle = 180f,
                     useCenter = false,
@@ -282,7 +282,7 @@ fun Wuxia2dCauldronInteractive(
                     style = Stroke(width = 5f)
                 )
                 drawArc(
-                    color = Color(0xFFB45309),
+                    color = Color(0xFF9A6B2C),
                     startAngle = 220f,
                     sweepAngle = 180f,
                     useCenter = false,
@@ -295,7 +295,7 @@ fun Wuxia2dCauldronInteractive(
                 if (fusionPhase == AlchemyFusionPhase.BREAKTHROUGH_REVEAL) {
                     drawRect(
                         brush = Brush.verticalGradient(
-                            listOf(Color.White, Color(0xFFFFD700).copy(alpha = 0.8f), Color.Transparent)
+                            listOf(Color.White, Color(0xFFE8C37E).copy(alpha = 0.8f), Color.Transparent)
                         ),
                         topLeft = Offset(cx - 40f, 0f),
                         size = Size(80f, cy + 10f)
@@ -317,7 +317,7 @@ fun Wuxia2dCauldronInteractive(
                             .size(105.dp)
                             .background(
                                 Brush.radialGradient(
-                                    listOf(Color(0xFFFFD700).copy(alpha = 0.8f), Color(0xFF00E5FF).copy(alpha = 0.4f), Color.Transparent)
+                                    listOf(Color(0xFFE8C37E).copy(alpha = 0.8f), Color(0xFF00E5FF).copy(alpha = 0.4f), Color.Transparent)
                                 ),
                                 shape = CircleShape
                             )
@@ -331,7 +331,7 @@ fun Wuxia2dCauldronInteractive(
                             modifier = Modifier
                                 .size(88.dp)
                                 .clip(RoundedCornerShape(12.dp))
-                                .border(2.dp, Color(0xFFFFD700), RoundedCornerShape(12.dp))
+                                .border(2.dp, Color(0xFFE8C37E), RoundedCornerShape(12.dp))
                         )
                     }
 
@@ -339,14 +339,14 @@ fun Wuxia2dCauldronInteractive(
                     Surface(
                         color = Color.Black.copy(alpha = 0.85f),
                         shape = RoundedCornerShape(6.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE8C37E)),
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .offset(y = 18.dp)
                     ) {
                         Text(
                             text = "✨ $pillQuality",
-                            color = Color(0xFFFFE082),
+                            color = Color(0xFFF3DDA6),
                             fontSize = 10.sp,
                             fontFamily = FontFamily.Monospace,
                             fontWeight = FontWeight.Black,
@@ -362,7 +362,7 @@ fun Wuxia2dCauldronInteractive(
         // Wybór Katalizatorów i Esencji
         Text(
             text = "Święte Esencje i Katalizatory Kultywacji:",
-            color = Color(0xFFFFE082),
+            color = Color(0xFFF3DDA6),
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold
         )
@@ -378,11 +378,11 @@ fun Wuxia2dCauldronInteractive(
             ).forEach { (catName, icon) ->
                 val isSelected = selectedCatalyst == catName
                 Surface(
-                    color = if (isSelected) Color(0xFF78350F) else Color(0xFF1E1B4B),
+                    color = if (isSelected) Color(0xFF78350F) else Color(0xFF1D1720),
                     shape = RoundedCornerShape(8.dp),
                     border = androidx.compose.foundation.BorderStroke(
                         1.dp,
-                        if (isSelected) Color(0xFFFFD700) else Color(0xFF4338CA)
+                        if (isSelected) Color(0xFFE8C37E) else Color(0xFF4338CA)
                     ),
                     modifier = Modifier
                         .weight(1f)
@@ -395,7 +395,7 @@ fun Wuxia2dCauldronInteractive(
                         Text(text = icon, fontSize = 16.sp)
                         Text(
                             text = catName.take(13),
-                            color = if (isSelected) Color(0xFFFFE082) else Color(0xFFCBD5E1),
+                            color = if (isSelected) Color(0xFFF3DDA6) else Color(0xFFD6CCB6),
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -425,7 +425,7 @@ fun Wuxia2dCauldronInteractive(
                 } else {
                     "⏳ TRWA PRZEŁOM KOSMICZNEGO PŁOMIENIA..."
                 },
-                color = if (fusionPhase == AlchemyFusionPhase.IDLE) Color.White else Color(0xFFFFD700),
+                color = if (fusionPhase == AlchemyFusionPhase.IDLE) Color.White else Color(0xFFE8C37E),
                 fontWeight = FontWeight.Black,
                 fontSize = 11.sp
             )

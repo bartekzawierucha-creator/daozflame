@@ -21,9 +21,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.*
+import com.example.ui.aaa.AaaPanelHeader
+import com.example.ui.aaa.aaaFrame
 
 // Ornate Oriental Palette
-val GildedGold = Color(0xFFFFD700)
+val GildedGold = Color(0xFFE8C37E)
 val ImperialGoldDark = Color(0xFFB8860B)
 val LacquerDark = Color(0xFF140D14)
 val JadeRoyal = Color(0xFF00A86B)
@@ -79,75 +81,17 @@ fun OrnateOrientalCard(
     backgroundColor: Color = Color(0xFF101722),
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Box(
+    val accent = com.example.ui.components.aaaAccentFor(borderColor)
+    Column(
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(backgroundColor)
+            .aaaFrame(accent = accent)
+            .padding(14.dp)
     ) {
-        // Custom canvas for corner filigrees & auspicious border
-        Canvas(modifier = Modifier.matchParentSize()) {
-            val w = size.width
-            val h = size.height
-
-            // Dual border lines
-            drawRoundRect(
-                color = borderColor.copy(alpha = 0.35f),
-                topLeft = Offset(1f, 1f),
-                size = Size(w - 2f, h - 2f),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(8f, 8f),
-                style = Stroke(width = 1.5f)
-            )
-            drawRoundRect(
-                color = borderColor.copy(alpha = 0.8f),
-                topLeft = Offset(4f, 4f),
-                size = Size(w - 8f, h - 8f),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(6f, 6f),
-                style = Stroke(width = 1f)
-            )
-
-            // 4 Traditional Gilded Corners
-            drawOrnateCorner(8f, 8f, isRight = false, isBottom = false, color = borderColor)
-            drawOrnateCorner(w - 8f, 8f, isRight = true, isBottom = false, color = borderColor)
-            drawOrnateCorner(8f, h - 8f, isRight = false, isBottom = true, color = borderColor)
-            drawOrnateCorner(w - 8f, h - 8f, isRight = true, isBottom = true, color = borderColor)
+        if (headerTitle != null) {
+            AaaPanelHeader(title = headerTitle, accent = accent)
+            Spacer(Modifier.height(10.dp))
         }
-
-        Column(modifier = Modifier.padding(14.dp)) {
-            if (headerTitle != null) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(6.dp)
-                            .background(GildedGold, RoundedCornerShape(1.dp))
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = headerTitle.uppercase(),
-                        color = TextGold,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.5.sp
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(1.dp)
-                            .background(
-                                Brush.horizontalGradient(
-                                    listOf(GildedGold.copy(alpha = 0.7f), Color.Transparent)
-                                )
-                            )
-                    )
-                }
-            }
-            content()
-        }
+        content()
     }
 }
 
@@ -202,166 +146,77 @@ fun ParchmentScrollFrame(
     title: String? = null,
     sealChar: String? = "道",
     borderColor: Color = GildedGold,
-    backgroundColor: Color = Color(0xFF161024),
+    backgroundColor: Color = Color(0xFF17121A),
     content: @Composable ColumnScope.() -> Unit
 ) {
+    val accent = com.example.ui.components.aaaAccentFor(borderColor)
     Column(modifier = modifier) {
-        // Gorny walek zwoju (Scroll Header Roller with Jade tips)
-        Box(
+        ScrollRoller()
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(10.dp)
-        ) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val w = size.width
-                val h = size.height
-                // Glowny drewniano-zloty walek
-                drawRoundRect(
-                    brush = Brush.horizontalGradient(
+                .padding(horizontal = 5.dp)
+                .aaaFrame(
+                    accent = accent,
+                    fill = Brush.verticalGradient(
                         listOf(
-                            Color(0xFF78350F),
-                            GildedGold,
-                            Color(0xFFFEF08A),
-                            GildedGold,
-                            Color(0xFF78350F)
+                            com.example.ui.aaa.Aaa.LacquerRed.copy(alpha = 0.55f),
+                            com.example.ui.aaa.Aaa.Ink2,
+                            com.example.ui.aaa.Aaa.Ink1
                         )
                     ),
-                    topLeft = Offset(12f, 2f),
-                    size = Size(w - 24f, h - 4f),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f)
+                    chamfer = 6.dp,
+                    elevation = 4.dp
                 )
-                // Lewa i prawa jadeitowa koncowka walka
-                drawCircle(color = JadeRoyal, radius = 5f, center = Offset(10f, h * 0.5f))
-                drawCircle(color = Color.White.copy(alpha = 0.8f), radius = 2f, center = Offset(9f, h * 0.4f))
-                drawCircle(color = JadeRoyal, radius = 5f, center = Offset(w - 10f, h * 0.5f))
-                drawCircle(color = Color.White.copy(alpha = 0.8f), radius = 2f, center = Offset(w - 11f, h * 0.4f))
+                .padding(14.dp)
+        ) {
+            if (title != null) {
+                AaaPanelHeader(title = title, seal = sealChar, accent = accent)
+                Spacer(Modifier.height(10.dp))
             }
+            content()
         }
+        ScrollRoller()
+    }
+}
 
-        // Cialo zwoju pergaminowego
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 6.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            backgroundColor,
-                            Color(0xFF201630),
-                            backgroundColor
-                        )
-                    )
-                )
-                .border(
-                    width = 1.5.dp,
-                    brush = Brush.linearGradient(
-                        listOf(
-                            borderColor,
-                            Color(0xFF78350F),
-                            borderColor,
-                            Color(0xFF451A03),
-                            borderColor
-                        )
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                )
-        ) {
-            // Narożniki kaligraficzne i motywy zwoju
-            Canvas(modifier = Modifier.matchParentSize()) {
-                val w = size.width
-                val h = size.height
-                drawOrnateCorner(8f, 8f, isRight = false, isBottom = false, color = borderColor.copy(alpha = 0.85f))
-                drawOrnateCorner(w - 8f, 8f, isRight = true, isBottom = false, color = borderColor.copy(alpha = 0.85f))
-                drawOrnateCorner(8f, h - 8f, isRight = false, isBottom = true, color = borderColor.copy(alpha = 0.85f))
-                drawOrnateCorner(w - 8f, h - 8f, isRight = true, isBottom = true, color = borderColor.copy(alpha = 0.85f))
-            }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(14.dp)
-            ) {
-                if (title != null) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (sealChar != null) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(24.dp)
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .background(CinnabarRed)
-                                        .border(1.dp, GildedGold, RoundedCornerShape(4.dp)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = sealChar,
-                                        color = Color(0xFFFFE082),
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Black
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(8.dp))
-                            }
-                            Text(
-                                text = title,
-                                color = Color(0xFFFFE8A3),
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Black,
-                                letterSpacing = 0.5.sp
-                            )
-                        }
-
-                        // Złoty ornament kaligraficzny
-                        Box(
-                            modifier = Modifier
-                                .width(40.dp)
-                                .height(2.dp)
-                                .background(
-                                    Brush.horizontalGradient(
-                                        listOf(GildedGold, Color.Transparent)
-                                    )
-                                )
-                        )
-                    }
-                }
-
-                content()
-            }
-        }
-
-        // Dolny walek zwoju (Scroll Footer Roller)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(10.dp)
-        ) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val w = size.width
-                val h = size.height
-                drawRoundRect(
-                    brush = Brush.horizontalGradient(
-                        listOf(
-                            Color(0xFF78350F),
-                            GildedGold,
-                            Color(0xFFFEF08A),
-                            GildedGold,
-                            Color(0xFF78350F)
-                        )
-                    ),
-                    topLeft = Offset(12f, 2f),
-                    size = Size(w - 24f, h - 4f),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f)
-                )
-                drawCircle(color = JadeRoyal, radius = 5f, center = Offset(10f, h * 0.5f))
-                drawCircle(color = JadeRoyal, radius = 5f, center = Offset(w - 10f, h * 0.5f))
-            }
+/** Wałek zwoju: szczotkowany złoty pręt z nefrytowymi główkami. */
+@Composable
+private fun ScrollRoller() {
+    Canvas(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(12.dp)
+    ) {
+        val w = size.width
+        val h = size.height
+        val capR = h * 0.5f
+        drawRoundRect(
+            brush = Brush.verticalGradient(
+                listOf(
+                    com.example.ui.aaa.Aaa.GoldHi,
+                    com.example.ui.aaa.Aaa.Gold,
+                    com.example.ui.aaa.Aaa.GoldDeep,
+                    com.example.ui.aaa.Aaa.GoldShadow
+                ),
+                startY = h * 0.2f,
+                endY = h * 0.8f
+            ),
+            topLeft = Offset(capR * 1.6f, h * 0.2f),
+            size = Size(w - capR * 3.2f, h * 0.6f),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(h * 0.3f, h * 0.3f)
+        )
+        listOf(capR, w - capR).forEach { x ->
+            drawCircle(
+                brush = Brush.radialGradient(
+                    listOf(Color(0xFF7FE0C0), JadeRoyal, Color(0xFF06352A)),
+                    center = Offset(x - capR * 0.3f, h * 0.35f),
+                    radius = capR * 1.2f
+                ),
+                radius = capR,
+                center = Offset(x, h / 2f)
+            )
+            drawCircle(com.example.ui.aaa.Aaa.GoldDeep, radius = capR, center = Offset(x, h / 2f), style = Stroke(width = 1f))
         }
     }
 }

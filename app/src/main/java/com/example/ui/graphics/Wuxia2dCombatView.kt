@@ -125,7 +125,7 @@ fun Wuxia2dCombatArena(
     val schoolAuraColor = when (combatState.discipleSchool) {
         MartialSchool.SWORD_IMMORTAL -> Color(0xFF00E5FF)
         MartialSchool.BODY_ASURA -> Color(0xFFFF5252)
-        MartialSchool.ELEMENTAL_TAOIST -> Color(0xFFFFD54F)
+        MartialSchool.ELEMENTAL_TAOIST -> Color(0xFFEBCB7A)
         MartialSchool.SHADOW_VIPER -> Color(0xFFE040FB)
     }
 
@@ -134,7 +134,7 @@ fun Wuxia2dCombatArena(
             .fillMaxWidth()
             .offset { IntOffset(shakeX.toInt(), shakeY.toInt()) }
             .background(Color(0xFF09060E))
-            .border(2.dp, Color(0xFFFFD700), RoundedCornerShape(14.dp))
+            .border(2.dp, Color(0xFFE8C37E), RoundedCornerShape(14.dp))
             .padding(10.dp)
     ) {
         // Nagłówek Areny z Tytułem
@@ -147,12 +147,12 @@ fun Wuxia2dCombatArena(
                 Box(
                     modifier = Modifier
                         .size(8.dp, 16.dp)
-                        .background(Color(0xFFFFD700), RoundedCornerShape(2.dp))
+                        .background(Color(0xFFE8C37E), RoundedCornerShape(2.dp))
                 )
                 Spacer(Modifier.width(6.dp))
                 Text(
                     text = "ARENA DZIEWIĘCIU NIEBIOS",
-                    color = Color(0xFFFFE082),
+                    color = Color(0xFFF3DDA6),
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold,
                     fontSize = 12.sp,
@@ -164,7 +164,7 @@ fun Wuxia2dCombatArena(
                 Surface(
                     color = if (combatState.isVictory == true) Color(0xFF065F46) else Color(0xFF7F1D1D),
                     shape = RoundedCornerShape(6.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700))
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE8C37E))
                 ) {
                     Text(
                         text = if (combatState.isVictory == true) "🏆 ZWYCIĘSTWO" else "☠️ PORAŻKA",
@@ -177,7 +177,7 @@ fun Wuxia2dCombatArena(
                 }
             } else {
                 Surface(
-                    color = Color(0xFF1E1B4B),
+                    color = Color(0xFF1D1720),
                     shape = RoundedCornerShape(6.dp),
                     border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF6366F1))
                 ) {
@@ -201,7 +201,7 @@ fun Wuxia2dCombatArena(
                 .fillMaxWidth()
                 .height(260.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .border(1.5.dp, Color(0xFFFFD700).copy(alpha = 0.8f), RoundedCornerShape(12.dp))
+                .border(1.5.dp, Color(0xFFE8C37E).copy(alpha = 0.8f), RoundedCornerShape(12.dp))
                 .background(Color.Black)
         ) {
             // 1. Tło Areny (Ilustracja Manhwa lub gradient)
@@ -257,7 +257,7 @@ fun Wuxia2dCombatArena(
                     center = Offset(beastCenterX, platformY)
                 )
                 drawCircle(
-                    color = Color(0xFFFFD700).copy(alpha = 0.45f),
+                    color = Color(0xFFE8C37E).copy(alpha = 0.45f),
                     radius = 40f,
                     center = Offset(beastCenterX, platformY),
                     style = Stroke(width = 2f)
@@ -286,7 +286,7 @@ fun Wuxia2dCombatArena(
                     "CRIT", "ULTIMATE" -> {
                         // Potężna fala energii rozbłysku
                         drawLine(
-                            brush = Brush.linearGradient(listOf(Color.White, Color(0xFFFFD700), Color(0xFFFF5252))),
+                            brush = Brush.linearGradient(listOf(Color.White, Color(0xFFE8C37E), Color(0xFFFF5252))),
                             start = Offset(heroCenterX, platformY - 70f),
                             end = Offset(beastCenterX, platformY - 40f),
                             strokeWidth = 12f,
@@ -297,7 +297,7 @@ fun Wuxia2dCombatArena(
                             val angle = (i * 45) * (PI.toFloat() / 180f)
                             val rayLen = 45f
                             drawLine(
-                                color = Color(0xFFFFD700),
+                                color = Color(0xFFE8C37E),
                                 start = Offset(beastCenterX, platformY - 40f),
                                 end = Offset(beastCenterX + cos(angle) * rayLen, platformY - 40f + sin(angle) * rayLen),
                                 strokeWidth = 3f
@@ -356,7 +356,7 @@ fun Wuxia2dCombatArena(
                                 modifier = Modifier
                                     .size(86.dp)
                                     .clip(RoundedCornerShape(12.dp))
-                                    .border(2.dp, Color(0xFFFFD700), RoundedCornerShape(12.dp))
+                                    .border(2.dp, Color(0xFFE8C37E), RoundedCornerShape(12.dp))
                             )
                         } else {
                             ManhwaSchoolAvatar(
@@ -374,7 +374,7 @@ fun Wuxia2dCombatArena(
                     ) {
                         Text(
                             text = combatState.discipleName,
-                            color = Color(0xFFFFE082),
+                            color = Color(0xFFF3DDA6),
                             fontFamily = FontFamily.Monospace,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
@@ -455,7 +455,7 @@ fun Wuxia2dCombatArena(
                             text = dmg.text,
                             color = when {
                                 dmg.isHeal -> Color(0xFF10B981)
-                                dmg.isCrit -> Color(0xFFFFD700)
+                                dmg.isCrit -> Color(0xFFE8C37E)
                                 dmg.isDisciple -> Color(0xFFFF5252)
                                 else -> Color(0xFF00E5FF)
                             }.copy(alpha = alpha),
@@ -519,15 +519,15 @@ fun Wuxia2dCombatArena(
         Surface(
             color = Color.Black.copy(alpha = 0.75f),
             shape = RoundedCornerShape(6.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF334155)),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF4A4239)),
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
                 text = "📜 $latestLog",
                 color = if (latestLog.contains("krytyczne") || latestLog.contains("BOSKĄ") || latestLog.contains("💥")) {
-                    Color(0xFFFFD700)
+                    Color(0xFFE8C37E)
                 } else {
-                    Color(0xFFE2E8F0)
+                    Color(0xFFEDE4CF)
                 },
                 fontSize = 11.sp,
                 fontFamily = FontFamily.Monospace,
@@ -553,12 +553,12 @@ fun Wuxia2dCombatArena(
                     contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("⚔️ Cios Miecza", fontSize = 11.sp, color = Color(0xFFFFE082), fontWeight = FontWeight.Bold)
+                    Text("⚔️ Cios Miecza", fontSize = 11.sp, color = Color(0xFFF3DDA6), fontWeight = FontWeight.Bold)
                 }
 
                 Button(
                     onClick = onUsePill,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB45309)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9A6B2C)),
                     modifier = Modifier
                         .weight(1f)
                         .testTag("battle_pill_btn"),
@@ -585,7 +585,7 @@ fun Wuxia2dCombatArena(
                     Text(
                         text = if (hasEnoughQi) "💥 Boskie Dao" else "⏳ Brak Qi",
                         fontSize = 11.sp,
-                        color = if (hasEnoughQi) Color(0xFFFFD700) else Color.Gray,
+                        color = if (hasEnoughQi) Color(0xFFE8C37E) else Color.Gray,
                         fontWeight = FontWeight.Black
                     )
                 }
