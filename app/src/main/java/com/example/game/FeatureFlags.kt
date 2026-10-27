@@ -19,4 +19,16 @@ object FeatureFlags {
 
     // Etap 4
     const val ECONOMY_V2 = true
+
+    // Etap 5
+    const val LIVING_WORLD = true
+
+    // Etap 6
+    const val HIDDEN_DEPTH = true
+
+    // Etap 7
+    const val SECT_LIFE = true
+
+    // Etap 8
+    const val META = true
 }

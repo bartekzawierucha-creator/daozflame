@@ -27,7 +27,7 @@ object WorldAI {
 
     /** Migracja do Etapu 5b: siła z rangi sekty. */
     fun normalize(s: GameState): GameState {
-        if (s.e5Initialized) return s
+        if (s.e5Initialized || !com.example.game.FeatureFlags.LIVING_WORLD) return s
         return s.copy(
             e5Initialized = true,
             rivalSects = s.rivalSects.map { if (it.strength > 0) it else it.copy(strength = initialStrength(it.powerRank)) }
@@ -70,7 +70,7 @@ object WorldAI {
 
         // Najazd na gracza: tylko wrogowie, nie za wcześnie, jeden naraz.
         if (hostile(sect) && s.currentDay >= FIRST_RAID_DAY && s.raid == null && rng.nextInt(100) < if (sect.nemesisLevel > 0) 60 else 35) {
-            val raid = Raid(sect.id, sect.name, s.currentDay + 2, Raids.strength(sect))
+            val raid = Raid(sect.id, sect.name, s.currentDay + 2, (Raids.strength(sect) * Rebirth.raidFactor(s)).toInt())
             val msg = "⚠ ${sect.name} szykuje najazd! Wojownicy staną u bram za 2 dni. Obsadź bramy."
             return note(s.copy(raid = raid), "${sect.name} wyrusza na sektę gracza.") to msg
         }

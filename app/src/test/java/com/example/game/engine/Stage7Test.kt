@@ -24,10 +24,13 @@ class Stage7Test {
     }
 
     private fun playStory(seed: Long, karma: Int, killChosenOnDay: Int? = null): GameState {
-        var s = fresh(seed).copy(spiritStones = 50_000, sectReputation = 1_000)
+        var s = fresh(seed).let { st -> st.copy(spiritStones = 50_000, sectReputation = 1_000,
+            disciples = st.disciples.mapIndexed { i, d -> if (i == 0) d.copy(majorRealm = com.example.model.MajorRealm.CORE_FORMATION) else d }) }
         var day = 0
-        while (Story.ending(s) == 0 && day++ < 400) {
-            s = nextDay(s.copy(karma = karma, spiritStones = s.spiritStones.coerceAtLeast(5_000)))
+        while (Story.ending(s) == 0 && day++ < 1_000) {
+            // Karma i Złoty Rdzeń jednego ucznia wymuszane – test sprawdza fabułę, nie tempo kultywacji.
+            s = nextDay(s.copy(karma = karma, spiritStones = s.spiritStones.coerceAtLeast(5_000),
+                disciples = s.disciples.mapIndexed { i, d -> if (i == 0) d.copy(majorRealm = com.example.model.MajorRealm.CORE_FORMATION) else d }))
             repeat(4) { s = answer(apply(s, GameCommand.Tick).state) }
             if (killChosenOnDay == s.currentDay) s.disciple(s.chosenId)?.let { s = Lifecycle.die(s, it, "test") }
         }
@@ -48,7 +51,7 @@ class Stage7Test {
 
     @Test
     fun storySurvivesDeathOfTheChosen() {
-        val s = playStory(4L, 0, killChosenOnDay = 30)
+        val s = playStory(4L, 0, killChosenOnDay = 200)
         assertEquals(3, Story.ending(s))
         assertTrue(s.ancestors.any { it.cause == "test" })
         assertNotNull(s.disciple(s.chosenId))

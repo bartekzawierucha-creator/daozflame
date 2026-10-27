@@ -208,6 +208,7 @@ object Secrets {
 
     /** Reguły losuje się raz – stare zapisy dostają je przy pierwszym wczytaniu, nowe przy tworzeniu gry. */
     fun normalize(s: GameState): GameState {
+        if (!com.example.game.FeatureFlags.HIDDEN_DEPTH) return s
         val base = s.rules ?: RulesGen.generate(s.worldSeed)
         // Nowa treść (v2) dopisywana z osobnego strumienia, bez ruszania starych reguł.
         val extended = FengShui.extend(base, s.worldSeed)

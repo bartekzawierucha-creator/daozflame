@@ -84,6 +84,57 @@ object BalanceSimulator {
         return Run(profile, seed, snaps, reached, bosses, defeats)
     }
 
+    /** Etap 8: kolejne ery gracza aktywnego. Zwraca godziny do pierwszego Złotego Rdzenia w każdej erze. */
+    data class EraRun(val era: Int, val coreHours: Double?, val essence: Int, val days: Int, val powerHours: Double? = null, val baselineHours: Double? = null)
+
+    /** Godziny gry do osiągnięcia siły [target] w świecie [seed] bez postępu meta (porównanie na tym samym ziarnie). */
+    fun hoursToPower(start: GameState, target: Long, limitTicks: Long = 200_000): Double? {
+        var s = start
+        var t = 0L
+        while (t < limitTicks) {
+            t++
+            s = GameEngine.apply(s, GameCommand.Tick).state
+            if (t % Profile.ACTIVE.actEveryTicks == 0L) s = act(s, Profile.ACTIVE).first
+            if (com.example.game.engine.Rebirth.power(s) >= target) return t * SECONDS_PER_TICK / 3600
+        }
+        return null
+    }
+
+    /** Miara tempa ery: godziny do siły sekty, jaką pierwsza era miała w dniu 360. */
+    const val PACE_DAY = 360
+
+    fun simulateEras(seed: Long, eras: Int = 3): List<EraRun> {
+        var s = GameEngine.newGame(seed)
+        val out = mutableListOf<EraRun>()
+        var target: Long? = null
+        val baselines = mutableListOf<Double?>()
+        repeat(eras) { e ->
+            var core: Double? = null
+            var reachedPower: Double? = null
+            var t = 0L
+            val coreOrdinal = com.example.model.MajorRealm.CORE_FORMATION.ordinal
+            while (!com.example.game.engine.Rebirth.available(s) || t == 0L) {
+                t++
+                s = GameEngine.apply(s, GameCommand.Tick).state
+                if (t % Profile.ACTIVE.actEveryTicks == 0L) s = act(s, Profile.ACTIVE).first
+                if (core == null && s.disciples.any { (it.majorRealm?.ordinal ?: 0) >= coreOrdinal }) core = t * SECONDS_PER_TICK / 3600
+                if (target == null && s.currentDay >= PACE_DAY) target = com.example.game.engine.Rebirth.power(s)
+                val tg = target
+                if (reachedPower == null && tg != null && com.example.game.engine.Rebirth.power(s) >= tg) reachedPower = t * SECONDS_PER_TICK / 3600
+                if (t > 200_000) break
+            }
+            val essence = com.example.game.engine.Rebirth.essence(s)
+            out += EraRun(e + 1, core, essence, s.currentDay, reachedPower, if (e == 0) reachedPower else baselines.getOrNull(e - 1))
+            s = apply(s, GameCommand.Rebirth(confirmed = true))
+            val baselineStart = GameEngine.newGame(s.worldSeed, s.lastActiveAtMs)
+            // Bot wydaje Esencję na gałąź Qi Drzewa Niebios.
+            // Na przemian gałęzie Qi i Bogactwa, poziom po poziomie.
+            (1..10).forEach { tier -> listOf("qi", "bogactwo").forEach { b -> s = apply(s, GameCommand.BuyHeavenNode("${b}_$tier")) } }
+            if (e + 1 < eras) baselines += hoursToPower(baselineStart, target ?: 0L)
+        }
+        return out
+    }
+
     private fun snapshot(s: GameState, t: Long) = Snapshot(
         tick = t,
         hours = t * SECONDS_PER_TICK / 3600,
@@ -98,6 +149,7 @@ object BalanceSimulator {
     )
 
     private fun apply(s: GameState, c: GameCommand): GameState = GameEngine.apply(s, c).state
+    fun actPublic(s: GameState): GameState = act(s, Profile.ACTIVE).first
 
     /** Decyzje bota. Zwraca (stan, pokonani bossowie, porażki). */
     private fun act(start: GameState, profile: Profile): Triple<GameState, Int, Int> {
@@ -309,8 +361,27 @@ object BalanceSimulator {
         dir.mkdirs()
         val runs = Profile.entries.map { simulate(it, seed, hours) }
         runs.forEach { File(dir, "sim_${it.profile.name.lowercase()}.csv").writeText(csv(it)) }
-        File(dir, "raport.md").writeText(report(runs, hours))
+        val eras = simulateEras(seed)
+        File(dir, "raport.md").writeText(report(runs, hours) + eraReport(eras))
         return runs
+    }
+
+    fun eraReport(eras: List<EraRun>): String = buildString {
+        appendLine()
+        appendLine("## Kolejne ery (gracz aktywny)")
+        appendLine()
+        appendLine("| Era | Siła z dnia $PACE_DAY ery 1 | Ten sam świat bez meta | Złoty Rdzeń | Esencja na koniec | Dni ery |")
+        appendLine("| --- | --- | --- | --- | --- | --- |")
+        eras.forEach { appendLine("| ${it.era} | ${it.powerHours?.let { h -> fmt(h) } ?: "—"} | ${it.baselineHours?.let { h -> fmt(h) } ?: "—"} | ${it.coreHours?.let { h -> fmt(h) } ?: "—"} | ${it.essence} | ${it.days} |") }
+        eraSpeedup(eras)?.let { appendLine("\nDruga era szybsza o ${"%.0f".format(it * 100)}% niż ten sam świat bez meta (cel: 30–60%).") }
+    }
+
+    /** Przyspieszenie drugiej ery względem tego samego świata bez postępu meta. */
+    fun eraSpeedup(eras: List<EraRun>): Double? {
+        val e2 = eras.getOrNull(1) ?: return null
+        val a = e2.baselineHours ?: return null
+        val b = e2.powerHours ?: return null
+        return 1 - b / a
     }
 
     @JvmStatic

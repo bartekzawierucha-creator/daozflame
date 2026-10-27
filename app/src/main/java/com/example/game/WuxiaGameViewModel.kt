@@ -117,8 +117,15 @@ data class WuxiaUiState(
     // Etap 6
     val secrets: SecretsUi = SecretsUi(),
     // Etap 7
-    val sectLife: SectLifeUi = SectLifeUi()
+    val sectLife: SectLifeUi = SectLifeUi(),
+    // Etap 8
+    val meta: MetaProgress = MetaProgress(),
+    val rebirthAvailable: Boolean = false,
+    val essenceOnRebirth: Int = 0,
+    val achievements: List<AchievementUi> = emptyList()
 )
+
+data class AchievementUi(val id: String, val name: String, val description: String, val unlocked: Boolean, val title: Boolean)
 
 data class SectLifeUi(
     val karmaPath: String = "",
@@ -277,6 +284,8 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             while (isActive) {
                 delay(AUTOSAVE_MS)
+                // Etap 8: czas realny tylko dla celów dziennych (silnik odrzuca cofnięty zegar).
+                dispatch(GameCommand.RealTime(System.currentTimeMillis()))
                 saveNow()
             }
         }
@@ -303,6 +312,7 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     fun onForeground() {
         val since = backgroundSinceMs
         backgroundSinceMs = 0L
+        dispatch(GameCommand.RealTime(System.currentTimeMillis()))
         if (since > 0 && FeatureFlags.OFFLINE_PROGRESS) {
             dispatch(GameCommand.OfflineCatchUp(System.currentTimeMillis() - since))
         }
@@ -331,6 +341,8 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     fun exportSave(): String? = store.exportText()
 
     fun importSave(text: String): Boolean = runCatching {
+        // Żelazna Wola: jeden zapis, bez wczytywania kopii (save.bak zostaje tylko na wypadek błędu technicznego).
+        check(!game.meta.ironWill) { "Żelazna Wola" }
         game = store.import(text, System.currentTimeMillis())
         notification = "Wczytano zapis."
         _uiState.value = buildUi()
@@ -493,6 +505,14 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     fun cure(discipleId: String) = dispatch(GameCommand.Cure(discipleId))
     fun cleanse(discipleId: String) = dispatch(GameCommand.Cleanse(discipleId))
     fun readStars() = dispatch(GameCommand.ReadStars)
+
+    // --- Etap 8: meta ---
+    fun rebirth(difficulty: Difficulty?, ironWill: Boolean?) = dispatch(GameCommand.Rebirth(confirmed = true, difficulty = difficulty, ironWill = ironWill))
+    fun buyHeavenNode(id: String) = dispatch(GameCommand.BuyHeavenNode(id))
+    fun chooseEra(id: String) = dispatch(GameCommand.ChooseEra(id))
+    fun succession(discipleId: String) = dispatch(GameCommand.Succession(discipleId, confirmed = true))
+    fun setTitle(id: String?) = dispatch(GameCommand.SetTitle(id))
+    fun offerToAncestors() = dispatch(GameCommand.OfferToAncestors)
 
     // --- Etap 4: gospodarka ---
     fun upgradeVein() = dispatch(GameCommand.UpgradeVein)
@@ -746,7 +766,14 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
             companions = game.companions,
             lifespans = game.disciples.associate { it.id to com.example.game.engine.Lifecycle.lifespan(it) },
             starsReadToday = game.starsReadDay == game.currentDay
-        )
+        ),
+        meta = game.meta,
+        rebirthAvailable = com.example.game.engine.Rebirth.available(game),
+        essenceOnRebirth = com.example.game.engine.Rebirth.essence(game),
+        achievements = com.example.game.engine.Achievements.ALL.map { a ->
+            val got = a.id in game.meta.achievements
+            AchievementUi(a.id, if (a.secret && !got) "???" else a.name, if (a.secret && !got) "???" else a.description, got, a.title)
+        }
     )
 
     private fun secretsUi(g: GameState): SecretsUi {
