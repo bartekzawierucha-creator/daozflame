@@ -46,7 +46,8 @@ object DiscipleRules {
         PersonalityTrait("greedy", "Chciwy", false, "Przy niskiej lojalności kradnie z magazynu."),
         PersonalityTrait("coward", "Tchórz", false, "−15% obrażeń w walce."),
         PersonalityTrait("hotheaded", "Porywczy", false, "+10% obrażeń, ale lojalność powoli spada."),
-        PersonalityTrait("traitor", "Zdrajca", false, "Ukryta. Przy niskiej lojalności sprzedaje sekrety rywalom.")
+        PersonalityTrait("traitor", "Zdrajca", false, "Ukryta. Przy niskiej lojalności sprzedaje sekrety rywalom."),
+        PersonalityTrait("blood_eyes", "Krwawe Oczy", false, "Mutacja z odchylenia Qi: +15% obrażeń, ale demon serca.")
     )
     private val traitById = TRAITS.associateBy { it.id }
     fun trait(id: String): PersonalityTrait? = traitById[id]
@@ -54,7 +55,7 @@ object DiscipleRules {
 
     fun rollTraits(rng: Random): Pair<List<String>, List<String>> {
         val positive = TRAITS.filter { it.positive }
-        val negative = TRAITS.filter { !it.positive && it.id != "traitor" }
+        val negative = TRAITS.filter { !it.positive && it.id != "traitor" && it.id != "blood_eyes" }
         val first = positive.random(rng).id
         val traitor = rng.nextInt(100) < 5
         val second = when {
@@ -154,6 +155,7 @@ object DiscipleRules {
         if (d.has("fearless")) add(Modifier("Nieustraszony", Stat.COMBAT_DAMAGE, ModOp.PERCENT, 10.0))
         if (d.has("hotheaded")) add(Modifier("Porywczy", Stat.COMBAT_DAMAGE, ModOp.PERCENT, 10.0))
         if (d.has("coward")) add(Modifier("Tchórz", Stat.COMBAT_DAMAGE, ModOp.PERCENT, -15.0))
+        if (d.has("blood_eyes")) add(Modifier("Krwawe Oczy", Stat.COMBAT_DAMAGE, ModOp.PERCENT, 15.0))
         val root = d.spiritRoot
         if (root != null && root.grade.ordinal >= RootGrade.SINGLE.ordinal && hasAffinity(d)) {
             add(Modifier("Korzeń zgodny ze szkołą", Stat.COMBAT_DAMAGE, ModOp.PERCENT, 20.0))

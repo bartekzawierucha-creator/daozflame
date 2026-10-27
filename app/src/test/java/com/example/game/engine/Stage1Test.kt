@@ -122,7 +122,8 @@ class Stage1Test {
         assertTrue(report.capped)
         assertEquals(OfflineProgress.MAX_HOURS * 3_600_000L, report.countedMs)
         assertTrue(r.state.disciples.all { it.realmProgress <= 99 })
-        assertEquals(s.disciples.map { it.realm }, r.state.disciples.map { it.realm })
+        // Małe przełomy (etapy) mogą zajść offline, wielkie (królestwa) – nigdy.
+        assertEquals(s.disciples.map { it.majorRealm }, r.state.disciples.map { it.majorRealm })
         assertEquals(null, r.state.activeEventId)
         assertEquals((s.spiritStones + report.stones - report.upkeep).coerceAtLeast(0), r.state.spiritStones)
         assertTrue(report.stones > 0)
@@ -161,7 +162,8 @@ class Stage1Test {
         val failed = apply(s.copy(disciples = listOf(notReady.copy(realmProgress = 10))), GameCommand.AttemptBreakthrough(notReady.id, false))
         assertEquals(2, failed.state.tutorialStep)
 
-        val ready = s.copy(disciples = listOf(notReady.copy(realmProgress = 100)))
+        val full = Realms.sync(notReady.copy(stageQi = Realms.required(notReady)))
+        val ready = s.copy(disciples = listOf(full))
         assertEquals(3, apply(ready, GameCommand.AttemptBreakthrough(notReady.id, false)).state.tutorialStep)
     }
 

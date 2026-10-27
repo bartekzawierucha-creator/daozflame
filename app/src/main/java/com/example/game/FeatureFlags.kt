@@ -13,4 +13,7 @@ object FeatureFlags {
 
     // Etap 2
     const val DISCIPLES_V2 = true
+
+    // Etap 3
+    const val CULTIVATION_V2 = true
 }

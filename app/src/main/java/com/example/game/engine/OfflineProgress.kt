@@ -59,8 +59,17 @@ object OfflineProgress {
         // Qi: wartość oczekiwana medytacji, z olśnieniem; stop na 99%.
         val qiGained = mutableMapOf<String, Int>()
         val disciples = s.disciples.map { d ->
-            if (d.role != DiscipleRole.MEDITATING || d.realmProgress >= 99) return@map d
+            if (d.role != DiscipleRole.MEDITATING) return@map d
             val mods = Modifiers.disciple(sect, d)
+            if (s.e3Initialized && d.majorRealm != null) {
+                // Qi oczekiwane (z olśnieniem jako % etapu); małe przełomy po drodze, wielki czeka na gracza.
+                val base = CultivationRules.meditationGain(d, mods).toDouble()
+                val perTick = base * (1 + Meditation.EPIPHANY_TICKS * CultivationRules.epiphanyChance(d, mods) / 100.0)
+                val after = offlineQi(d, perTick * effective)
+                qiGained[d.id] = (after.stage - d.stage) * 100 + (after.realmProgress - d.realmProgress)
+                return@map after
+            }
+            if (d.realmProgress >= 99) return@map d
             val perTickQi = CultivationRules.meditationGain(d, mods) + 12 * CultivationRules.epiphanyChance(d, mods) / 100.0
             val newProgress = (d.realmProgress + perTickQi * effective).toInt().coerceAtMost(99)
             qiGained[d.id] = newProgress - d.realmProgress
@@ -132,6 +141,30 @@ object OfflineProgress {
             null,
             GameEvent.OfflineSummary(report)
         )
+    }
+
+    /** Rozdziela Qi na kolejne etapy; zatrzymuje się na 99% szczytu królestwa (wielki przełom = gracz). */
+    fun offlineQi(d0: com.example.model.Disciple, total: Double): com.example.model.Disciple {
+        var d = d0
+        var left = total
+        var guard = 0
+        while (left > 0 && guard++ < 100) {
+            val major = d.majorRealm ?: return d
+            val need = Realms.required(d) - d.stageQi
+            if (d.stage < major.stages && left >= need) {
+                left -= need
+                d = d.copy(
+                    stage = d.stage + 1, stageQi = 0.0,
+                    maxHp = (d.maxHp * Realms.MINOR_STAT_GROWTH).toInt(), currentHp = (d.maxHp * Realms.MINOR_STAT_GROWTH).toInt(),
+                    attack = (d.attack * Realms.MINOR_STAT_GROWTH).toInt(), defense = (d.defense * Realms.MINOR_STAT_GROWTH).toInt()
+                )
+            } else {
+                val cap = if (d.stage >= major.stages) Realms.required(d) * 0.99 else Realms.required(d)
+                d = d.copy(stageQi = (d.stageQi + left).coerceAtMost(cap))
+                left = 0.0
+            }
+        }
+        return Realms.sync(d)
     }
 
     /** Górny limit losowań rodzaju zbiorów (wydajność); powyżej tej liczby i tak wychodzi rozkład wag. */

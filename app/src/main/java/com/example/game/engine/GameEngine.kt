@@ -26,6 +26,7 @@ object GameEngine {
         TimePhase,
         UpkeepPhase,
         SectLifePhase,
+        CultivationDailyPhase,
         IncomePhase,
         DiscipleWorkPhase,
         RandomEventPhase,
@@ -67,11 +68,18 @@ object GameEngine {
             lastActiveAtMs = nowMs,
             tutorialStep = 0
         )
-        return DiscipleRules.normalize(created)
+        return normalize(created)
     }
 
-    /** Wywoływane po wczytaniu zapisu: jednorazowe migracje logiczne (np. korzenie w Etapie 2). */
-    fun normalize(state: GameState): GameState = DiscipleRules.normalize(state)
+    /** Wywoływane po wczytaniu zapisu: jednorazowe migracje logiczne (korzenie w Etapie 2, etapy w Etapie 3). */
+    fun normalize(state: GameState): GameState = Realms.normalize(DiscipleRules.normalize(state))
+
+    /** Przygotowanie nowego kandydata: korzeń, cechy (Etap 2) i etap kultywacji (Etap 3). */
+    fun prepareCandidate(d: com.example.model.Disciple, rng: kotlin.random.Random, state: GameState): com.example.model.Disciple {
+        var x = if (state.e2Initialized) DiscipleRules.enrich(d, rng, candidate = true) else d
+        if (state.e3Initialized) x = Realms.upgrade(x)
+        return x
+    }
 
     /** Jedyne wejście do zmiany stanu gry. */
     fun apply(state: GameState, command: GameCommand): StepResult {
@@ -91,6 +99,13 @@ object GameEngine {
             is GameCommand.TestCandidate -> LifeCommands.testCandidate(state, command.candidateId)
             is GameCommand.BuyFood -> LifeCommands.buyFood(state, command.rations)
             GameCommand.HoldFeast -> LifeCommands.holdFeast(state)
+            is GameCommand.ChoosePath -> CultivationCommands.choosePath(state, command.discipleId, command.path)
+            is GameCommand.LearnMethod -> CultivationCommands.learnMethod(state, command.discipleId, command.scrollItem)
+            is GameCommand.ChooseLaw -> CultivationCommands.chooseLaw(state, command.discipleId, command.law)
+            is GameCommand.Seclude -> CultivationCommands.seclude(state, command.discipleId, command.days)
+            is GameCommand.EndSeclusion -> CultivationCommands.endSeclusion(state, command.discipleId)
+            is GameCommand.AwakenBloodline -> CultivationCommands.awakenBloodline(state, command.discipleId)
+            is GameCommand.Ascend -> CultivationCommands.ascend(state, command.discipleId, ctx)
             is GameCommand.ToggleAutoBreakthrough -> SectCommands.toggleAutoBreakthrough(state, command.enabled)
             is GameCommand.ToggleAutoPills -> SectCommands.toggleAutoPills(state, command.enabled)
             GameCommand.BreakthroughAll -> SectCommands.breakthroughAll(state, ctx)

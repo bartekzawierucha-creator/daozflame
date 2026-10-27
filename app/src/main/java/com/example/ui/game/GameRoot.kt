@@ -137,6 +137,10 @@ fun GameRoot(viewModel: WuxiaGameViewModel) {
                 .padding(start = 8.dp, bottom = 96.dp)
         )
 
+        ui.tribulation?.let { t ->
+            TribulationOverlay(t, onDone = { viewModel.dismissTribulation() })
+        }
+
         ui.offlineReport?.let { report ->
             OfflineSummaryDialog(report, onClaim = { viewModel.claimOfflineReport() })
         }

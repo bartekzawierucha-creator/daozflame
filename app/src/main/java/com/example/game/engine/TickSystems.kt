@@ -141,9 +141,14 @@ object DiscipleWorkPhase : TickPhase {
         val exploredRegionIds = s.regions.filter { it.explorationProgress > 0 }.map { it.id }.toSet()
         fun gatherChance(d: com.example.model.Disciple) = 0.5 * Modifiers.disciple(frame.sectMods, d).factor(Stat.GATHER_YIELD)
 
+        val e3 = s.e3Initialized
         frame.disciples = frame.disciples.map { disciple ->
+            val secluded = e3 && disciple.secludedUntilDay >= frame.day && disciple.secludedUntilDay > 0
+            val bodyTraining = e3 && disciple.path == com.example.model.CultivationPath.BODY && disciple.role == DiscipleRole.COMBAT_TRAINING
+            if (secluded || bodyTraining) return@map Meditation.meditate(frame, disciple, rng, if (bodyTraining) 0.8 else 1.0)
             when (disciple.role) {
                 DiscipleRole.MEDITATING -> {
+                    if (e3) return@map Meditation.meditate(frame, disciple, rng, 1.0)
                     val mods = Modifiers.disciple(frame.sectMods, disciple)
                     val gain = CultivationRules.meditationGain(disciple, mods)
                     var bonusDao = 0
@@ -208,6 +213,7 @@ object RandomEventPhase : TickPhase {
 object AutoBreakthroughPhase : TickPhase {
     override fun run(frame: TickFrame) {
         val s = frame.before
+        if (s.e3Initialized) return runV2(frame)
         if (!s.autoBreakthroughEnabled) return
         val rng = frame.ctx.rng("breakthrough")
         frame.disciples = frame.disciples.map { disciple ->
@@ -222,4 +228,24 @@ object AutoBreakthroughPhase : TickPhase {
             r.disciple
         }
     }
+
+    /** Etap 3: małe przełomy zawsze; wielkie bez tribulacji tylko z włączonym automatem. */
+    private fun runV2(frame: TickFrame) {
+        val s = frame.before
+        val rng = frame.ctx.rng("breakthrough")
+        val state = s.copy(currentDay = frame.day, timeOfDay = frame.timeOfDay)
+        frame.disciples = frame.disciples.map { d ->
+            if (!CultivationSystem.ready(d)) return@map d
+            val major = d.majorRealm ?: return@map d
+            if (d.stage >= major.stages && !s.autoBreakthroughEnabled) return@map d
+            val r = CultivationSystem.advance(state, d, s.autoUsePillsForBreakthrough, frame.inventory, rng, player = false)
+            frame.reputationGained += r.reputation
+            if (r.attempted) {
+                if (frame.notice == null) frame.notice = r.message
+                frame.events += GameEvent.Breakthrough(d.id, r.majorSuccess)
+            }
+            r.disciple ?: d
+        }
+    }
 }
+
