@@ -25,6 +25,7 @@ object GameEngine {
     val TICK_PHASES: List<TickPhase> = listOf(
         TimePhase,
         UpkeepPhase,
+        SectLifePhase,
         IncomePhase,
         DiscipleWorkPhase,
         RandomEventPhase,
@@ -47,7 +48,7 @@ object GameEngine {
         val flames = WuxiaGenerator.getGeocentricFlames()
         val leader = WuxiaGenerator.getInitialSectLeader().let { it.copy(activeDecrees = EdictCatalog.asDecrees(it.activeDecrees)) }
         val beasts = WuxiaGenerator.getInitialSectBeasts()
-        return GameState(
+        val created = GameState(
             worldSeed = worldSeed,
             step = 1L,
             spiritStones = 1200,
@@ -66,7 +67,11 @@ object GameEngine {
             lastActiveAtMs = nowMs,
             tutorialStep = 0
         )
+        return DiscipleRules.normalize(created)
     }
+
+    /** Wywoływane po wczytaniu zapisu: jednorazowe migracje logiczne (np. korzenie w Etapie 2). */
+    fun normalize(state: GameState): GameState = DiscipleRules.normalize(state)
 
     /** Jedyne wejście do zmiany stanu gry. */
     fun apply(state: GameState, command: GameCommand): StepResult {
@@ -80,6 +85,12 @@ object GameEngine {
             is GameCommand.AssignRole -> SectCommands.assignRole(state, command.discipleId, command.role)
             is GameCommand.UnlockSkill -> SectCommands.unlockSkill(state, command.discipleId, command.skillId)
             is GameCommand.UsePill -> SectCommands.usePill(state, command.discipleId, command.pillName)
+            is GameCommand.Promote -> LifeCommands.promote(state, command.discipleId)
+            is GameCommand.Punish -> LifeCommands.punish(state, command.discipleId)
+            is GameCommand.Pardon -> LifeCommands.pardon(state, command.discipleId)
+            is GameCommand.TestCandidate -> LifeCommands.testCandidate(state, command.candidateId)
+            is GameCommand.BuyFood -> LifeCommands.buyFood(state, command.rations)
+            GameCommand.HoldFeast -> LifeCommands.holdFeast(state)
             is GameCommand.ToggleAutoBreakthrough -> SectCommands.toggleAutoBreakthrough(state, command.enabled)
             is GameCommand.ToggleAutoPills -> SectCommands.toggleAutoPills(state, command.enabled)
             GameCommand.BreakthroughAll -> SectCommands.breakthroughAll(state, ctx)

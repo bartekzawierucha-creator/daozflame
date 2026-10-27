@@ -113,7 +113,7 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
     Box(Modifier.fillMaxSize()) {
         ModuleScaffold(
             module = GameModule.ADEPTS,
-            subtitle = "${ui.disciples.size} adeptów · $ready gotowych do przełomu",
+            subtitle = "${ui.disciples.size} adeptów · $ready gotowych · morale ${ui.morale}",
             onBack = onBack,
             accent = d?.let { schoolColor(it.martialSchool) } ?: Aaa.Gold,
             glyph = d?.let { schoolGlyph(it.martialSchool) } ?: GameModule.ADEPTS.glyph,
@@ -167,7 +167,7 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                             .size(52.dp)
                             .clip(cutCornerTicket())
                             .background(Aaa.Ink0.copy(alpha = 0.6f))
-                            .clickable(role = Role.Button) { legacy = "palace" }
+                            .clickable(role = Role.Button) { legacy = "exam" }
                             .testTag("adepts_recruit"),
                         contentAlignment = Alignment.Center
                     ) {
@@ -199,6 +199,18 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                         valueColor = if (isReady) Aaa.Gold else Aaa.TextMid
                     )
                     ThinBar(d.realmProgress / 100f, schoolColor(d.martialSchool))
+                    DiscipleLifeInfo(d)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        GhostButton(
+                            text = if (d.id in ui.promotableIds) "Awans" else d.rank.polishName.substringAfter(" "),
+                            enabled = d.id in ui.promotableIds,
+                            onClick = { viewModel.promote(d.id) },
+                            modifier = Modifier.weight(1f),
+                            height = 38.dp
+                        )
+                        GhostButton("Kara", onClick = { viewModel.punish(d.id) }, danger = true, modifier = Modifier.weight(1f), height = 38.dp)
+                        GhostButton("Łaska", onClick = { viewModel.pardon(d.id) }, modifier = Modifier.weight(1f), height = 38.dp)
+                    }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         GhostButton("Księga", onClick = { legacy = "disciples" }, modifier = Modifier.weight(1f))
                         GhostButton(
@@ -249,6 +261,7 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
             "palace" -> LegacyPanel("Pałac Sekty · Nabór", onClose = { legacy = null }) {
                 SectSanctuaryScreen(viewModel = viewModel, uiState = ui, onNavigateToDisciples = { legacy = null })
             }
+            "exam" -> ExamPanel(ui, viewModel, onClose = { legacy = null })
         }
     }
 }

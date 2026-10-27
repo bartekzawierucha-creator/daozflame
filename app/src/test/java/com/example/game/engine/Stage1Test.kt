@@ -34,7 +34,12 @@ class Stage1Test {
 
     @Test
     fun meditationGainMatchesFormerFormula() {
-        val s = fresh(2L)
+        // Bez systemów Etapu 2 (korzeń, ranga, cechy, morale) wzór musi być identyczny z dawnym.
+        val base = fresh(2L)
+        val s = base.copy(
+            e2Initialized = false,
+            disciples = base.disciples.map { it.copy(spiritRoot = null, traitIds = emptyList(), hiddenTraitIds = emptyList(), rank = com.example.model.SectRank.OUTER) }
+        )
         val sect = Modifiers.sect(s)
         s.disciples.forEach { d ->
             val shared = sect.percent(Stat.QI_GAIN)
@@ -84,11 +89,11 @@ class Stage1Test {
     fun edictEffectsReachTheGame() {
         val base = fresh(3L)
         val decrees = base.sectLeader.activeDecrees.map { it.copy(isActive = it.id == "ed_trade") }
-        val trade = base.copy(sectLeader = base.sectLeader.copy(activeDecrees = decrees))
+        val trade = base.copy(sectLeader = base.sectLeader.copy(activeDecrees = decrees), morale = 50)
         assertEquals(25.0, Modifiers.sect(trade).percent(Stat.STONE_INCOME), 1e-9)
 
         val guards = trade.disciples.map { it.copy(role = DiscipleRole.SECT_GUARD) }
-        val s = trade.copy(disciples = guards, territories = emptyList(), timeOfDay = TimeOfDay.DAY)
+        val s = trade.copy(disciples = guards, territories = emptyList(), timeOfDay = TimeOfDay.DAY, phaseTick = 0)
         val after = apply(s, GameCommand.Tick).state
         assertEquals(s.spiritStones + (2 * guards.size * 1.25).toInt(), after.spiritStones)
     }

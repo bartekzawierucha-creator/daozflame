@@ -241,7 +241,20 @@ data class Disciple(
     val fatedTraits: List<FatedTrait> = emptyList(),
     val talentGrade: TalentGrade = TalentGrade.S,
     val combatPower: Int = 1250,
-    val innateTechnique: String = "Taniec Ostrza Dziewięciu Chmur"
+    val innateTechnique: String = "Taniec Ostrza Dziewięciu Chmur",
+    // --- Etap 2: życie ucznia (wszystko z wartościami domyślnymi dla starych zapisów) ---
+    /** null = stary zapis; silnik uzupełnia deterministycznie przy wczytaniu. */
+    val spiritRoot: SpiritRoot? = null,
+    /** Jawne cechy charakteru (id z katalogu). */
+    val traitIds: List<String> = emptyList(),
+    /** Cechy ukryte – ujawniają się w zdarzeniach albo po Teście Korzenia. */
+    val hiddenTraitIds: List<String> = emptyList(),
+    val rank: SectRank = SectRank.OUTER,
+    /** Lojalność 0–100. */
+    val loyalty: Int = 70,
+    val ageYears: Int = 18,
+    /** Dzień, od którego uczeń spełnia wymagania awansu, a go nie dostał (dla cechy Ambitny). */
+    val promotionDueSinceDay: Int? = null
 )
 
 enum class ResourceCategory { MINERAL, HERB, PILL, ESSENCE }

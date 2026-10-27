@@ -79,6 +79,7 @@ fun OfflineSummaryDialog(report: OfflineProgress.Report, onClaim: () -> Unit) {
             if (report.qiGained.isNotEmpty()) {
                 SummaryLine("Uczniowie medytowali", "${report.qiGained.size}", Aaa.Jade)
             }
+            if (report.foodShortage > 0) SummaryLine("Zabrakło ryżu", "${report.foodShortage} racji", Aaa.Cinnabar)
             if (report.readyForBreakthrough > 0) {
                 SummaryLine("Gotowi do przełomu", "${report.readyForBreakthrough}", Aaa.Jade)
             }

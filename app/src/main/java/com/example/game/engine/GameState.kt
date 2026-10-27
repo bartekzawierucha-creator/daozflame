@@ -56,6 +56,20 @@ data class GameState(
 
     val combat: ActiveCombat? = null,
 
+    // --- Etap 2: życie sekty ---
+    /** false = zapis sprzed Etapu 2; silnik uzupełnia korzenie, cechy i rangi przy wczytaniu. */
+    val e2Initialized: Boolean = false,
+    /** Morale sekty 0–100. */
+    val morale: Int = 60,
+    /** Dzień, w którym zabrakło jedzenia (kara do Qi tego dnia). */
+    val hungryOnDay: Int = -1,
+    /** Egzamin wstępny trwa do tego dnia włącznie (0 = brak egzaminu). */
+    val examOpenUntilDay: Int = 0,
+    /** Ilu kandydatów przyjęto na bieżącym egzaminie (pierwsi dwaj za darmo). */
+    val admittedInExam: Int = 0,
+    val nextFeastDay: Int = 0,
+    val lastTournamentDay: Int = 0,
+
     /** Krok samouczka; brak pola w starym zapisie = samouczek ukończony. */
     val tutorialStep: Int = Tutorial.DONE,
 

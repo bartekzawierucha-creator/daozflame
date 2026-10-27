@@ -18,6 +18,14 @@ sealed interface GameCommand {
     data class UnlockSkill(val discipleId: String, val skillId: String) : GameCommand
     data class UsePill(val discipleId: String, val pillName: String) : GameCommand
 
+    // Etap 2: życie sekty
+    data class Promote(val discipleId: String) : GameCommand
+    data class Punish(val discipleId: String) : GameCommand
+    data class Pardon(val discipleId: String) : GameCommand
+    data class TestCandidate(val candidateId: String) : GameCommand
+    data class BuyFood(val rations: Int) : GameCommand
+    data object HoldFeast : GameCommand
+
     // Kultywacja
     data class ToggleAutoBreakthrough(val enabled: Boolean? = null) : GameCommand
     data class ToggleAutoPills(val enabled: Boolean? = null) : GameCommand
