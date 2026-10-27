@@ -205,7 +205,7 @@ fun ManhwaHeroBanner(
     PixelCard(
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(min = height)
+            .height(height)
             .shadow(8.dp, RoundedCornerShape(14.dp)),
         backgroundColor = Color(0xFF0F0B18),
         borderColor = Color(0xFFE8C37E)
