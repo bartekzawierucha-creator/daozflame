@@ -35,6 +35,24 @@ sealed interface GameCommand {
     data class AwakenBloodline(val discipleId: String) : GameCommand
     data class Ascend(val discipleId: String) : GameCommand
 
+    // Etap 4: gospodarka i rzemiosło
+    data object UpgradeVein : GameCommand
+    data class PlantHerb(val plotIndex: Int, val herb: String) : GameCommand
+    data object HarvestFields : GameCommand
+    data object ExpandFields : GameCommand
+    data class Sell(val item: String, val quantity: Int) : GameCommand
+    data class Buy(val item: String, val quantity: Int) : GameCommand
+    data class SendCaravan(val item: String, val quantity: Int, val guardId: String?) : GameCommand
+    data class BuyBlackMarket(val offerIndex: Int) : GameCommand
+    data class FulfillContract(val contractId: String) : GameCommand
+    data class Experiment(val mainHerb: String, val secondHerb: String?) : GameCommand
+    data class UpgradeArtifact(val vaultIndex: Int) : GameCommand
+    data class CraftTalisman(val name: String) : GameCommand
+    data class HealWithTalisman(val discipleId: String) : GameCommand
+    data class CombatTalisman(val name: String) : GameCommand
+    data class FlameToForge(val flameId: String) : GameCommand
+    data class FlameToDisciple(val flameId: String, val discipleId: String) : GameCommand
+
     // Kultywacja
     data class ToggleAutoBreakthrough(val enabled: Boolean? = null) : GameCommand
     data class ToggleAutoPills(val enabled: Boolean? = null) : GameCommand

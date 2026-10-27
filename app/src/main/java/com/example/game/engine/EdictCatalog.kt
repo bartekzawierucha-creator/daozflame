@@ -66,7 +66,7 @@ object EdictCatalog {
 
     fun slots(s: GameState): Int {
         val diplomacy = s.facilities.find { it.type == FacilityType.DIPLOMACY_HALL }?.level ?: 1
-        return BASE_SLOTS + if (diplomacy >= 5) 1 else 0
+        return BASE_SLOTS + (if (diplomacy >= 5) 1 else 0) + if (s.e4Initialized) Vein.extraEdictSlots(s.veinLevel) else 0
     }
 
     fun activeIds(s: GameState): List<String> = s.sectLeader.activeDecrees.filter { it.isActive }.map { it.id }

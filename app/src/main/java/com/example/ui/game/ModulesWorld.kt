@@ -902,6 +902,7 @@ private fun DrawScope.drawItem(kind: ItemKind, c: Color) {
 @Composable
 fun VaultModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> Unit) {
     var cat by remember { mutableIntStateOf(0) }
+    var market by remember { mutableStateOf(false) }
     val all = remember(ui.inventory, ui.vaultArtifacts) {
         ui.inventory.filter { it.value > 0 }.map { (n, q) -> VaultItem(n, q, kindOf(n), rarityOf(n)) }
             .sortedWith(compareBy<VaultItem> { it.kind.ordinal }.thenBy { it.name }) +
@@ -944,14 +945,16 @@ fun VaultModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
         },
         topRight = { CurrencyPill(AaaGlyph.SPIRIT_STONE, ui.spiritStones) }
     ) {
-        TextTabs(
-            listOf("Wszystko", "Pigułki", "Surowce", "Artefakty"),
-            cat,
-            { cat = it },
+        Row(
             Modifier
+                .fillMaxWidth()
                 .safeTop()
-                .padding(start = 60.dp, top = 58.dp)
-        )
+                .padding(start = 60.dp, top = 58.dp, end = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TextTabs(listOf("Wszystko", "Pigułki", "Surowce", "Artefakty"), cat, { cat = it }, Modifier.weight(1f))
+            if (ui.economy.enabled) GhostButton("Targ", onClick = { market = true }, height = 30.dp)
+        }
         Column(
             Modifier
                 .fillMaxSize()
@@ -1055,4 +1058,5 @@ fun VaultModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
             }
         }
     }
+    if (market) EconomyPanel(ui, viewModel, EconomyTab.MARKET, onClose = { market = false })
 }

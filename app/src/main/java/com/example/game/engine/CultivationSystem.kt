@@ -138,11 +138,7 @@ object CultivationSystem {
         val mods = Modifiers.disciple(sect, d)
         var pillBonus = 0
         if (usePill) {
-            val n = inventory[GameContent.BREAKTHROUGH_PILL] ?: 0
-            if (n > 0) {
-                inventory[GameContent.BREAKTHROUGH_PILL] = n - 1
-                pillBonus = 35
-            }
+            Quality.takeBest(inventory, GameContent.BREAKTHROUGH_PILL)?.let { q -> pillBonus = (35 * q.effect).toInt() }
         }
 
         // Odchylenie Qi przy wysokiej toksyczności.
@@ -174,7 +170,7 @@ object CultivationSystem {
             }
         }
 
-        val trib = tribulation(d, target, inventory, rng)
+        val trib = tribulation(d, target, inventory, rng, if (s.e4Initialized) Vein.tribulationMitigation(s.veinLevel) else 0.0)
         return when {
             trib.catastrophe -> Advance(null, "☠️ Katastrofa! ${d.name} nie przetrwał gniewu niebios.", -10, attempted = true, died = true, tribulation = trib)
             !trib.survived -> Advance(
@@ -228,8 +224,13 @@ object CultivationSystem {
     }
 
     /** Tribulacja: kolejne uderzenia pioruna osłabiane przez obronę i przygotowanie. */
-    fun tribulation(d: Disciple, target: MajorRealm, inventory: MutableMap<String, Int>, rng: Random): TribulationResult {
-        var mitigation = (d.defense / (d.defense + 500.0)).coerceAtMost(0.6)
+    fun tribulation(d: Disciple, target: MajorRealm, inventory: MutableMap<String, Int>, rng: Random, extraMitigation: Double = 0.0): TribulationResult {
+        var mitigation = (d.defense / (d.defense + 500.0)).coerceAtMost(0.6) + extraMitigation
+        val rod = inventory["Talizman Piorunochronu"] ?: 0
+        if (rod > 0) {
+            inventory["Talizman Piorunochronu"] = rod - 1
+            mitigation += 0.15
+        }
         if (d.path == CultivationPath.BODY) mitigation += 0.3
         val pills = inventory[TRIBULATION_PILL] ?: 0
         if (pills > 0) {

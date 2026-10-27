@@ -40,6 +40,15 @@ class TickFrame(val before: GameState, val ctx: EngineContext) {
     var admittedInExam: Int = before.admittedInExam
     var lastTournamentDay: Int = before.lastTournamentDay
     val returnedArtifacts = mutableListOf<com.example.model.Artifact>()
+    // Etap 4
+    var marketMultipliers = before.marketMultipliers
+    var caravans = before.caravans
+    var contracts = before.contracts
+    var contractsRefreshDay = before.contractsRefreshDay
+    var veinLevel = before.veinLevel
+    var veinUpgradeDoneDay = before.veinUpgradeDoneDay
+    /** Kamienie spoza dochodu (karawany) – nie podlegają premiom dochodu. */
+    var stonesBonus: Int = 0
 
     fun toResult(): StepResult {
         val income = (stonesGained * sectMods.factor(Stat.STONE_INCOME)).toInt()
@@ -49,7 +58,7 @@ class TickFrame(val before: GameState, val ctx: EngineContext) {
             phaseTick = phaseTick,
             currentDay = day,
             timeOfDay = timeOfDay,
-            spiritStones = (before.spiritStones + income - upkeepPaid).coerceAtLeast(0),
+            spiritStones = (before.spiritStones + income + stonesBonus - upkeepPaid).coerceAtLeast(0),
             sectReputation = before.sectReputation + rep,
             sectLeader = before.sectLeader.copy(activeDecrees = decrees),
             morale = morale,
@@ -59,6 +68,12 @@ class TickFrame(val before: GameState, val ctx: EngineContext) {
             admittedInExam = admittedInExam,
             lastTournamentDay = lastTournamentDay,
             vaultArtifacts = before.vaultArtifacts + returnedArtifacts,
+            marketMultipliers = marketMultipliers,
+            caravans = caravans,
+            contracts = contracts,
+            contractsRefreshDay = contractsRefreshDay,
+            veinLevel = veinLevel,
+            veinUpgradeDoneDay = veinUpgradeDoneDay,
             inventory = inventory.toMap(),
             disciples = disciples,
             activeEventId = activeEventId,

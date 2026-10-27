@@ -28,7 +28,9 @@ object CombatSystem {
         val d = s.disciple(discipleId) ?: return ok(s)
         val beast = region.bossBeast ?: return ok(s)
         val penalty = hazardPenalty(region.hazard, d.constitution)
-        val raw = d.attack + (s.activeFlame?.combatDamageBonus ?: 0) - penalty
+        // Etap 4: premię z płomienia ma tylko jego nosiciel; wcześniej działał płomień z kotła.
+        val flameBonus = if (s.e4Initialized) s.flames.find { it.id == d.flameId }?.combatDamageBonus ?: 0 else s.activeFlame?.combatDamageBonus ?: 0
+        val raw = d.attack + flameBonus - penalty
         val attack = (raw * Modifiers.disciple(Modifiers.sect(s), d).factor(Stat.COMBAT_DAMAGE)).toInt().coerceAtLeast(10)
         val combat = ActiveCombat(
             regionId = region.id,
@@ -76,6 +78,10 @@ object CombatSystem {
             return if (enemyHp <= 0) finish(s, next, true, hit) else ok(s.copy(combat = next), null, hit)
         }
 
+        if (c.enemySealed) {
+            return ok(s.copy(combat = c.copy(enemySealed = false, discipleTurn = true,
+                logs = c.logs + CombatLogEntry(c.round, "📜 Pieczęć wiąże ${beast.name} – traci ruch!"))))
+        }
         val dmg = (beast.attack - (s.disciple(c.discipleId)?.defense ?: 0) * 0.35).toInt().coerceAtLeast(12)
         val discipleHp = (c.discipleHp - dmg).coerceAtLeast(0)
         val next = c.copy(
@@ -118,6 +124,35 @@ object CombatSystem {
         )
         val hit = GameEvent.CombatHit(GameEvent.HitKind.ULTIMATE, dmg, onDisciple = false)
         return if (next.enemyHp <= 0) finish(s, next, true, hit) else ok(s.copy(combat = next), null, hit)
+    }
+
+    /** Etap 4: talizman użyty w walce (z magazynu). */
+    fun talisman(s: GameState, name: String): StepResult {
+        val c = s.combat?.takeIf { !it.finished } ?: return ok(s)
+        val have = s.inventory[name] ?: 0
+        if (have < 1) return fail(s, "Brak: $name.")
+        val st = s.copy(inventory = s.inventory + (name to have - 1))
+        return when (name) {
+            "Talizman Ognistej Kuli" -> {
+                val next = c.copy(enemyHp = (c.enemyHp - 250).coerceAtLeast(0), logs = c.logs + CombatLogEntry(c.logs.size + 1, "🔥 Talizman Ognistej Kuli: 250 obrażeń!", isCrit = true))
+                val hit = GameEvent.CombatHit(GameEvent.HitKind.ULTIMATE, 250, onDisciple = false)
+                if (next.enemyHp <= 0) finish(st, next, true, hit) else ok(st.copy(combat = next), null, hit)
+            }
+            "Talizman Złotej Tarczy" -> ok(
+                st.copy(combat = c.copy(discipleHp = (c.discipleHp + 300).coerceAtMost(c.discipleMaxHp),
+                    logs = c.logs + CombatLogEntry(c.logs.size + 1, "🛡️ Złota Tarcza: +300 HP", isHeal = true))),
+                null, GameEvent.CombatHit(GameEvent.HitKind.HEAL, 300, onDisciple = true)
+            )
+            "Talizman Pieczęci" -> ok(st.copy(combat = c.copy(enemySealed = true,
+                logs = c.logs + CombatLogEntry(c.logs.size + 1, "📜 Pieczęć gotowa – bestia straci następny ruch."))))
+            "Talizman Ucieczki" -> {
+                val fled = c.copy(outcome = false, rewardText = "Uczeń uciekł dzięki talizmanowi – bez utraty reputacji.",
+                    logs = c.logs + CombatLogEntry(c.logs.size + 1, "💨 Talizman Ucieczki – odwrót bez hańby."))
+                StepResult(st.copy(combat = fled, disciples = st.disciples.map { if (it.id == c.discipleId) it.copy(currentHp = c.discipleHp.coerceAtLeast(10)) else it }),
+                    listOf(GameEvent.CombatEnded(false)))
+            }
+            else -> fail(s, "$name nie działa w walce.")
+        }
     }
 
     /** Szansa (%) na zwój metody z bossa krainy i jego stopień wg numeru krainy. */
@@ -186,6 +221,10 @@ object CombatSystem {
             ),
             morale = if (s.e2Initialized) (s.morale + if (victory) 2 else -3).coerceIn(0, 100) else s.morale
         )
+        if (victory && s.e4Initialized) {
+            val (withContracts, msg) = Contracts.onBossDefeated(state, c.regionId)
+            return StepResult(withContracts, extra.toList() + listOfNotNull(msg?.let { GameEvent.Notice(it) }) + GameEvent.CombatEnded(true))
+        }
         return StepResult(state, extra.toList() + GameEvent.CombatEnded(victory))
     }
 }

@@ -27,6 +27,7 @@ object GameEngine {
         UpkeepPhase,
         SectLifePhase,
         CultivationDailyPhase,
+        EconomyDailyPhase,
         IncomePhase,
         DiscipleWorkPhase,
         RandomEventPhase,
@@ -46,7 +47,9 @@ object GameEngine {
             named(CultivationRealm.FOUNDATION_LATE, BloodlineType.IMMORTAL_LOTUS_HEART, "Lin Xue (Szermierka Lotosu)", MartialSchool.SWORD_IMMORTAL),
             named(CultivationRealm.FOUNDATION_EARLY, BloodlineType.PURPLE_LIGHTNING_QILIN, "Bai Chen (Władca Pioruna)", MartialSchool.ELEMENTAL_TAOIST)
         )
-        val flames = WuxiaGenerator.getGeocentricFlames()
+        val allFlames = WuxiaGenerator.getGeocentricFlames()
+        // Etap 4: nowa sekta zaczyna z jednym płomieniem – resztę trzeba zdobyć.
+        val flames = if (com.example.game.FeatureFlags.ECONOMY_V2) allFlames.filter { it.id == Flames.STARTING_FLAME } else allFlames
         val leader = WuxiaGenerator.getInitialSectLeader().let { it.copy(activeDecrees = EdictCatalog.asDecrees(it.activeDecrees)) }
         val beasts = WuxiaGenerator.getInitialSectBeasts()
         val created = GameState(
@@ -66,13 +69,26 @@ object GameEngine {
             sectBeasts = beasts,
             activeBeastId = beasts.firstOrNull()?.id,
             lastActiveAtMs = nowMs,
-            tutorialStep = 0
+            tutorialStep = 0,
+            knownRecipeIds = if (com.example.game.FeatureFlags.ECONOMY_V2) CraftV2.startingRecipes() else emptySet(),
+            fields = if (com.example.game.FeatureFlags.ECONOMY_V2) Fields.empty(Fields.BASE_SIZE) else emptyList()
         )
         return normalize(created)
     }
 
     /** Wywoływane po wczytaniu zapisu: jednorazowe migracje logiczne (korzenie w Etapie 2, etapy w Etapie 3). */
-    fun normalize(state: GameState): GameState = Realms.normalize(DiscipleRules.normalize(state))
+    fun normalize(state: GameState): GameState = economy(Realms.normalize(DiscipleRules.normalize(state)))
+
+    /** Migracja do Etapu 4: stare zapisy zachowują wszystkie płomienie i znają wszystkie receptury. */
+    private fun economy(s: GameState): GameState {
+        if (s.e4Initialized || !com.example.game.FeatureFlags.ECONOMY_V2) return s
+        return s.copy(
+            e4Initialized = true,
+            knownRecipeIds = s.knownRecipeIds.ifEmpty { GameContent.alchemyRecipes.map { it.id }.toSet() },
+            fields = s.fields.ifEmpty { Fields.empty(Fields.BASE_SIZE) },
+            contractsRefreshDay = s.currentDay
+        )
+    }
 
     /** Przygotowanie nowego kandydata: korzeń, cechy (Etap 2) i etap kultywacji (Etap 3). */
     fun prepareCandidate(d: com.example.model.Disciple, rng: kotlin.random.Random, state: GameState): com.example.model.Disciple {
@@ -99,6 +115,22 @@ object GameEngine {
             is GameCommand.TestCandidate -> LifeCommands.testCandidate(state, command.candidateId)
             is GameCommand.BuyFood -> LifeCommands.buyFood(state, command.rations)
             GameCommand.HoldFeast -> LifeCommands.holdFeast(state)
+            GameCommand.UpgradeVein -> Vein.startUpgrade(state)
+            is GameCommand.PlantHerb -> Fields.plant(state, command.plotIndex, command.herb)
+            GameCommand.HarvestFields -> Fields.harvestAll(state, ctx)
+            GameCommand.ExpandFields -> Fields.expand(state)
+            is GameCommand.Sell -> Market.sell(state, command.item, command.quantity)
+            is GameCommand.Buy -> Market.buy(state, command.item, command.quantity)
+            is GameCommand.SendCaravan -> Market.sendCaravan(state, ctx, command.item, command.quantity, command.guardId)
+            is GameCommand.BuyBlackMarket -> Market.buyBlack(state, ctx, command.offerIndex)
+            is GameCommand.FulfillContract -> Contracts.fulfill(state, command.contractId)
+            is GameCommand.Experiment -> CraftV2.experiment(state, ctx, command.mainHerb, command.secondHerb)
+            is GameCommand.UpgradeArtifact -> CraftV2.upgrade(state, ctx, command.vaultIndex)
+            is GameCommand.CraftTalisman -> Talismans.craft(state, command.name)
+            is GameCommand.HealWithTalisman -> Talismans.heal(state, command.discipleId)
+            is GameCommand.CombatTalisman -> CombatSystem.talisman(state, command.name)
+            is GameCommand.FlameToForge -> Flames.toForge(state, command.flameId)
+            is GameCommand.FlameToDisciple -> Flames.toDisciple(state, command.flameId, command.discipleId)
             is GameCommand.ChoosePath -> CultivationCommands.choosePath(state, command.discipleId, command.path)
             is GameCommand.LearnMethod -> CultivationCommands.learnMethod(state, command.discipleId, command.scrollItem)
             is GameCommand.ChooseLaw -> CultivationCommands.chooseLaw(state, command.discipleId, command.law)
@@ -117,11 +149,15 @@ object GameEngine {
             is GameCommand.FeedBeast -> SectCommands.feedBeast(state, command.beastId, command.herbName)
             is GameCommand.EvolveBeast -> SectCommands.evolveBeast(state, command.beastId)
 
-            is GameCommand.BrewPill -> CraftCommands.brewPill(state, command.recipeId)
-            is GameCommand.ForgeArtifact -> CraftCommands.forgeArtifact(state, command.recipeId)
+            is GameCommand.BrewPill -> if (state.e4Initialized) CraftV2.brew(state, ctx, command.recipeId) else CraftCommands.brewPill(state, command.recipeId)
+            is GameCommand.ForgeArtifact -> if (state.e4Initialized) CraftV2.forge(state, ctx, command.recipeId) else CraftCommands.forgeArtifact(state, command.recipeId)
             is GameCommand.EquipArtifact -> CraftCommands.equipArtifact(state, command.discipleId, command.artifact)
-            is GameCommand.SelectFlame -> CraftCommands.selectFlame(state, command.flameId)
-            is GameCommand.RefineFlame -> CraftCommands.refineFlame(state, command.flameId)
+            is GameCommand.SelectFlame -> if (state.e4Initialized) Flames.toCauldron(state, command.flameId) else CraftCommands.selectFlame(state, command.flameId)
+            is GameCommand.RefineFlame -> {
+                val f = state.flames.find { it.id == command.flameId }
+                if (state.e4Initialized && f != null && f.refinementLevel >= Flames.MAX_REFINEMENT) fail(state, "${f.name} osiągnął najwyższy, ${Flames.MAX_REFINEMENT}. poziom rafinacji.")
+                else CraftCommands.refineFlame(state, command.flameId)
+            }
             is GameCommand.UpgradeFacility -> CraftCommands.upgradeFacility(state, command.type)
 
             is GameCommand.StartExpedition -> CombatSystem.start(state, command.regionId, command.discipleId)

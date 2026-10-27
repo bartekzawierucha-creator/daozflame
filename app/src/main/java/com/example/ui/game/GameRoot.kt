@@ -153,6 +153,9 @@ fun GameRoot(viewModel: WuxiaGameViewModel) {
                 onUltimate = { viewModel.combatUltimate() },
                 onClose = { viewModel.closeCombat() }
             )
+            Box(Modifier.fillMaxSize().safeTop().padding(top = 8.dp, start = 12.dp, end = 12.dp), contentAlignment = Alignment.TopCenter) {
+                CombatTalismanBar(ui, viewModel)
+            }
         }
     }
 }
