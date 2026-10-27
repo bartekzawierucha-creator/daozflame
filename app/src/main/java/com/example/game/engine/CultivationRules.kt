@@ -21,34 +21,18 @@ object CultivationRules {
         TalentGrade.B -> 1.0
     }
 
-    /** Premie wspólne dla całej sekty: bestia, sojusze, polityka (w procentach). */
-    fun sectBonusPercent(s: GameState): Int {
-        val beast = s.activeBeast?.let { it.tier * 12 + it.intimacy / 4 } ?: 0
-        val alliances = s.rivalSects.filter { it.status == DiplomaticStatus.ALLIANCE }.sumOf { it.cultivationBuffBonusPercent }
-        val policy = when (s.currentPolicy) {
-            SectPolicy.RIGHTEOUS_DAO -> 25
-            SectPolicy.ISOLATIONIST -> 35
-            SectPolicy.EXPANSIONIST -> 10
-            SectPolicy.DEMONIC_RAIDERS -> 15
-            SectPolicy.MERCHANT_CONSORTIUM -> 5
-        }
-        return beast + alliances + policy
-    }
-
-    fun decreeBonusPercent(s: GameState): Int =
-        if (s.sectLeader.activeDecrees.any { it.id == "dec_1" && it.isActive }) 35 else 0
-
     /** Przyrost postępu Qi za jeden cykl medytacji (bez błysku oświecenia). */
-    fun meditationGain(d: Disciple, sharedBonusPercent: Int): Int {
+    fun meditationGain(d: Disciple, stack: ModifierStack): Int {
         val base = 10 + d.comprehension / 8
-        val traits = d.fatedTraits.sumOf { it.cultivationBonusPercent }
-        val clan = if (d.ancientClan.name.contains("Ye")) 50 else 0
-        val total = talentMultiplier(d.talentGrade) * (1.0 + (sharedBonusPercent + traits + clan) / 100.0)
-        return (base * total).toInt().coerceAtLeast(1)
+        return stack.apply(Stat.QI_GAIN, base.toDouble()).toInt().coerceAtLeast(1)
     }
 
-    fun breakthroughChance(d: Disciple, pillBonus: Int, time: TimeOfDay): Int {
-        var chance = 40 + d.karmicLuck / 5 + pillBonus
+    /** Szansa na błysk oświecenia (%) – zależy od karmy, wzmacniają ją edykty. */
+    fun epiphanyChance(d: Disciple, stack: ModifierStack): Int =
+        ((d.karmicLuck / 25).coerceIn(3, 20) * stack.factor(Stat.EPIPHANY_CHANCE)).toInt().coerceIn(0, 100)
+
+    fun breakthroughChance(d: Disciple, pillBonus: Int, time: TimeOfDay, bonus: Int = 0): Int {
+        var chance = 40 + d.karmicLuck / 5 + pillBonus + bonus
         if (time == TimeOfDay.FULL_MOON) chance += 45
         if (d.bloodline == BloodlineType.PURE_MORTAL) chance += 15
         return chance
@@ -66,7 +50,8 @@ object CultivationRules {
         usePill: Boolean,
         inventory: MutableMap<String, Int>,
         time: TimeOfDay,
-        rng: Random
+        rng: Random,
+        chanceBonus: Int = 0
     ): BreakthroughResult {
         var pillBonus = 0
         if (usePill) {
@@ -76,7 +61,7 @@ object CultivationRules {
                 pillBonus = 35
             }
         }
-        val success = rng.nextInt(100) < breakthroughChance(d, pillBonus, time)
+        val success = rng.nextInt(100) < breakthroughChance(d, pillBonus, time, chanceBonus)
         val next = nextRealm(d.realm)
         return if (success && next != null) {
             val hp = (d.maxHp * 1.45).toInt()

@@ -46,10 +46,16 @@ data class GameState(
     val sectBeasts: List<SectDivineBeast> = emptyList(),
     val activeBeastId: String? = null,
 
+    /** Edykt → dzień, od którego wolno go znów przełączyć. */
+    val edictCooldowns: Map<String, Int> = emptyMap(),
+
     val autoBreakthroughEnabled: Boolean = true,
     val autoUsePillsForBreakthrough: Boolean = true,
 
     val combat: ActiveCombat? = null,
+
+    /** Krok samouczka; brak pola w starym zapisie = samouczek ukończony. */
+    val tutorialStep: Int = Tutorial.DONE,
 
     /** Znacznik czasu ostatniej aktywności (ms) – do postępu offline (Etap 1). */
     val lastActiveAtMs: Long = 0L

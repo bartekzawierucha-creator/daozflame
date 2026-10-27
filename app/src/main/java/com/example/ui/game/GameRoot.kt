@@ -119,6 +119,16 @@ fun GameRoot(viewModel: WuxiaGameViewModel) {
                 .padding(top = 56.dp)
         )
 
+        TutorialBanner(
+            tutorial = if (shown == null) ui.tutorial else null,
+            onNext = { viewModel.tutorialNext() },
+            onSkip = { viewModel.tutorialSkip() },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .safeBottom()
+                .padding(bottom = 112.dp)
+        )
+
         DebugPanel(
             viewModel = viewModel,
             modifier = Modifier
@@ -126,6 +136,10 @@ fun GameRoot(viewModel: WuxiaGameViewModel) {
                 .safeBottom()
                 .padding(start = 8.dp, bottom = 96.dp)
         )
+
+        ui.offlineReport?.let { report ->
+            OfflineSummaryDialog(report, onClaim = { viewModel.claimOfflineReport() })
+        }
 
         if (ui.combatState.active) {
             CombatScreenModal(

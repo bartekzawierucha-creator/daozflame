@@ -24,7 +24,6 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.game.FeatureFlags
 import com.example.game.WuxiaGameViewModel
 import com.example.game.engine.GameCommand
 import com.example.game.engine.GameContent
@@ -35,7 +34,7 @@ import com.example.game.engine.GameContent
  */
 @Composable
 fun DebugPanel(viewModel: WuxiaGameViewModel, modifier: Modifier = Modifier) {
-    if (!FeatureFlags.debugPanel) return
+    if (!com.example.BuildConfig.DEBUG) return
     var open by remember { mutableStateOf(false) }
     var confirmNewGame by remember { mutableStateOf(false) }
     val clipboard = LocalClipboardManager.current

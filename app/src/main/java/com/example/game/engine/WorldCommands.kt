@@ -127,7 +127,8 @@ object WorldCommands {
             s.copy(
                 activeEventId = null,
                 spiritStones = (s.spiritStones + choice.stoneChange).coerceAtLeast(0),
-                sectReputation = s.sectReputation + choice.repChange,
+                sectReputation = s.sectReputation +
+                    if (choice.repChange > 0) (choice.repChange * Modifiers.sect(s).factor(Stat.REPUTATION_GAIN)).toInt() else choice.repChange,
                 inventory = inv
             ),
             choice.outcomeDescription

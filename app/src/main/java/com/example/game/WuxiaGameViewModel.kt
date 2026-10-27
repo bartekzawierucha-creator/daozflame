@@ -9,6 +9,10 @@ import com.example.game.engine.GameContent
 import com.example.game.engine.GameEngine
 import com.example.game.engine.GameEvent
 import com.example.game.engine.GameState
+import com.example.game.engine.Modifiers
+import com.example.game.engine.OfflineProgress
+import com.example.game.engine.Stat
+import com.example.game.engine.Tutorial
 import com.example.game.save.SaveStore
 import com.example.model.*
 import com.example.ui.audio.WuxiaAudioEngine
@@ -56,8 +60,19 @@ data class WuxiaUiState(
     val currentPolicy: SectPolicy = SectPolicy.RIGHTEOUS_DAO,
     val sectBeasts: List<SectDivineBeast> = emptyList(),
     val activeBeast: SectDivineBeast? = null,
-    val territories: List<TerritoryNode> = emptyList()
+    val territories: List<TerritoryNode> = emptyList(),
+    /** Podsumowanie „Gdy cię nie było” do pokazania (null = brak). */
+    val offlineReport: OfflineProgress.Report? = null,
+    val tutorial: TutorialUi? = null,
+    /** Ostatnia celebracja (np. przełom) – id rośnie przy każdej nowej. */
+    val celebration: CelebrationUi? = null,
+    /** Rozbicie przyrostu Qi sekty: „źródło: wartość” (tooltip „skąd to?”). */
+    val qiBreakdown: List<String> = emptyList()
 )
+
+data class TutorialUi(val index: Int, val total: Int, val title: String, val text: String, val waitingForAction: Boolean)
+
+data class CelebrationUi(val id: Long, val text: String)
 
 /**
  * Cienka warstwa między silnikiem a Compose: pętla czasu, zamiana zdarzeń na komunikaty,
@@ -70,8 +85,9 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     // Stan wyłącznie interfejsu (nie trafia do zapisu). Zadeklarowany PRZED wczytaniem gry,
-    // bo loadOrNewGame() może ustawić komunikat.
+    // bo loadOrNewGame() może ustawić komunikat i czas nieobecności.
     private var notification: String? = null
+    private var pendingOfflineMs: Long = 0L
 
     private val store = SaveStore(File(application.filesDir, "saves"))
     private var game: GameState = loadOrNewGame()
@@ -80,6 +96,8 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     private var speed: Int = 1
     private var ping: Int = 14
     private var combatFx = CombatFx()
+    private var offlineReport: OfflineProgress.Report? = null
+    private var celebration: CelebrationUi? = null
 
     private val _uiState = MutableStateFlow(buildUi())
     val uiState: StateFlow<WuxiaUiState> = _uiState.asStateFlow()
@@ -88,6 +106,7 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     private var combatJob: Job? = null
 
     init {
+        if (pendingOfflineMs > 0) dispatch(GameCommand.OfflineCatchUp(pendingOfflineMs))
         startGameLoop()
         startAutosave()
         if (game.combat?.finished == false) startCombatLoop()
@@ -100,6 +119,7 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
         val loaded = runCatching { store.load() }.getOrNull()
         loaded?.state?.let { state ->
             if (loaded.fromBackup) notification = "Główny zapis był uszkodzony – wczytano kopię zapasową."
+            pendingOfflineMs = if (FeatureFlags.OFFLINE_PROGRESS && state.lastActiveAtMs > 0) now - state.lastActiveAtMs else 0L
             return state.copy(lastActiveAtMs = now)
         }
         if (loaded?.error != null) notification = "Nie udało się wczytać zapisu – rozpoczęto nową grę."
@@ -121,6 +141,25 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch(Dispatchers.IO + NonCancellable) {
             runCatching { store.save(snapshot, snapshot.lastActiveAtMs) }
         }
+    }
+
+    private var backgroundSinceMs: Long = 0L
+
+    /** Aplikacja schowana: zapis i pauza pętli (oszczędność baterii). */
+    fun onBackground() {
+        backgroundSinceMs = System.currentTimeMillis()
+        gameLoopJob?.cancel()
+        saveNow()
+    }
+
+    /** Powrót do gry: nadrobienie czasu nieobecności i wznowienie pętli. */
+    fun onForeground() {
+        val since = backgroundSinceMs
+        backgroundSinceMs = 0L
+        if (since > 0 && FeatureFlags.OFFLINE_PROGRESS) {
+            dispatch(GameCommand.OfflineCatchUp(System.currentTimeMillis() - since))
+        }
+        if (gameLoopJob?.isActive != true) startGameLoop()
     }
 
     /** Zapis synchroniczny – przy niszczeniu ViewModelu nie ma już zakresu korutyn. */
@@ -163,7 +202,11 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
             is GameEvent.Notice -> notification = event.message
             is GameEvent.CombatHit -> onCombatHit(event)
             is GameEvent.CombatEnded -> if (event.victory) WuxiaAudioEngine.playDivineGong()
-            is GameEvent.Breakthrough -> Unit
+            is GameEvent.Breakthrough -> if (event.success) {
+                val d = game.disciple(event.discipleId)
+                celebration = CelebrationUi(System.nanoTime(), "${d?.name?.substringBefore(" (") ?: "Uczeń"}: ${d?.realm?.polishName ?: "przełom"}!")
+            }
+            is GameEvent.OfflineSummary -> offlineReport = event.report
         }
     }
 
@@ -189,6 +232,14 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
         selectedDiscipleId = id
         _uiState.value = buildUi()
     }
+
+    fun claimOfflineReport() {
+        offlineReport = null
+        _uiState.value = buildUi()
+    }
+
+    fun tutorialNext() = dispatch(GameCommand.TutorialNext)
+    fun tutorialSkip() = dispatch(GameCommand.TutorialSkip)
 
     fun clearNotification() {
         notification = null
@@ -297,12 +348,12 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     // --- Narzędzia debug (tylko build debug) ---
 
     fun debug(command: GameCommand) {
-        if (FeatureFlags.debugPanel) dispatch(command)
+        if (com.example.BuildConfig.DEBUG) dispatch(command)
     }
 
     /** Przewija [count] cykli gry bez rysowania każdego z osobna. */
     fun debugSkipTicks(count: Int) {
-        if (!FeatureFlags.debugPanel) return
+        if (!com.example.BuildConfig.DEBUG) return
         repeat(count) { game = GameEngine.apply(game, GameCommand.Tick).state }
         notification = "[debug] przewinięto $count cykli (dzień ${game.currentDay})"
         _uiState.value = buildUi()
@@ -373,6 +424,12 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
         currentPolicy = game.currentPolicy,
         sectBeasts = game.sectBeasts,
         activeBeast = game.activeBeast,
-        territories = game.territories
+        territories = game.territories,
+        offlineReport = offlineReport,
+        tutorial = Tutorial.current(game)?.let { step ->
+            TutorialUi(game.tutorialStep, Tutorial.steps.size, step.title, step.text, waitingForAction = step.goal != null)
+        },
+        celebration = celebration,
+        qiBreakdown = Modifiers.sect(game).breakdown(Stat.QI_GAIN)
     )
 }

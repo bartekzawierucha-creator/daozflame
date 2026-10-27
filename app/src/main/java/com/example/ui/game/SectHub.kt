@@ -67,6 +67,9 @@ fun SectHub(
 ) {
     val ready = ui.disciples.count { it.realmProgress >= 100 }
     val celebration = rememberCelebration()
+    LaunchedEffect(ui.celebration?.id) {
+        ui.celebration?.let { celebration.fire(it.text) }
+    }
     val chronicle = rememberChronicle(ui)
 
     Box(modifier.background(Aaa.Ink0)) {

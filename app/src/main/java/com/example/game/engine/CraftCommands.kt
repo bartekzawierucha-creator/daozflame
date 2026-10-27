@@ -20,8 +20,9 @@ object CraftCommands {
         if (second != null && recipe.secondaryHerbCount > 0 && (s.inventory[second] ?: 0) < recipe.secondaryHerbCount) {
             return fail(s, "Brak składnika pomocniczego: $second (${recipe.secondaryHerbCount} wymagane)!")
         }
-        if (s.spiritStones < recipe.requiredSpiritStones) {
-            return fail(s, "Brak Kamieni Ducha (${recipe.requiredSpiritStones} wymagane)!")
+        val cost = (recipe.requiredSpiritStones * Modifiers.sect(s).factor(Stat.ALCHEMY_COST)).toInt().coerceAtLeast(0)
+        if (s.spiritStones < cost) {
+            return fail(s, "Brak Kamieni Ducha ($cost wymagane)!")
         }
         val inv = s.inventory.toMutableMap()
         inv[recipe.requiredHerbName] = herbCount - recipe.requiredHerbCount
@@ -32,7 +33,7 @@ object CraftCommands {
         val flame = s.activeFlame
         return ok(
             s.copy(
-                spiritStones = s.spiritStones - recipe.requiredSpiritStones,
+                spiritStones = s.spiritStones - cost,
                 inventory = inv.toMap(),
                 sectReputation = s.sectReputation + recipe.tier * 6
             ),
@@ -46,12 +47,13 @@ object CraftCommands {
         if (count < recipe.requiredMineralCount) {
             return fail(s, "Brak minerału: ${recipe.requiredMineralName} (${recipe.requiredMineralCount} wymagane)!")
         }
-        if (s.spiritStones < recipe.requiredSpiritStones) {
-            return fail(s, "Brak Kamieni Ducha (${recipe.requiredSpiritStones} wymagane)!")
+        val cost = (recipe.requiredSpiritStones * Modifiers.sect(s).factor(Stat.FORGE_COST)).toInt().coerceAtLeast(0)
+        if (s.spiritStones < cost) {
+            return fail(s, "Brak Kamieni Ducha ($cost wymagane)!")
         }
         return ok(
             s.copy(
-                spiritStones = s.spiritStones - recipe.requiredSpiritStones,
+                spiritStones = s.spiritStones - cost,
                 inventory = s.inventory + (recipe.requiredMineralName to count - recipe.requiredMineralCount),
                 vaultArtifacts = s.vaultArtifacts + recipe.artifactResult,
                 sectReputation = s.sectReputation + 15

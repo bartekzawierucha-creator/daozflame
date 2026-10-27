@@ -24,6 +24,7 @@ object GameEngine {
     /** Kolejność faz cyklu gry. Nowy system cykliczny = nowa faza dopisana tutaj. */
     val TICK_PHASES: List<TickPhase> = listOf(
         TimePhase,
+        UpkeepPhase,
         IncomePhase,
         DiscipleWorkPhase,
         RandomEventPhase,
@@ -44,6 +45,7 @@ object GameEngine {
             named(CultivationRealm.FOUNDATION_EARLY, BloodlineType.PURPLE_LIGHTNING_QILIN, "Bai Chen (Władca Pioruna)", MartialSchool.ELEMENTAL_TAOIST)
         )
         val flames = WuxiaGenerator.getGeocentricFlames()
+        val leader = WuxiaGenerator.getInitialSectLeader().let { it.copy(activeDecrees = EdictCatalog.asDecrees(it.activeDecrees)) }
         val beasts = WuxiaGenerator.getInitialSectBeasts()
         return GameState(
             worldSeed = worldSeed,
@@ -51,6 +53,7 @@ object GameEngine {
             spiritStones = 1200,
             disciples = disciples,
             availableRecruits = SectCommands.recruitPool(rng),
+            sectLeader = leader,
             inventory = STARTING_INVENTORY,
             facilities = WuxiaGenerator.getInitialFacilities(),
             regions = WuxiaGenerator.getInitialRegions(),
@@ -60,7 +63,8 @@ object GameEngine {
             activeFlameId = flames.firstOrNull()?.id,
             sectBeasts = beasts,
             activeBeastId = beasts.firstOrNull()?.id,
-            lastActiveAtMs = nowMs
+            lastActiveAtMs = nowMs,
+            tutorialStep = 0
         )
     }
 
@@ -109,6 +113,10 @@ object GameEngine {
             is GameCommand.EventChoice -> WorldCommands.eventChoice(state, command.choiceIndex)
             GameCommand.DismissEvent -> ok(state.copy(activeEventId = null))
 
+            is GameCommand.OfflineCatchUp -> OfflineProgress.apply(state, command.elapsedMs, ctx)
+            GameCommand.TutorialNext -> ok(state.copy(tutorialStep = Tutorial.next(state.tutorialStep)))
+            GameCommand.TutorialSkip -> ok(state.copy(tutorialStep = Tutorial.DONE), "Samouczek pominięty. Duch Założyciela czuwa w milczeniu.")
+
             is GameCommand.DebugAddStones -> ok(state.copy(spiritStones = state.spiritStones + command.amount), "[debug] +${command.amount} kamieni")
             is GameCommand.DebugAddItem -> ok(
                 state.copy(inventory = state.inventory + (command.item to (state.inventory[command.item] ?: 0) + command.amount)),
@@ -121,7 +129,8 @@ object GameEngine {
             }
             GameCommand.DebugFillQi -> ok(state.copy(disciples = state.disciples.map { it.copy(realmProgress = 100) }), "[debug] Qi wszystkich uczniów = 100%")
         }
-        return result.copy(state = result.state.copy(step = state.step + 1))
+        val advanced = Tutorial.afterCommand(state, command, result.state)
+        return result.copy(state = advanced.copy(step = state.step + 1))
     }
 
     private fun tick(state: GameState, ctx: EngineContext): StepResult {

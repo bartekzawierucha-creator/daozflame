@@ -59,6 +59,12 @@ sealed interface GameCommand {
     data class FeedBeast(val beastId: String, val herbName: String) : GameCommand
     data class EvolveBeast(val beastId: String) : GameCommand
 
+    // Czas i samouczek
+    /** Nadrobienie czasu nieobecności (postęp offline). */
+    data class OfflineCatchUp(val elapsedMs: Long) : GameCommand
+    data object TutorialNext : GameCommand
+    data object TutorialSkip : GameCommand
+
     // Narzędzia debug (panel tylko w buildzie debug)
     data class DebugAddStones(val amount: Int) : GameCommand
     data class DebugAddItem(val item: String, val amount: Int) : GameCommand
@@ -81,6 +87,7 @@ sealed interface GameEvent {
 
     data class CombatEnded(val victory: Boolean) : GameEvent
     data class Breakthrough(val discipleId: String, val success: Boolean) : GameEvent
+    data class OfflineSummary(val report: OfflineProgress.Report) : GameEvent
 }
 
 data class StepResult(val state: GameState, val events: List<GameEvent> = emptyList()) {

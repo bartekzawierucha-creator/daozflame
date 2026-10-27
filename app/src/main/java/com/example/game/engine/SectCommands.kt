@@ -10,14 +10,19 @@ object SectCommands {
     const val RECRUIT_COST = 120
     const val REFRESH_COST = 60
 
-    fun recruitPool(rng: Random): List<Disciple> = listOf(
+    private val BASE_POOL = listOf(
         CultivationRealm.QI_CONDENSATION_1,
         CultivationRealm.QI_CONDENSATION_1,
         CultivationRealm.QI_CONDENSATION_5,
         CultivationRealm.QI_CONDENSATION_5,
         CultivationRealm.QI_CONDENSATION_9,
         CultivationRealm.FOUNDATION_EARLY
-    ).map { WuxiaGenerator.generateDisciple(rng, it) }
+    )
+
+    /** Kandydaci do sekty; [extra] dodatkowych (np. z edyktu) dostaje najniższe królestwo. */
+    fun recruitPool(rng: Random, extra: Int = 0): List<Disciple> =
+        (BASE_POOL + List(extra.coerceAtLeast(0)) { CultivationRealm.QI_CONDENSATION_1 })
+            .map { WuxiaGenerator.generateDisciple(rng, it) }
 
     private fun GameState.withDisciple(id: String, f: (Disciple) -> Disciple) =
         copy(disciples = disciples.map { if (it.id == id) f(it) else it })
@@ -39,8 +44,11 @@ object SectCommands {
     fun refreshRecruits(s: GameState, ctx: EngineContext): StepResult {
         if (s.spiritStones < REFRESH_COST) return fail(s, "Potrzeba $REFRESH_COST Kamieni Ducha na zwołanie próby rekrutacyjnej!")
         return ok(
-            s.copy(spiritStones = s.spiritStones - REFRESH_COST, availableRecruits = recruitPool(ctx.rng("recruits"))),
-            "Przybyli nowi kandydaci (6 adeptów) szukający mistrza Dao!"
+            s.copy(
+                spiritStones = s.spiritStones - REFRESH_COST,
+                availableRecruits = recruitPool(ctx.rng("recruits"), Modifiers.sect(s).flat(Stat.RECRUIT_POOL).toInt())
+            ),
+            "Przybyli nowi kandydaci szukający mistrza Dao!"
         )
     }
 
@@ -83,12 +91,13 @@ object SectCommands {
         val ready = s.disciples.filter { it.realmProgress >= 100 }
         if (ready.isEmpty()) return fail(s, "Żaden adept nie zgromadził jeszcze 100% Qi.")
         val rng = ctx.rng("breakthrough")
+        val bonus = Modifiers.sect(s).flat(Stat.BREAKTHROUGH_CHANCE).toInt()
         val inv = s.inventory.toMutableMap()
         var rep = 0
         val events = mutableListOf<GameEvent>()
         val updated = s.disciples.map { d ->
             if (d.realmProgress < 100) return@map d
-            val r = CultivationRules.breakthrough(d, s.autoUsePillsForBreakthrough, inv, s.timeOfDay, rng)
+            val r = CultivationRules.breakthrough(d, s.autoUsePillsForBreakthrough, inv, s.timeOfDay, rng, bonus)
             rep += r.reputation
             events += GameEvent.Breakthrough(d.id, r.success)
             r.disciple
@@ -104,7 +113,9 @@ object SectCommands {
         val d = s.disciple(id) ?: return ok(s)
         if (d.realmProgress < 100) return fail(s, "Uczeń musi zgromadzić 100% Qi w swoim meridianie przed próbą przełomu!")
         val inv = s.inventory.toMutableMap()
-        val r = CultivationRules.breakthrough(d, usePill, inv, s.timeOfDay, ctx.rng("breakthrough"))
+        val r = CultivationRules.breakthrough(
+            d, usePill, inv, s.timeOfDay, ctx.rng("breakthrough"), Modifiers.sect(s).flat(Stat.BREAKTHROUGH_CHANCE).toInt()
+        )
         return ok(
             s.withDisciple(id) { r.disciple }.copy(inventory = inv.toMap(), sectReputation = s.sectReputation + r.reputation),
             r.message,
@@ -153,11 +164,32 @@ object SectCommands {
         )
     }
 
+    /**
+     * Przełączenie edyktu. W wersji 2: limit aktywnych edyktów i 3 dni odnowienia po każdej zmianie.
+     */
     fun toggleDecree(s: GameState, decreeId: String): StepResult {
-        val updated = s.sectLeader.activeDecrees.map { if (it.id == decreeId) it.copy(isActive = !it.isActive) else it }
-        val toggled = updated.find { it.id == decreeId }
-        val status = if (toggled?.isActive == true) "Aktywowano" else "Cofnięto"
-        return ok(s.copy(sectLeader = s.sectLeader.copy(activeDecrees = updated)), "$status edykt: ${toggled?.title ?: decreeId}")
+        val decrees = EdictCatalog.asDecrees(s.sectLeader.activeDecrees)
+        val target = decrees.find { it.id == decreeId } ?: return ok(s)
+        val title = target.title
+        if (com.example.game.FeatureFlags.EDICTS_V2) {
+            val readyOn = s.edictCooldowns[decreeId] ?: 0
+            if (s.currentDay < readyOn) {
+                return fail(s, "Edykt „$title” można zmienić dopiero za ${readyOn - s.currentDay} dni.")
+            }
+            val activeCount = decrees.count { it.isActive }
+            if (!target.isActive && activeCount >= EdictCatalog.slots(s)) {
+                return fail(s, "Aktywne mogą być najwyżej ${EdictCatalog.slots(s)} edykty. Najpierw cofnij inny.")
+            }
+        }
+        val updated = decrees.map { if (it.id == decreeId) it.copy(isActive = !it.isActive) else it }
+        val nowActive = updated.first { it.id == decreeId }.isActive
+        return ok(
+            s.copy(
+                sectLeader = s.sectLeader.copy(activeDecrees = updated),
+                edictCooldowns = s.edictCooldowns + (decreeId to s.currentDay + EdictCatalog.COOLDOWN_DAYS)
+            ),
+            "${if (nowActive) "Aktywowano" else "Cofnięto"} edykt: $title"
+        )
     }
 
     fun upgradePrestige(s: GameState): StepResult {

@@ -29,10 +29,16 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /** Zapis przy każdym wyjściu z gry (przełączenie aplikacji, blokada ekranu). */
+    /** Powrót do gry: nadrobienie czasu nieobecności. */
+    override fun onStart() {
+        super.onStart()
+        gameViewModel.onForeground()
+    }
+
+    /** Wyjście z gry (przełączenie aplikacji, blokada ekranu): zapis i pauza. */
     override fun onStop() {
         super.onStop()
-        gameViewModel.saveNow()
+        gameViewModel.onBackground()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
