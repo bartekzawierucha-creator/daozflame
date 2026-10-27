@@ -35,3 +35,26 @@ data class ExpeditionRun(
     /** Walka z bossem trwa (wynik rozliczy [com.example.game.engine.CombatSystem]). */
     val atBoss: Boolean = false
 )
+
+/** Etap 5b: zapowiedziany najazd rywala. */
+data class Raid(
+    val sectId: String = "",
+    val sectName: String = "",
+    val arriveDay: Int = 0,
+    val strength: Int = 0
+)
+
+enum class SpyType(val polishName: String, val description: String) {
+    SCOUT("Zwiad", "Poznaj siłę i zamiary sekty."),
+    STEAL("Kradzież", "Wynieś kamienie ze skarbca rywala."),
+    SABOTAGE("Sabotaż", "Osłab sektę o 10%."),
+    RUMOR("Plotki", "Skłóć sektę z sąsiadami na 30 dni.")
+}
+
+data class SpyMission(
+    val id: String = "",
+    val discipleId: String = "",
+    val sectId: String = "",
+    val type: SpyType = SpyType.SCOUT,
+    val returnDay: Int = 0
+)

@@ -189,3 +189,163 @@ fun TowerPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: () -> U
         }
     }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Etap 5b – obrona, wywiad, wojna i kronika świata
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum class SectsTab(val label: String) { DEFENSE("Obrona"), SPIES("Wywiad"), WAR("Wojna i honor"), CHRONICLE("Kronika") }
+
+@Composable
+fun SectsPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, sect: com.example.model.RivalSect?, initial: SectsTab, onClose: () -> Unit) {
+    var tab by remember { mutableStateOf(initial) }
+    LegacyPanel(title = "Sekty świata" + (sect?.let { " · ${it.name}" } ?: ""), onClose = onClose) {
+        Column(Modifier.fillMaxSize()) {
+            TextTabs(SectsTab.entries.map { it.label }, tab.ordinal, { tab = SectsTab.entries[it] }, Modifier.padding(horizontal = 14.dp, vertical = 6.dp))
+            Column(
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                when (tab) {
+                    SectsTab.DEFENSE -> DefenseTab(ui, viewModel)
+                    SectsTab.SPIES -> SpiesTab(ui, viewModel, sect)
+                    SectsTab.WAR -> WarTab(ui, viewModel, sect)
+                    SectsTab.CHRONICLE -> {
+                        if (ui.chronicle.isEmpty()) SheetBody("Świat jeszcze milczy.", color = Aaa.TextLow)
+                        ui.chronicle.reversed().forEach { SheetBody(it, color = Aaa.TextMid, maxLines = 3) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun DefenseTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
+    val raid = ui.raid
+    if (raid != null) {
+        val days = raid.arriveDay - ui.currentDay
+        SheetBody("⚠ ${raid.sectName} uderzy ${if (days <= 0) "dziś" else "za $days dni"}. Siła na bramę ok. ${raid.strength / 3}.", color = Aaa.Cinnabar, maxLines = 3)
+    } else {
+        SheetBody("Bramy są spokojne. Wrogie sekty zapowiadają najazd 2 dni wcześniej. Najazd rozstrzyga się w 3 rundach – po jednej na bramę; ostatnie rozstawienie działa także, gdy cię nie ma.", maxLines = 5)
+    }
+    com.example.game.engine.Raids.GATES.forEach { gate ->
+        val guardId = ui.gates[gate]
+        val guard = ui.disciples.find { it.id == guardId }
+        val power = ui.gatePowers[gate] ?: 0
+        val safe = raid == null || power >= raid.strength / 3
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .background(Aaa.Ink3.copy(alpha = 0.8f))
+                .border(1.dp, if (safe) Aaa.Hairline else Aaa.Cinnabar)
+                .padding(10.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            KvRow(gate, "moc $power", valueColor = if (safe) Aaa.Jade else Aaa.Cinnabar)
+            SheetBody(guard?.let { "Straż: ${it.name.substringBefore(" (")}" } ?: "Bez straży – broni tylko mur.", color = Aaa.TextMid)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                ui.disciples.sortedByDescending { it.combatPower }.take(6).forEach { d ->
+                    val on = d.id == guardId
+                    Text(
+                        d.name.substringBefore(" (").substringBefore(" "),
+                        style = AaaType.Label.copy(fontSize = 10.sp, color = if (on) Aaa.Ink0 else Aaa.TextHi),
+                        modifier = Modifier
+                            .background(if (on) Aaa.Gold else Aaa.Ink4)
+                            .clickable(role = Role.Button) { viewModel.guardGate(gate, if (on) null else d.id) }
+                            .padding(horizontal = 7.dp, vertical = 4.dp)
+                    )
+                }
+            }
+        }
+    }
+    Overline("Wielka Formacja ${ui.formationNodes.size}/7")
+    KvRow("Mnożnik obrony bram", "×%.2f".format(ui.formationFactor))
+    if (ui.formationNodes.isNotEmpty()) SheetBody(ui.formationNodes.joinToString(" ") { it.glyph }, color = Aaa.Gold)
+    SheetBody("Każdy węzeł +8% obrony. Pięć podstawowych żywiołów: +20% obrony i +5% Qi sekty. Komplet 7 węzłów: kolejne +10%.", color = Aaa.TextLow, maxLines = 3)
+    ui.formationNextCost?.let { cost ->
+        SheetBody("Następny węzeł: $cost", color = Aaa.TextHi)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            com.example.model.SpiritElement.BASIC.forEach { e ->
+                GhostButton("${e.glyph} ${e.polishName}", onClick = { viewModel.placeFormationNode(e) }, height = 32.dp)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SpiesTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, sect: com.example.model.RivalSect?) {
+    if (sect == null) { SheetBody("Wybierz sektę."); return }
+    val scouted = ui.intel[sect.id]
+    KvRow("Siła sekty", if (scouted != null) "${sect.strength} (zwiad z dnia $scouted)" else "nieznana – wyślij zwiad", valueColor = Aaa.TextMid)
+    if (sect.nemesisLevel > 0) KvRow("Nemezis", "poziom ${sect.nemesisLevel}", valueColor = Aaa.Cinnabar)
+    if (ui.spies.isNotEmpty()) {
+        Overline("Na misjach")
+        ui.spies.forEach { m ->
+            val who = ui.disciples.find { it.id == m.discipleId }?.name?.substringBefore(" (") ?: "?"
+            val where = ui.rivalSects.find { it.id == m.sectId }?.name ?: "?"
+            KvRow("$who · ${m.type.polishName}", "$where · wraca dnia ${m.returnDay}", valueColor = Aaa.TextMid)
+        }
+    }
+    var type by remember { mutableStateOf(com.example.model.SpyType.SCOUT) }
+    Overline("Nowa misja")
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        com.example.model.SpyType.entries.forEach { t ->
+            val on = t == type
+            Text(
+                t.polishName,
+                style = AaaType.Label.copy(fontSize = 10.5.sp, color = if (on) Aaa.Ink0 else Aaa.TextHi),
+                modifier = Modifier
+                    .background(if (on) Aaa.Violet else Aaa.Ink3)
+                    .clickable(role = Role.Button) { type = t }
+                    .padding(horizontal = 8.dp, vertical = 5.dp)
+            )
+        }
+    }
+    SheetBody(type.description + " Misja trwa 3 dni. Wykrycie: relacje −20 i ranny szpieg.", color = Aaa.TextLow, maxLines = 3)
+    val busy = ui.spies.map { it.discipleId }.toSet()
+    ui.disciples.filter { it.id !in busy }.sortedByDescending { it.comprehension }.take(6).forEach { d ->
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("${d.name.substringBefore(" (")} · zrozumienie ${d.comprehension}", style = AaaType.Label.copy(fontSize = 11.sp, color = Aaa.TextHi), modifier = Modifier.weight(1f), maxLines = 1)
+            GhostButton("Wyślij", onClick = { viewModel.sendSpy(d.id, sect.id, type) }, height = 32.dp)
+        }
+    }
+}
+
+@Composable
+private fun WarTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, sect: com.example.model.RivalSect?) {
+    if (sect == null) { SheetBody("Wybierz sektę."); return }
+    val atWar = sect.status == com.example.model.DiplomaticStatus.TOTAL_WAR
+    Overline("Bitwa")
+    val army = ui.disciples.filter { it.currentHp > it.maxHp / 3 }.sortedByDescending { it.combatPower }.take(5)
+    SheetBody(
+        if (atWar) "Do bitwy ruszy 5 najsilniejszych zdrowych uczniów: ${army.joinToString { it.name.substringBefore(" (").substringBefore(" ") }}. Zwycięstwo daje kamienie i terytorium."
+        else "Bitwy toczy się tylko w stanie wojny.",
+        maxLines = 4
+    )
+    GoldCta("Bitwa z ${sect.name}", enabled = atWar && army.isNotEmpty(), onClick = { viewModel.sectBattle(sect.id, army.map { it.id }) }, modifier = Modifier.fillMaxWidth())
+
+    Overline("Honorowy pojedynek")
+    val champ = ui.disciples.maxByOrNull { it.combatPower }
+    var confirmDeath by remember(sect.id) { mutableStateOf(false) }
+    if (champ != null) {
+        SheetBody("Czempion: ${champ.name.substringBefore(" (")}. Pojedynek do pierwszej krwi kosztuje tylko rany. Na śmierć – przegrany ginie.", maxLines = 3)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            GhostButton("Do pierwszej krwi", onClick = { viewModel.honorDuel(sect.id, champ.id, toDeath = false, confirmed = false) }, modifier = Modifier.weight(1f))
+            if (!confirmDeath) {
+                GhostButton("Na śmierć…", danger = true, onClick = { confirmDeath = true }, modifier = Modifier.weight(1f))
+            } else {
+                GoldCta("Potwierdzam", danger = true, onClick = {
+                    confirmDeath = false
+                    viewModel.honorDuel(sect.id, champ.id, toDeath = true, confirmed = true)
+                }, modifier = Modifier.weight(1f))
+            }
+        }
+    }
+}

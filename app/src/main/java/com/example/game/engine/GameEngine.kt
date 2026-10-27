@@ -77,7 +77,7 @@ object GameEngine {
     }
 
     /** Wywoływane po wczytaniu zapisu: jednorazowe migracje logiczne (korzenie w Etapie 2, etapy w Etapie 3). */
-    fun normalize(state: GameState): GameState = economy(Realms.normalize(DiscipleRules.normalize(state)))
+    fun normalize(state: GameState): GameState = WorldAI.normalize(economy(Realms.normalize(DiscipleRules.normalize(state))))
 
     /** Migracja do Etapu 4: stare zapisy zachowują wszystkie płomienie i znają wszystkie receptury. */
     private fun economy(s: GameState): GameState {
@@ -135,6 +135,11 @@ object GameEngine {
             GameCommand.RetreatExpedition -> if (state.expedition?.atBoss == true) fail(state, "Walka trwa.") else Expeditions.retreat(state)
             GameCommand.CraftRing -> Expeditions.craftRing(state)
             is GameCommand.ClimbTower -> Tower.climb(state, command.discipleId, ctx)
+            is GameCommand.GuardGate -> Raids.assign(state, command.gate, command.discipleId)
+            is GameCommand.PlaceFormationNode -> Formation.place(state, command.element)
+            is GameCommand.SendSpy -> Spies.send(state, ctx, command.discipleId, command.sectId, command.type)
+            is GameCommand.SectBattle -> Wars.battle(state, ctx, command.sectId, command.discipleIds)
+            is GameCommand.HonorDuel -> Wars.duel(state, ctx, command.sectId, command.discipleId, command.toDeath, command.confirmed)
             is GameCommand.FlameToForge -> Flames.toForge(state, command.flameId)
             is GameCommand.FlameToDisciple -> Flames.toDisciple(state, command.flameId, command.discipleId)
             is GameCommand.ChoosePath -> CultivationCommands.choosePath(state, command.discipleId, command.path)
@@ -204,7 +209,11 @@ object GameEngine {
     private fun tick(state: GameState, ctx: EngineContext): StepResult {
         val frame = TickFrame(state, ctx)
         TICK_PHASES.forEach { it.run(frame) }
-        return frame.toResult()
+        val result = frame.toResult()
+        if (result.state.currentDay == state.currentDay) return result
+        // Systemy dobowe na pełnym stanie (Etap 5b: AI sekt, najazdy, szpiedzy) – po fazach cyklu, raz na dzień.
+        val (world, notes) = WorldAI.daily(result.state, ctx)
+        return StepResult(world, result.events + notes.map { GameEvent.Notice(it) })
     }
 
     val STARTING_INVENTORY: Map<String, Int> = mapOf(

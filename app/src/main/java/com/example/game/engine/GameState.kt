@@ -49,6 +49,17 @@ data class GameState(
     val towerFloor: Int = 0,
     val towerDay: Int = 0,
     val towerAttempts: Int = 0,
+    /** Etap 5b: żywe sekty. */
+    val e5Initialized: Boolean = false,
+    val raid: com.example.model.Raid? = null,
+    /** Brama → uczeń na straży (ostatnie rozstawienie obowiązuje także offline). */
+    val gates: Map<String, String> = emptyMap(),
+    val formationNodes: List<com.example.model.SpiritElement> = emptyList(),
+    val spies: List<com.example.model.SpyMission> = emptyList(),
+    /** Sekta → dzień ostatniego zwiadu. */
+    val intel: Map<String, Int> = emptyMap(),
+    /** Ostatnie wydarzenia świata (kronika, najnowsze na końcu). */
+    val chronicle: List<String> = emptyList(),
 
     val worldBoss: WorldBossRaid = com.example.game.WuxiaGenerator.getInitialWorldBoss(),
     val sectLeader: SectLeaderData = com.example.game.WuxiaGenerator.getInitialSectLeader(),

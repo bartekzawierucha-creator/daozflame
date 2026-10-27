@@ -97,7 +97,17 @@ data class WuxiaUiState(
     /** Strażnik następnego piętra: HP / atak / obrona. */
     val towerNext: Triple<Int, Int, Int> = Triple(0, 0, 0),
     /** Krainy z aktywnym tropem płomienia (id krainy → nazwa płomienia + pora roku). */
-    val flameTrails: Map<String, String> = emptyMap()
+    val flameTrails: Map<String, String> = emptyMap(),
+    // Etap 5b
+    val raid: Raid? = null,
+    val gates: Map<String, String> = emptyMap(),
+    val gatePowers: Map<String, Int> = emptyMap(),
+    val formationNodes: List<SpiritElement> = emptyList(),
+    val formationFactor: Double = 1.0,
+    val formationNextCost: String? = null,
+    val spies: List<SpyMission> = emptyList(),
+    val intel: Map<String, Int> = emptyMap(),
+    val chronicle: List<String> = emptyList()
 )
 
 data class MarketRow(val item: String, val have: Int, val sellPrice: Int, val buyPrice: Int?)
@@ -379,6 +389,14 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     fun craftRing() = dispatch(GameCommand.CraftRing)
     fun climbTower(discipleId: String) = dispatch(GameCommand.ClimbTower(discipleId))
 
+    // --- Etap 5b: żywe sekty ---
+    fun guardGate(gate: String, discipleId: String?) = dispatch(GameCommand.GuardGate(gate, discipleId))
+    fun placeFormationNode(element: SpiritElement) = dispatch(GameCommand.PlaceFormationNode(element))
+    fun sendSpy(discipleId: String, sectId: String, type: SpyType) = dispatch(GameCommand.SendSpy(discipleId, sectId, type))
+    fun sectBattle(sectId: String, discipleIds: List<String>) = dispatch(GameCommand.SectBattle(sectId, discipleIds))
+    fun honorDuel(sectId: String, discipleId: String, toDeath: Boolean, confirmed: Boolean) =
+        dispatch(GameCommand.HonorDuel(sectId, discipleId, toDeath, confirmed))
+
     // --- Etap 4: gospodarka ---
     fun upgradeVein() = dispatch(GameCommand.UpgradeVein)
     fun plantHerb(index: Int, herb: String) = dispatch(GameCommand.PlantHerb(index, herb))
@@ -585,7 +603,17 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
         flameTrails = com.example.game.engine.FlameSources.SOURCES
             .filter { (id, _) -> (game.flags[com.example.game.engine.FlameSources.trailFlag(id)] ?: 0) > 0 }
             .map { (id, src) -> src.regionId to ((com.example.game.engine.FlameSources.allFlames[id]?.name ?: id) + (src.season?.let { " · ${it.polishName}" } ?: "")) }
-            .toMap()
+            .toMap(),
+        raid = game.raid,
+        gates = game.gates,
+        gatePowers = com.example.game.engine.Raids.GATES.associateWith { com.example.game.engine.Raids.gatePower(game, it) },
+        formationNodes = game.formationNodes,
+        formationFactor = com.example.game.engine.Formation.defenseFactor(game),
+        formationNextCost = game.formationNodes.size.takeIf { it < com.example.game.engine.Formation.MAX_NODES }
+            ?.let { com.example.game.engine.Formation.cost(it) }?.let { (st, m) -> "$st kamieni · ${m}× ${com.example.game.engine.Formation.MINERAL}" },
+        spies = game.spies,
+        intel = game.intel,
+        chronicle = game.chronicle
     )
 
     private fun economyUi(g: GameState): EconomyUi {

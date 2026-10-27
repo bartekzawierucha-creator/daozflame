@@ -257,4 +257,118 @@ class Stage5Test {
         assertTrue(r.notice!!.contains("jutra"))
         assertEquals(3, Tower.attemptsLeft(s.copy(currentDay = s.currentDay + 1)))
     }
+
+    // --- 5b: żywe sekty ---
+
+    private fun advanceDays(s0: GameState, days: Int): GameState {
+        var s = s0
+        repeat(days) { s = nextDay(s) }
+        return s
+    }
+
+    @Test
+    fun sectsGetStrengthFromRankAndOldSavesMigrate() {
+        val s = fresh(30L)
+        assertTrue(s.rivalSects.all { it.strength > 0 })
+        assertEquals(WorldAI.initialStrength(1), s.rivalSects.first { it.powerRank == 1 }.strength)
+        val old = s.copy(e5Initialized = false, rivalSects = s.rivalSects.map { it.copy(strength = 0) })
+        assertTrue(GameEngine.normalize(old).rivalSects.all { it.strength > 0 })
+    }
+
+    @Test
+    fun fiveYearsWithoutPlayerNoSectTakesTheWholeMap() {
+        var s = fresh(31L)
+        val ctx = EngineContext(s.worldSeed, 0)
+        repeat(600) { day ->
+            s = s.copy(currentDay = s.currentDay + 1, step = s.step + 1, raid = null)
+            s = WorldAI.daily(s, EngineContext(s.worldSeed, s.step)).first
+        }
+        val byOwner = s.territories.groupBy { it.controllingSectId }.mapValues { it.value.size }
+        val maxOwned = byOwner.filterKeys { it != "player" }.values.maxOrNull() ?: 0
+        assertTrue("$byOwner", maxOwned < s.territories.size)
+        val avg = s.rivalSects.map { it.strength }.average()
+        assertTrue(s.rivalSects.all { it.strength <= avg * WorldAI.STRENGTH_CAP * 1.1 })
+        assertTrue(s.chronicle.isNotEmpty())
+    }
+
+    @Test
+    fun hostileSectRaidsWithTwoDayWarningAndGuardedGatesHold() {
+        val base = fresh(32L).let { st ->
+            st.copy(currentDay = 40, rivalSects = st.rivalSects.map { if (it.id == "sect_shadow") it.copy(status = com.example.model.DiplomaticStatus.TOTAL_WAR) else it })
+        }
+        var s = base
+        var tries = 0
+        while (s.raid == null && tries++ < 200) s = nextDay(s)
+        val raid = s.raid!!
+        assertEquals(s.currentDay + 2, raid.arriveDay)
+        // Silni strażnicy na wszystkich bramach.
+        val strong = s.copy(disciples = s.disciples.map { it.copy(attack = 2_000, defense = 1_000) })
+        var guarded = strong
+        Raids.GATES.zip(strong.disciples).forEach { (g, d) -> guarded = apply(guarded, GameCommand.GuardGate(g, d.id)).state }
+        val (won, msg) = Raids.resolve(guarded.copy(currentDay = raid.arriveDay), EngineContext(1, 1))
+        assertTrue(msg.contains("odparty"))
+        assertNull(won.raid)
+        val (lost, msg2) = Raids.resolve(s.copy(gates = emptyMap(), currentDay = raid.arriveDay, spiritStones = 10_000), EngineContext(1, 1))
+        assertTrue(msg2.contains("przełamuje"))
+        assertEquals(9_000, lost.spiritStones)
+    }
+
+    @Test
+    fun formationNodesRaiseDefenseAndFiveElementsGiveSetBonus() {
+        var s = fresh(33L).copy(spiritStones = 100_000, inventory = mapOf(Formation.MINERAL to 500))
+        val f0 = Formation.defenseFactor(s)
+        com.example.model.SpiritElement.BASIC.forEach { s = apply(s, GameCommand.PlaceFormationNode(it)).state }
+        assertTrue(Formation.fiveElements(s))
+        assertEquals(f0 + 0.4 + 0.2, Formation.defenseFactor(s), 1e-9)
+        assertTrue(Modifiers.sect(s).breakdown(Stat.QI_GAIN).any { it.contains("Pięciu") })
+        repeat(3) { s = apply(s, GameCommand.PlaceFormationNode(com.example.model.SpiritElement.FIRE)).state }
+        assertEquals(Formation.MAX_NODES, s.formationNodes.size)
+    }
+
+    @Test
+    fun spiesReturnAfterThreeDaysWithResults() {
+        val s = fresh(34L)
+        val d = s.disciples.maxBy { it.comprehension }
+        val sent = apply(s, GameCommand.SendSpy(d.id, "sect_drunken", com.example.model.SpyType.SCOUT)).state
+        assertTrue(apply(sent, GameCommand.SendSpy(d.id, "sect_drunken", com.example.model.SpyType.STEAL)).notice!!.contains("misji"))
+        val back = advanceDays(sent, Spies.DAYS)
+        assertTrue(back.spies.isEmpty())
+        val drunk = back.rivalSects.first { it.id == "sect_drunken" }
+        assertTrue(back.intel.containsKey("sect_drunken") || drunk.relations < s.rivalSects.first { it.id == "sect_drunken" }.relations)
+    }
+
+    @Test
+    fun threeDefeatsMakeANemesisCappedAtThree() {
+        var s = fresh(35L)
+        repeat(3) { s = WorldAI.grudge(s, "sect_shadow").first }
+        assertEquals(1, s.rivalSects.first { it.id == "sect_shadow" }.nemesisLevel)
+        s = WorldAI.grudge(s, "sect_shadow").first
+        assertEquals(2, s.rivalSects.first { it.id == "sect_shadow" }.nemesisLevel)
+        listOf("sect_dragon", "sect_wudang", "sect_nether").forEach { id -> repeat(3) { s = WorldAI.grudge(s, id).first } }
+        assertEquals(3, s.rivalSects.count { it.nemesisLevel > 0 })
+        assertTrue(Raids.strength(s.rivalSects.first { it.id == "sect_shadow" }) > (s.rivalSects.first { it.id == "sect_shadow" }.strength * 0.5).toInt())
+    }
+
+    @Test
+    fun deathDuelNeedsConfirmationAndLoserDies() {
+        val s = fresh(36L)
+        val weak = s.disciples.minBy { it.attack }
+        assertTrue(apply(s, GameCommand.HonorDuel("sect_wudang", weak.id, toDeath = true)).notice!!.contains("potwierdzenia"))
+        val weakened = s.copy(disciples = s.disciples.map { if (it.id == weak.id) it.copy(attack = 1, defense = 1) else it })
+        val r = apply(weakened, GameCommand.HonorDuel("sect_wudang", weak.id, toDeath = true, confirmed = true)).state
+        assertNull(r.disciple(weak.id))
+    }
+
+    @Test
+    fun battlesNeedWarAndCanTakeTerritory() {
+        val s = fresh(37L)
+        val ids = s.disciples.map { it.id }
+        assertTrue(apply(s, GameCommand.SectBattle("sect_dragon", ids)).notice!!.contains("wojny"))
+        val war = s.copy(
+            rivalSects = s.rivalSects.map { if (it.id == "sect_dragon") it.copy(status = com.example.model.DiplomaticStatus.TOTAL_WAR) else it },
+            disciples = s.disciples.map { it.copy(attack = 5_000, defense = 5_000) }
+        )
+        val r = apply(war, GameCommand.SectBattle("sect_dragon", ids)).state
+        assertTrue(r.territories.count { it.controllingSectId == "player" } > s.territories.count { it.controllingSectId == "player" })
+    }
 }

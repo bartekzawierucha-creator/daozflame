@@ -435,6 +435,7 @@ fun ClansModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
     var selId by remember { mutableStateOf(ui.rivalSects.firstOrNull()?.id) }
     val s: RivalSect? = ui.rivalSects.firstOrNull { it.id == selId } ?: ui.rivalSects.firstOrNull()
     var legacy by remember { mutableStateOf(false) }
+    var sects by remember { mutableStateOf<SectsTab?>(null) }
     val celebration = rememberCelebration()
     if (s != null) {
         WatchIncrease(s.id, s.status.ordinal.let { if (s.status == DiplomaticStatus.ALLIANCE) 1 else 0 }) {
@@ -529,6 +530,13 @@ fun ClansModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
                             )
                         }
                     }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        GhostButton(if (ui.raid != null) "⚠ Obrona" else "Obrona", danger = ui.raid != null, onClick = { sects = SectsTab.DEFENSE }, modifier = Modifier.weight(1f), height = 36.dp)
+                        GhostButton("Wywiad", onClick = { sects = SectsTab.SPIES }, modifier = Modifier.weight(1f), height = 36.dp)
+                        GhostButton("Wojna", onClick = { sects = SectsTab.WAR }, modifier = Modifier.weight(1f), height = 36.dp)
+                        GhostButton("Kronika", onClick = { sects = SectsTab.CHRONICLE }, modifier = Modifier.weight(1f), height = 36.dp)
+                    }
+                    if (s.nemesisLevel > 0) SheetBody("☠ Nemezis poziomu ${s.nemesisLevel}", color = Aaa.Cinnabar)
                     Text(
                         "Księga dyplomacji",
                         style = AaaType.Label.copy(fontSize = 9.5.sp, color = Aaa.TextLow),
@@ -546,6 +554,7 @@ fun ClansModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
                 DiplomacyScreen(viewModel = viewModel, uiState = ui)
             }
         }
+        sects?.let { SectsPanel(ui, viewModel, s, it, onClose = { sects = null }) }
     }
 }
 

@@ -160,6 +160,12 @@ object BalanceSimulator {
                 .forEach { (k, v) -> s = apply(s, GameCommand.Sell(k, v - 40)) }
         }
 
+        // Etap 5b: trzech najsilniejszych na bramach.
+        if (s.e5Initialized && s.gates.size < 3) {
+            com.example.game.engine.Raids.GATES.zip(s.disciples.sortedByDescending { it.combatPower }.take(3))
+                .forEach { (g, d) -> s = apply(s, GameCommand.GuardGate(g, d.id)) }
+        }
+
         // Etap 5a: Wieża Prób najsilniejszym uczniem.
         s.disciples.maxByOrNull { it.combatPower }?.let { champ ->
             while (com.example.game.engine.Tower.attemptsLeft(s) > 0) {
