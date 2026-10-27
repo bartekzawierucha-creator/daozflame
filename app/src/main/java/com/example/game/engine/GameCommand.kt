@@ -53,6 +53,24 @@ sealed interface GameCommand {
     data class FlameToForge(val flameId: String) : GameCommand
     data class FlameToDisciple(val flameId: String, val discipleId: String) : GameCommand
 
+    // Etap 5a
+    data class BeginExpedition(val regionId: String, val discipleId: String, val auto: Boolean = false) : GameCommand
+    data class ChooseNode(val index: Int) : GameCommand
+    data object EnterLair : GameCommand
+    data object RetreatExpedition : GameCommand
+    data object CraftRing : GameCommand
+    data class ClimbTower(val discipleId: String) : GameCommand
+
+    // Etap 5b
+    data class GuardGate(val gate: String, val discipleId: String?) : GameCommand
+    // Etap 5c
+    data class ScoutRegion(val regionId: String, val discipleId: String) : GameCommand
+    data class EnterSecretRealm(val realmId: String, val discipleId: String) : GameCommand
+    data class PlaceFormationNode(val element: com.example.model.SpiritElement) : GameCommand
+    data class SendSpy(val discipleId: String, val sectId: String, val type: com.example.model.SpyType) : GameCommand
+    data class SectBattle(val sectId: String, val discipleIds: List<String>) : GameCommand
+    data class HonorDuel(val sectId: String, val discipleId: String, val toDeath: Boolean, val confirmed: Boolean = false) : GameCommand
+
     // Kultywacja
     data class ToggleAutoBreakthrough(val enabled: Boolean? = null) : GameCommand
     data class ToggleAutoPills(val enabled: Boolean? = null) : GameCommand

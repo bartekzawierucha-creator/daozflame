@@ -41,6 +41,30 @@ data class GameState(
     val activeEventId: String? = null,
     /** Ostatnio wylosowane zdarzenia – nie powtarzają się, dopóki nie minie 12 innych. */
     val recentEventIds: List<String> = emptyList(),
+    /** Etap 5: flagi skryptów zdarzeń (łańcuchy, NPC, fabuła). */
+    val flags: Map<String, Int> = emptyMap(),
+    val scheduledEvents: List<com.example.model.ScheduledEvent> = emptyList(),
+    /** Etap 5a: wyprawa w toku i Wieża Prób. */
+    val expedition: com.example.model.ExpeditionRun? = null,
+    val towerFloor: Int = 0,
+    val towerDay: Int = 0,
+    val towerAttempts: Int = 0,
+    /** Etap 5b: żywe sekty. */
+    val e5Initialized: Boolean = false,
+    val raid: com.example.model.Raid? = null,
+    /** Brama → uczeń na straży (ostatnie rozstawienie obowiązuje także offline). */
+    val gates: Map<String, String> = emptyMap(),
+    val formationNodes: List<com.example.model.SpiritElement> = emptyList(),
+    val spies: List<com.example.model.SpyMission> = emptyList(),
+    /** Sekta → dzień ostatniego zwiadu. */
+    val intel: Map<String, Int> = emptyMap(),
+    /** Ostatnie wydarzenia świata (kronika, najnowsze na końcu). */
+    val chronicle: List<String> = emptyList(),
+    /** Etap 5c: mgła wojny, tajne królestwa, katastrofy. */
+    val discoveredRegionIds: Set<String> = emptySet(),
+    /** Tajne królestwo → dzień otwarcia, w którym sekta już w nim była. */
+    val realmVisits: Map<String, Int> = emptyMap(),
+    val catastrophe: com.example.model.Catastrophe? = null,
 
     val worldBoss: WorldBossRaid = com.example.game.WuxiaGenerator.getInitialWorldBoss(),
     val sectLeader: SectLeaderData = com.example.game.WuxiaGenerator.getInitialSectLeader(),
@@ -123,6 +147,8 @@ data class ActiveCombat(
     val discipleTurn: Boolean = true,
     /** Talizman Pieczęci – przeciwnik traci następny ruch. */
     val enemySealed: Boolean = false,
+    /** Etap 5a: przewaga żywiołu bestii nad uczniem (mnożnik jej obrażeń). */
+    val enemyAttackFactor: Double = 1.0,
     val logs: List<CombatLogEntry> = emptyList(),
     /** null = trwa, true = zwycięstwo, false = porażka. */
     val outcome: Boolean? = null,

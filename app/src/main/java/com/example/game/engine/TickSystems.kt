@@ -49,6 +49,9 @@ class TickFrame(val before: GameState, val ctx: EngineContext) {
     var veinUpgradeDoneDay = before.veinUpgradeDoneDay
     /** Kamienie spoza dochodu (karawany) – nie podlegają premiom dochodu. */
     var stonesBonus: Int = 0
+    // Etap 5
+    var flags = before.flags
+    var scheduledEvents = before.scheduledEvents
 
     fun toResult(): StepResult {
         val income = (stonesGained * sectMods.factor(Stat.STONE_INCOME)).toInt()
@@ -77,7 +80,9 @@ class TickFrame(val before: GameState, val ctx: EngineContext) {
             inventory = inventory.toMap(),
             disciples = disciples,
             activeEventId = activeEventId,
-            recentEventIds = recentEventIds
+            recentEventIds = recentEventIds,
+            flags = flags,
+            scheduledEvents = scheduledEvents
         )
         notice?.let { events += GameEvent.Notice(it) }
         return StepResult(state, events.toList())
@@ -212,15 +217,26 @@ object RandomEventPhase : TickPhase {
     const val MEMORY = 12
 
     override fun run(frame: TickFrame) {
-        if (frame.activeEventId != null || frame.tick % EVERY_TICKS != 0L) return
+        if (frame.activeEventId != null) return
+        val view = frame.before.copy(
+            currentDay = frame.day, timeOfDay = frame.timeOfDay, activeEventId = null,
+            recentEventIds = frame.recentEventIds, flags = frame.flags, scheduledEvents = frame.scheduledEvents
+        )
+        // Zaplanowane ogniwa łańcuchów mają pierwszeństwo i nie czekają na losowanie.
+        EventScripts.dueScheduled(view)?.let { return frame.take(it) }
+        if (frame.tick % EVERY_TICKS != 0L) return
         val rng = frame.ctx.rng("events")
         if (rng.nextInt(100) >= CHANCE_PERCENT) return
-        val eligible = GameContent.events.filter {
-            it.isEligible(frame.day, frame.before.sectReputation, frame.timeOfDay) && it.id !in frame.recentEventIds
-        }
+        val eligible = GameContent.scripts.filter { it.random && it.id !in frame.recentEventIds && EventScripts.eligible(view, it) }
         val picked = eligible.randomOrNull(rng) ?: return
-        frame.activeEventId = picked.id
-        frame.recentEventIds = (frame.recentEventIds + picked.id).takeLast(MEMORY)
+        frame.take(EventScripts.activate(view, picked))
+    }
+
+    private fun TickFrame.take(s: GameState) {
+        activeEventId = s.activeEventId
+        recentEventIds = s.recentEventIds
+        flags = s.flags
+        scheduledEvents = s.scheduledEvents
     }
 }
 

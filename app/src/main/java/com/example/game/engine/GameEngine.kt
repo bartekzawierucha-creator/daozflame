@@ -77,7 +77,7 @@ object GameEngine {
     }
 
     /** Wywoływane po wczytaniu zapisu: jednorazowe migracje logiczne (korzenie w Etapie 2, etapy w Etapie 3). */
-    fun normalize(state: GameState): GameState = economy(Realms.normalize(DiscipleRules.normalize(state)))
+    fun normalize(state: GameState): GameState = Fog.normalize(WorldAI.normalize(economy(Realms.normalize(DiscipleRules.normalize(state)))))
 
     /** Migracja do Etapu 4: stare zapisy zachowują wszystkie płomienie i znają wszystkie receptury. */
     private fun economy(s: GameState): GameState {
@@ -129,6 +129,19 @@ object GameEngine {
             is GameCommand.CraftTalisman -> Talismans.craft(state, command.name)
             is GameCommand.HealWithTalisman -> Talismans.heal(state, command.discipleId)
             is GameCommand.CombatTalisman -> CombatSystem.talisman(state, command.name)
+            is GameCommand.BeginExpedition -> Expeditions.begin(state, command.regionId, command.discipleId, command.auto, ctx)
+            is GameCommand.ChooseNode -> Expeditions.choose(state, command.index, ctx)
+            GameCommand.EnterLair -> Expeditions.toBoss(state)
+            GameCommand.RetreatExpedition -> if (state.expedition?.atBoss == true) fail(state, "Walka trwa.") else Expeditions.retreat(state)
+            GameCommand.CraftRing -> Expeditions.craftRing(state)
+            is GameCommand.ClimbTower -> Tower.climb(state, command.discipleId, ctx)
+            is GameCommand.GuardGate -> Raids.assign(state, command.gate, command.discipleId)
+            is GameCommand.ScoutRegion -> Fog.scout(state, ctx, command.regionId, command.discipleId)
+            is GameCommand.EnterSecretRealm -> SecretRealms.enter(state, ctx, command.realmId, command.discipleId)
+            is GameCommand.PlaceFormationNode -> Formation.place(state, command.element)
+            is GameCommand.SendSpy -> Spies.send(state, ctx, command.discipleId, command.sectId, command.type)
+            is GameCommand.SectBattle -> Wars.battle(state, ctx, command.sectId, command.discipleIds)
+            is GameCommand.HonorDuel -> Wars.duel(state, ctx, command.sectId, command.discipleId, command.toDeath, command.confirmed)
             is GameCommand.FlameToForge -> Flames.toForge(state, command.flameId)
             is GameCommand.FlameToDisciple -> Flames.toDisciple(state, command.flameId, command.discipleId)
             is GameCommand.ChoosePath -> CultivationCommands.choosePath(state, command.discipleId, command.path)
@@ -172,7 +185,7 @@ object GameEngine {
             is GameCommand.AssignGarrison -> WorldCommands.assignGarrison(state, command.territoryId, command.discipleId)
             is GameCommand.AttackWorldBoss -> WorldCommands.attackWorldBoss(state, ctx, command.discipleId)
             is GameCommand.ArenaDuel -> WorldCommands.arenaDuel(state, ctx, command.discipleId, command.rivalSectName)
-            is GameCommand.EventChoice -> WorldCommands.eventChoice(state, command.choiceIndex)
+            is GameCommand.EventChoice -> EventScripts.choose(state, command.choiceIndex)
             GameCommand.DismissEvent -> ok(state.copy(activeEventId = null))
 
             is GameCommand.OfflineCatchUp -> OfflineProgress.apply(state, command.elapsedMs, ctx)
@@ -185,9 +198,9 @@ object GameEngine {
                 "[debug] +${command.amount}× ${command.item}"
             )
             GameCommand.DebugForceEvent -> {
-                val pool = GameContent.events.filter { it.id !in state.recentEventIds }
-                val picked = pool.randomOrNull(ctx.rng("debug")) ?: GameContent.events.first()
-                ok(state.copy(activeEventId = picked.id, recentEventIds = (state.recentEventIds + picked.id).takeLast(RandomEventPhase.MEMORY)))
+                val pool = GameContent.scripts.filter { it.random && it.id !in state.recentEventIds }
+                val picked = pool.randomOrNull(ctx.rng("debug")) ?: GameContent.scripts.first()
+                ok(EventScripts.activate(state, picked))
             }
             GameCommand.DebugFillQi -> ok(state.copy(disciples = state.disciples.map { it.copy(realmProgress = 100) }), "[debug] Qi wszystkich uczniów = 100%")
         }
@@ -198,7 +211,11 @@ object GameEngine {
     private fun tick(state: GameState, ctx: EngineContext): StepResult {
         val frame = TickFrame(state, ctx)
         TICK_PHASES.forEach { it.run(frame) }
-        return frame.toResult()
+        val result = frame.toResult()
+        if (result.state.currentDay == state.currentDay) return result
+        // Systemy dobowe na pełnym stanie (Etap 5b: AI sekt, najazdy, szpiedzy) – po fazach cyklu, raz na dzień.
+        val (world, notes) = WorldDaily.run(result.state, ctx)
+        return StepResult(world, result.events + notes.map { GameEvent.Notice(it) })
     }
 
     val STARTING_INVENTORY: Map<String, Int> = mapOf(

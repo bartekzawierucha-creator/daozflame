@@ -66,7 +66,7 @@ object Fields {
         var total = 0
         ready.forEach { i ->
             val herb = s.fields[i].herb!!
-            val factor = Seasons.fieldYieldFactor(season) * (1 + synergy(s, i) + 0.15 * woodFarmers) * (if (talisman) 1.5 else 1.0)
+            val factor = Seasons.fieldYieldFactor(season) * (1 + synergy(s, i) + 0.15 * woodFarmers) * (if (talisman) 1.5 else 1.0) * Catastrophes.fieldFactor(s)
             val amount = ((3 + rng.nextInt(3)) * factor).roundToInt().coerceAtLeast(1)
             inv[herb] = (inv[herb] ?: 0) + amount
             total += amount

@@ -88,6 +88,9 @@ fun WorldModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
     var regionSel by remember { mutableIntStateOf(0) }
     var terrSel by remember { mutableIntStateOf(0) }
     var legacy by remember { mutableStateOf(false) }
+    var expoOpen by remember { mutableStateOf(ui.expedition != null) }
+    var towerOpen by remember { mutableStateOf(false) }
+    var realmsOpen by remember { mutableStateOf(false) }
     val celebration = rememberCelebration()
     val champ = champion(ui)
 
@@ -120,9 +123,9 @@ fun WorldModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
                         val p = spotFor(i)
                         MapNode(
                             x = w * p.x, y = h * p.y,
-                            label = if (r.explorationProgress == 0) "???" else shortName(r.name, 2),
+                            label = if (ui.discoveredRegionIds.isNotEmpty() && r.id !in ui.discoveredRegionIds) "???" else shortName(r.name, 2),
                             color = dangerColor(r.dangerLevel),
-                            fog = r.explorationProgress == 0,
+                            fog = ui.discoveredRegionIds.isNotEmpty() && r.id !in ui.discoveredRegionIds,
                             selected = i == regionSel,
                             flag = null,
                             onClick = { regionSel = i },
@@ -150,13 +153,12 @@ fun WorldModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
             ModuleSheet {
                 if (tab == 0) {
                     val r = ui.regions.getOrNull(regionSel)
-                    if (r != null) RegionSheet(r, champ, onExpedition = {
-                        if (champ != null) {
-                            WuxiaAudioEngine.playSwordClash()
-                            viewModel.startExpedition(r.id, champ.id)
-                            celebration.fire("Wyprawa: ${champ.name.substringBefore(" (")}", withFlash = false)
-                        }
-                    }, onBook = { legacy = true })
+                    val hidden = r != null && ui.discoveredRegionIds.isNotEmpty() && r.id !in ui.discoveredRegionIds
+                    if (r != null && hidden) FogSheet(r, ui, champ, viewModel, onRealms = { realmsOpen = true })
+                    else if (r != null) RegionSheet(r, champ, onExpedition = {
+                        WuxiaAudioEngine.playSwordClash()
+                        expoOpen = true
+                    }, onBook = { legacy = true }, onTower = { towerOpen = true }, onRealms = { realmsOpen = true })
                 } else {
                     val t = ui.territories.getOrNull(terrSel)
                     if (t != null) TerritorySheet(t, ui, champ, viewModel, onBook = { legacy = true })
@@ -169,11 +171,14 @@ fun WorldModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
                 WorldMapScreen(viewModel = viewModel, uiState = ui, showCombatOverlay = false)
             }
         }
+        if (expoOpen) ExpeditionPanel(ui.regions.getOrNull(regionSel), ui, viewModel, onClose = { expoOpen = false })
+        if (towerOpen) TowerPanel(ui, viewModel, onClose = { towerOpen = false })
+        if (realmsOpen) SecretRealmsPanel(ui, viewModel, onClose = { realmsOpen = false })
     }
 }
 
 @Composable
-private fun ColumnScope.RegionSheet(r: WorldRegion, champ: Disciple?, onExpedition: () -> Unit, onBook: () -> Unit) {
+private fun ColumnScope.RegionSheet(r: WorldRegion, champ: Disciple?, onExpedition: () -> Unit, onBook: () -> Unit, onTower: () -> Unit, onRealms: () -> Unit) {
     val unknown = r.explorationProgress == 0
     Row(verticalAlignment = Alignment.CenterVertically) {
         DangerPips(r.dangerLevel)
@@ -195,6 +200,8 @@ private fun ColumnScope.RegionSheet(r: WorldRegion, champ: Disciple?, onExpediti
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         GhostButton("Księga", onClick = onBook, modifier = Modifier.weight(1f))
+        GhostButton("Wieża", onClick = onTower, modifier = Modifier.weight(1f))
+        GhostButton("Tajne", onClick = onRealms, modifier = Modifier.weight(1f))
         val can = champ != null && r.bossBeast != null && !r.isConquered
         GoldCta(
             text = when {
@@ -433,6 +440,7 @@ fun ClansModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
     var selId by remember { mutableStateOf(ui.rivalSects.firstOrNull()?.id) }
     val s: RivalSect? = ui.rivalSects.firstOrNull { it.id == selId } ?: ui.rivalSects.firstOrNull()
     var legacy by remember { mutableStateOf(false) }
+    var sects by remember { mutableStateOf<SectsTab?>(null) }
     val celebration = rememberCelebration()
     if (s != null) {
         WatchIncrease(s.id, s.status.ordinal.let { if (s.status == DiplomaticStatus.ALLIANCE) 1 else 0 }) {
@@ -527,6 +535,13 @@ fun ClansModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
                             )
                         }
                     }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        GhostButton(if (ui.raid != null) "⚠ Obrona" else "Obrona", danger = ui.raid != null, onClick = { sects = SectsTab.DEFENSE }, modifier = Modifier.weight(1f), height = 36.dp)
+                        GhostButton("Wywiad", onClick = { sects = SectsTab.SPIES }, modifier = Modifier.weight(1f), height = 36.dp)
+                        GhostButton("Wojna", onClick = { sects = SectsTab.WAR }, modifier = Modifier.weight(1f), height = 36.dp)
+                        GhostButton("Kronika", onClick = { sects = SectsTab.CHRONICLE }, modifier = Modifier.weight(1f), height = 36.dp)
+                    }
+                    if (s.nemesisLevel > 0) SheetBody("☠ Nemezis poziomu ${s.nemesisLevel}", color = Aaa.Cinnabar)
                     Text(
                         "Księga dyplomacji",
                         style = AaaType.Label.copy(fontSize = 9.5.sp, color = Aaa.TextLow),
@@ -544,6 +559,7 @@ fun ClansModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
                 DiplomacyScreen(viewModel = viewModel, uiState = ui)
             }
         }
+        sects?.let { SectsPanel(ui, viewModel, s, it, onClose = { sects = null }) }
     }
 }
 

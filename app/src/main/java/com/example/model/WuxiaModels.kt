@@ -455,7 +455,11 @@ data class RivalSect(
     val cultivationBuffName: String = "Harmonia Qi",
     val cultivationBuffDescription: String = "+15% Zysk Qi przy przymierzu",
     val cultivationBuffBonusPercent: Int = 15,
-    val controlledTerritoryIds: List<String> = emptyList()
+    val controlledTerritoryIds: List<String> = emptyList(),
+    /** Etap 5b: siła sekty (AI), uraza do gracza i poziom nemezis (0 = zwykły rywal). */
+    val strength: Int = 0,
+    val grudge: Int = 0,
+    val nemesisLevel: Int = 0
 )
 
 enum class TimeOfDay(val polishName: String, val symbol: String, val statModifierDesc: String) {

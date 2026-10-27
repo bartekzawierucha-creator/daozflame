@@ -15,17 +15,22 @@ object GameContent {
     val skills: List<SkillNode> by lazy { WuxiaGenerator.getAllSkillNodes() }
     val alchemyRecipes: List<AlchemyRecipe> by lazy { WuxiaGenerator.getAlchemyRecipes() }
     val forgingRecipes: List<ForgingRecipe> by lazy { WuxiaGenerator.getForgingRecipes() }
-    val events: List<RandomEvent> by lazy { WuxiaGenerator.getRandomEvents() }
+    /** Wszystkie zdarzenia jako skrypty: dawne (przeniesione) + łańcuchy Etapu 5. */
+    val scripts: List<com.example.model.ScriptEvent> by lazy {
+        WuxiaGenerator.getRandomEvents().map { EventScripts.fromLegacy(it) } + com.example.game.content.ScriptCatalog.events + com.example.game.content.NpcCatalog.events
+    }
     val rankings: List<MultiplayerSectRanking> by lazy { WuxiaGenerator.getMultiplayerRankings() }
 
     private val skillById by lazy { skills.associateBy { it.id } }
-    private val eventById by lazy { events.associateBy { it.id } }
+    private val scriptById by lazy { scripts.associateBy { it.id } }
     private val recipeById by lazy { alchemyRecipes.associateBy { it.id } }
     private val recipeByPill by lazy { alchemyRecipes.associateBy { it.pillName } }
     private val forgeById by lazy { forgingRecipes.associateBy { it.id } }
 
     fun skill(id: String): SkillNode? = skillById[id]
-    fun event(id: String?): RandomEvent? = id?.let { eventById[it] }
+    fun script(id: String?): com.example.model.ScriptEvent? = id?.let { scriptById[it] }
+    /** Widok zdarzenia (kształt dawnego [RandomEvent]); ze stanem – zablokowane wybory są oznaczone. */
+    fun event(id: String?, state: GameState? = null): RandomEvent? = script(id)?.let { EventScripts.view(it, state) }
     fun recipe(id: String): AlchemyRecipe? = recipeById[id]
     fun recipeForPill(pillName: String): AlchemyRecipe? = recipeByPill[pillName]
     fun forging(id: String): ForgingRecipe? = forgeById[id]

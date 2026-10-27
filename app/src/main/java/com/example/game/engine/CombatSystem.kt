@@ -27,11 +27,16 @@ object CombatSystem {
         val region = s.regions.find { it.id == regionId } ?: return ok(s)
         val d = s.disciple(discipleId) ?: return ok(s)
         val beast = region.bossBeast ?: return ok(s)
+        if (s.discoveredRegionIds.isNotEmpty() && regionId !in s.discoveredRegionIds) return fail(s, "Kraina kryje się we mgle – najpierw wyślij zwiad.")
         val penalty = hazardPenalty(region.hazard, d.constitution)
         // Etap 4: premię z płomienia ma tylko jego nosiciel; wcześniej działał płomień z kotła.
         val flameBonus = if (s.e4Initialized) s.flames.find { it.id == d.flameId }?.combatDamageBonus ?: 0 else s.activeFlame?.combatDamageBonus ?: 0
         val raw = d.attack + flameBonus - penalty
-        val attack = (raw * Modifiers.disciple(Modifiers.sect(s), d).factor(Stat.COMBAT_DAMAGE)).toInt().coerceAtLeast(10)
+        // Etap 5a: żywioł krainy kontra korzeń ucznia (+30% dla przewagi).
+        val element = Elements.of(region.biome)
+        val elemAtk = if (s.e2Initialized) Elements.attackFactor(d, element) else 1.0
+        val elemDef = if (s.e2Initialized) Elements.defenseFactor(d, element) else 1.0
+        val attack = (raw * elemAtk * Modifiers.disciple(Modifiers.sect(s), d).factor(Stat.COMBAT_DAMAGE)).toInt().coerceAtLeast(10)
         val combat = ActiveCombat(
             regionId = region.id,
             discipleId = d.id,
@@ -43,11 +48,14 @@ object CombatSystem {
             discipleMaxHp = d.maxHp,
             enemyHp = beast.hp,
             enemyMaxHp = beast.maxHp,
-            logs = listOf(
+            enemyAttackFactor = elemDef * Catastrophes.beastFactor(s),
+            logs = listOfNotNull(
                 CombatLogEntry(1, "Wkroczono do regionu: ${region.name} (${region.biome.emoji})"),
                 if (penalty > 0) CombatLogEntry(1, "⚠️ Środowisko (${region.hazard.polishName}) osłabia adepta o $penalty pkt!")
                 else CombatLogEntry(1, "Konstytucja adepta harmonizuje z otoczeniem!"),
-                CombatLogEntry(1, "Rozpoczęto starcie z mitycznym stworem: ${beast.name}!")
+                CombatLogEntry(1, "Rozpoczęto starcie z mitycznym stworem: ${beast.name}!"),
+                if (elemAtk > 1.0) CombatLogEntry(1, "${element.glyph} Żywioł ucznia przełamuje ${element.polishName} bestii: +30% obrażeń!") else null,
+                if (elemDef > 1.0) CombatLogEntry(1, "${element.glyph} ${element.polishName} bestii tłumi korzeń ucznia: bestia rani mocniej!") else null
             )
         )
         return ok(s.copy(combat = combat))
@@ -82,7 +90,7 @@ object CombatSystem {
             return ok(s.copy(combat = c.copy(enemySealed = false, discipleTurn = true,
                 logs = c.logs + CombatLogEntry(c.round, "📜 Pieczęć wiąże ${beast.name} – traci ruch!"))))
         }
-        val dmg = (beast.attack - (s.disciple(c.discipleId)?.defense ?: 0) * 0.35).toInt().coerceAtLeast(12)
+        val dmg = (beast.attack * c.enemyAttackFactor - (s.disciple(c.discipleId)?.defense ?: 0) * 0.35).toInt().coerceAtLeast(12)
         val discipleHp = (c.discipleHp - dmg).coerceAtLeast(0)
         val next = c.copy(
             discipleHp = discipleHp,
@@ -221,10 +229,24 @@ object CombatSystem {
             ),
             morale = if (s.e2Initialized) (s.morale + if (victory) 2 else -3).coerceIn(0, 100) else s.morale
         )
-        if (victory && s.e4Initialized) {
-            val (withContracts, msg) = Contracts.onBossDefeated(state, c.regionId)
-            return StepResult(withContracts, extra.toList() + listOfNotNull(msg?.let { GameEvent.Notice(it) }) + GameEvent.CombatEnded(true))
+        var result = state
+        val notes = mutableListOf<String>()
+        // Etap 5a: koniec wyprawy – łupy z węzłów (porażka: połowa).
+        val run = s.expedition
+        if (run != null && run.atBoss && run.regionId == c.regionId) {
+            result = Expeditions.payout(result, run, if (victory) 1.0 else Expeditions.DEFEAT_LOOT).copy(expedition = null)
+            notes += if (victory) "Wyprawa zakończona – łupy trafiły do skarbca." else "Odwrót z legowiska – zabrano połowę łupów."
         }
-        return StepResult(state, extra.toList() + GameEvent.CombatEnded(victory))
+        if (victory && (region?.explorationProgress ?: 0) < 100 && result.regions.find { it.id == c.regionId }?.explorationProgress == 100) {
+            val (withTrail, msg) = FlameSources.onRegionExplored(result, c.regionId)
+            result = withTrail
+            msg?.let { notes += it }
+        }
+        if (victory && s.e4Initialized) {
+            val (withContracts, msg) = Contracts.onBossDefeated(result, c.regionId)
+            result = withContracts
+            msg?.let { notes += it }
+        }
+        return StepResult(result, extra.toList() + notes.map { GameEvent.Notice(it) } + GameEvent.CombatEnded(victory))
     }
 }
