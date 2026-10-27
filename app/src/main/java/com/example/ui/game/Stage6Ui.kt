@@ -44,10 +44,10 @@ private fun levelColor(l: KnowledgeLevel) = when (l) {
 
 /** Księga Tajemnic – Dziennik odkryć, zakładka na kategorię. Liczby tylko przy wpisach „Pewne”. */
 @Composable
-fun JournalPanel(ui: WuxiaUiState, onClose: () -> Unit) {
+fun JournalPanel(ui: WuxiaUiState, initialTab: Int = 0, onClose: () -> Unit) {
     val sec = ui.secrets
     val cats = sec.journal.map { it.category }.distinct()
-    var tab by remember { mutableIntStateOf(0) }
+    var tab by remember { mutableIntStateOf(initialTab) }
     TabbedPanel(
         title = "Księga Tajemnic",
         tabs = listOf("Wszystko") + cats,
@@ -85,10 +85,10 @@ private enum class DaoTab(val label: String) { MERIDIANS("Meridiany"), BREATH("O
 /** Meridiany i Dao ucznia: siatka 6×6, oddech, kontemplacja, narzędzia. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun SecretsPanel(d: Disciple, ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: () -> Unit) {
+fun SecretsPanel(d: Disciple, ui: WuxiaUiState, viewModel: WuxiaGameViewModel, initialTab: Int = 0, onClose: () -> Unit) {
     val sec = ui.secrets
     var journal by remember { mutableStateOf(false) }
-    var tab by remember { mutableStateOf(DaoTab.MERIDIANS) }
+    var tab by remember { mutableStateOf(DaoTab.entries[initialTab.coerceIn(0, DaoTab.entries.lastIndex)]) }
     val cap = com.example.game.engine.Meridians.cap(d.majorRealm)
     TabbedPanel(
         title = "Dao · ${d.name.substringBefore(" (")}",

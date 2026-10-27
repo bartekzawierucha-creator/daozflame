@@ -731,6 +731,16 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
         _uiState.value = buildUi()
     }
 
+    /** Podgląd ekranów (testy zrzutów): podmienia stan gry i zatrzymuje pętlę. */
+    @androidx.annotation.VisibleForTesting
+    fun previewState(state: GameState, selectedDisciple: String? = null) {
+        gameLoopJob?.cancel()
+        game = state
+        selectedDiscipleId = selectedDisciple ?: selectedDiscipleId
+        notification = null
+        _uiState.value = buildUi()
+    }
+
     fun debugInfo(): String =
         "ziarno ${game.worldSeed} · krok ${game.step} · tick ${game.tick} · dzień ${game.currentDay}"
 

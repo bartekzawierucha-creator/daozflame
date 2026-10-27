@@ -10,6 +10,9 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -50,6 +53,16 @@ jobs:
                       print(f"::error title={case.get('classname')}.{case.get('name')}::{msg}")
           PY
           grep -E "^e: " gradle-test.log | head -20 | sed 's/^/::error::/' || true
+
+      - name: Podgląd ekranów → gałąź previews
+        if: success() && github.event_name == 'push'
+        run: |
+          test -d app/build/previews || exit 0
+          cd app/build/previews
+          git init -q && git checkout -q -b previews
+          echo "Zrzuty z ${GITHUB_REF_NAME} @ ${GITHUB_SHA::7}" > README.md
+          git add . && git -c user.name="CI" -c user.email="ci@users.noreply.github.com" commit -qm "Podgląd ekranów: ${GITHUB_REF_NAME} @ ${GITHUB_SHA::7}"
+          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" previews
 
       - name: Raport balansu w podsumowaniu
         if: always()
