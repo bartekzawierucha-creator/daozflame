@@ -118,20 +118,4 @@ object WorldCommands {
             "🏆 Zwycięstwo w Niebiańskiej Arenie! ${d.name} pokonał czempiona sekty $rivalSectName! (+200 Kamieni, +35 Reputacji)"
         ) else fail(s, "Pojedynek w Arenie zakończony remisem ze wskazaniem na $rivalSectName.")
     }
-
-    fun eventChoice(s: GameState, index: Int): StepResult {
-        val event = GameContent.event(s.activeEventId) ?: return ok(s.copy(activeEventId = null))
-        val choice = event.choices.getOrNull(index) ?: return ok(s)
-        val inv = choice.rewardItem?.let { s.inventory + (it to (s.inventory[it] ?: 0) + 2) } ?: s.inventory
-        return ok(
-            s.copy(
-                activeEventId = null,
-                spiritStones = (s.spiritStones + choice.stoneChange).coerceAtLeast(0),
-                sectReputation = s.sectReputation +
-                    if (choice.repChange > 0) (choice.repChange * Modifiers.sect(s).factor(Stat.REPUTATION_GAIN)).toInt() else choice.repChange,
-                inventory = inv
-            ),
-            choice.outcomeDescription
-        )
-    }
 }

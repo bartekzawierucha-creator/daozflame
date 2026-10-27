@@ -87,7 +87,17 @@ data class WuxiaUiState(
     val karma: Int = 0,
     val tribulation: TribulationUi? = null,
     // Etap 4
-    val economy: EconomyUi = EconomyUi()
+    val economy: EconomyUi = EconomyUi(),
+    // Etap 5
+    val expedition: ExpeditionRun? = null,
+    val lootSlots: Int = 4,
+    val hasRing: Boolean = false,
+    val towerFloor: Int = 0,
+    val towerAttemptsLeft: Int = 3,
+    /** Strażnik następnego piętra: HP / atak / obrona. */
+    val towerNext: Triple<Int, Int, Int> = Triple(0, 0, 0),
+    /** Krainy z aktywnym tropem płomienia (id krainy → nazwa płomienia + pora roku). */
+    val flameTrails: Map<String, String> = emptyMap()
 )
 
 data class MarketRow(val item: String, val have: Int, val sellPrice: Int, val buyPrice: Int?)
@@ -357,6 +367,18 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     fun refineFlame(flameId: String) = dispatch(GameCommand.RefineFlame(flameId))
     fun upgradeFacility(type: FacilityType) = dispatch(GameCommand.UpgradeFacility(type))
 
+    // --- Etap 5a: wyprawy, Wieża Prób ---
+    fun beginExpedition(regionId: String, discipleId: String, auto: Boolean) = dispatch(GameCommand.BeginExpedition(regionId, discipleId, auto))
+    fun chooseNode(index: Int) = dispatch(GameCommand.ChooseNode(index))
+    fun enterLair() {
+        combatFx = CombatFx()
+        dispatch(GameCommand.EnterLair)
+        if (game.combat != null) startCombatLoop()
+    }
+    fun retreatExpedition() = dispatch(GameCommand.RetreatExpedition)
+    fun craftRing() = dispatch(GameCommand.CraftRing)
+    fun climbTower(discipleId: String) = dispatch(GameCommand.ClimbTower(discipleId))
+
     // --- Etap 4: gospodarka ---
     fun upgradeVein() = dispatch(GameCommand.UpgradeVein)
     fun plantHerb(index: Int, herb: String) = dispatch(GameCommand.PlantHerb(index, herb))
@@ -518,7 +540,7 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
         flames = game.flames,
         activeFlame = game.activeFlame,
         vaultArtifacts = game.vaultArtifacts,
-        activeRandomEvent = GameContent.event(game.activeEventId),
+        activeRandomEvent = GameContent.event(game.activeEventId, game),
         combatState = combatUi(game.combat),
         multiplayerRankings = GameContent.rankings,
         worldBoss = game.worldBoss,
@@ -553,7 +575,17 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
         scrolls = game.inventory.filter { it.value > 0 && it.key.startsWith("Zwój: ") }.keys.sorted(),
         karma = game.karma,
         tribulation = tribulation,
-        economy = economyUi(game)
+        economy = economyUi(game),
+        expedition = game.expedition,
+        lootSlots = com.example.game.engine.Expeditions.slots(game),
+        hasRing = (game.inventory[com.example.game.engine.Expeditions.RING] ?: 0) > 0,
+        towerFloor = game.towerFloor,
+        towerAttemptsLeft = com.example.game.engine.Tower.attemptsLeft(game),
+        towerNext = com.example.game.engine.Tower.guardian(game.towerFloor + 1).let { Triple(it.hp, it.attack, it.defense) },
+        flameTrails = com.example.game.engine.FlameSources.SOURCES
+            .filter { (id, _) -> (game.flags[com.example.game.engine.FlameSources.trailFlag(id)] ?: 0) > 0 }
+            .map { (id, src) -> src.regionId to ((com.example.game.engine.FlameSources.allFlames[id]?.name ?: id) + (src.season?.let { " · ${it.polishName}" } ?: "")) }
+            .toMap()
     )
 
     private fun economyUi(g: GameState): EconomyUi {

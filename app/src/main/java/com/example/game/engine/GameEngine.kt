@@ -129,6 +129,12 @@ object GameEngine {
             is GameCommand.CraftTalisman -> Talismans.craft(state, command.name)
             is GameCommand.HealWithTalisman -> Talismans.heal(state, command.discipleId)
             is GameCommand.CombatTalisman -> CombatSystem.talisman(state, command.name)
+            is GameCommand.BeginExpedition -> Expeditions.begin(state, command.regionId, command.discipleId, command.auto, ctx)
+            is GameCommand.ChooseNode -> Expeditions.choose(state, command.index, ctx)
+            GameCommand.EnterLair -> Expeditions.toBoss(state)
+            GameCommand.RetreatExpedition -> if (state.expedition?.atBoss == true) fail(state, "Walka trwa.") else Expeditions.retreat(state)
+            GameCommand.CraftRing -> Expeditions.craftRing(state)
+            is GameCommand.ClimbTower -> Tower.climb(state, command.discipleId, ctx)
             is GameCommand.FlameToForge -> Flames.toForge(state, command.flameId)
             is GameCommand.FlameToDisciple -> Flames.toDisciple(state, command.flameId, command.discipleId)
             is GameCommand.ChoosePath -> CultivationCommands.choosePath(state, command.discipleId, command.path)
@@ -172,7 +178,7 @@ object GameEngine {
             is GameCommand.AssignGarrison -> WorldCommands.assignGarrison(state, command.territoryId, command.discipleId)
             is GameCommand.AttackWorldBoss -> WorldCommands.attackWorldBoss(state, ctx, command.discipleId)
             is GameCommand.ArenaDuel -> WorldCommands.arenaDuel(state, ctx, command.discipleId, command.rivalSectName)
-            is GameCommand.EventChoice -> WorldCommands.eventChoice(state, command.choiceIndex)
+            is GameCommand.EventChoice -> EventScripts.choose(state, command.choiceIndex)
             GameCommand.DismissEvent -> ok(state.copy(activeEventId = null))
 
             is GameCommand.OfflineCatchUp -> OfflineProgress.apply(state, command.elapsedMs, ctx)
@@ -185,9 +191,9 @@ object GameEngine {
                 "[debug] +${command.amount}× ${command.item}"
             )
             GameCommand.DebugForceEvent -> {
-                val pool = GameContent.events.filter { it.id !in state.recentEventIds }
-                val picked = pool.randomOrNull(ctx.rng("debug")) ?: GameContent.events.first()
-                ok(state.copy(activeEventId = picked.id, recentEventIds = (state.recentEventIds + picked.id).takeLast(RandomEventPhase.MEMORY)))
+                val pool = GameContent.scripts.filter { it.random && it.id !in state.recentEventIds }
+                val picked = pool.randomOrNull(ctx.rng("debug")) ?: GameContent.scripts.first()
+                ok(EventScripts.activate(state, picked))
             }
             GameCommand.DebugFillQi -> ok(state.copy(disciples = state.disciples.map { it.copy(realmProgress = 100) }), "[debug] Qi wszystkich uczniów = 100%")
         }

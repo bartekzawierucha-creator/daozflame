@@ -106,7 +106,7 @@ object BalanceSimulator {
         var losses = 0
 
         // Zdarzenie: wybór najbardziej opłacalnej opcji.
-        GameContent.event(s.activeEventId)?.let { ev ->
+        GameContent.event(s.activeEventId, s)?.let { ev ->
             val best = ev.choices.indices.maxBy { i -> ev.choices[i].stoneChange + ev.choices[i].repChange * 5 }
             s = apply(s, GameCommand.EventChoice(best))
         }
@@ -158,6 +158,15 @@ object BalanceSimulator {
                 .forEach { s = apply(s, GameCommand.FulfillContract(it.id)) }
             s.inventory.filter { (k, v) -> v > 60 && (com.example.game.engine.Market.basePrice(k) ?: 0) > 0 && k != com.example.game.engine.DiscipleRules.FOOD }
                 .forEach { (k, v) -> s = apply(s, GameCommand.Sell(k, v - 40)) }
+        }
+
+        // Etap 5a: Wieża Prób najsilniejszym uczniem.
+        s.disciples.maxByOrNull { it.combatPower }?.let { champ ->
+            while (com.example.game.engine.Tower.attemptsLeft(s) > 0) {
+                val before = s.towerFloor
+                s = apply(s, GameCommand.ClimbTower(champ.id))
+                if (s.towerFloor == before) break
+            }
         }
 
         // Wyprawa: najsłabsza niezbadana kraina, najsilniejszy zdrowy uczeń, jeśli ma szansę.

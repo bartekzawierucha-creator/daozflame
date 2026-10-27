@@ -88,6 +88,8 @@ fun WorldModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
     var regionSel by remember { mutableIntStateOf(0) }
     var terrSel by remember { mutableIntStateOf(0) }
     var legacy by remember { mutableStateOf(false) }
+    var expoOpen by remember { mutableStateOf(ui.expedition != null) }
+    var towerOpen by remember { mutableStateOf(false) }
     val celebration = rememberCelebration()
     val champ = champion(ui)
 
@@ -151,12 +153,9 @@ fun WorldModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
                 if (tab == 0) {
                     val r = ui.regions.getOrNull(regionSel)
                     if (r != null) RegionSheet(r, champ, onExpedition = {
-                        if (champ != null) {
-                            WuxiaAudioEngine.playSwordClash()
-                            viewModel.startExpedition(r.id, champ.id)
-                            celebration.fire("Wyprawa: ${champ.name.substringBefore(" (")}", withFlash = false)
-                        }
-                    }, onBook = { legacy = true })
+                        WuxiaAudioEngine.playSwordClash()
+                        expoOpen = true
+                    }, onBook = { legacy = true }, onTower = { towerOpen = true })
                 } else {
                     val t = ui.territories.getOrNull(terrSel)
                     if (t != null) TerritorySheet(t, ui, champ, viewModel, onBook = { legacy = true })
@@ -169,11 +168,13 @@ fun WorldModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
                 WorldMapScreen(viewModel = viewModel, uiState = ui, showCombatOverlay = false)
             }
         }
+        if (expoOpen) ExpeditionPanel(ui.regions.getOrNull(regionSel), ui, viewModel, onClose = { expoOpen = false })
+        if (towerOpen) TowerPanel(ui, viewModel, onClose = { towerOpen = false })
     }
 }
 
 @Composable
-private fun ColumnScope.RegionSheet(r: WorldRegion, champ: Disciple?, onExpedition: () -> Unit, onBook: () -> Unit) {
+private fun ColumnScope.RegionSheet(r: WorldRegion, champ: Disciple?, onExpedition: () -> Unit, onBook: () -> Unit, onTower: () -> Unit) {
     val unknown = r.explorationProgress == 0
     Row(verticalAlignment = Alignment.CenterVertically) {
         DangerPips(r.dangerLevel)
@@ -195,6 +196,7 @@ private fun ColumnScope.RegionSheet(r: WorldRegion, champ: Disciple?, onExpediti
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         GhostButton("Księga", onClick = onBook, modifier = Modifier.weight(1f))
+        GhostButton("Wieża", onClick = onTower, modifier = Modifier.weight(1f))
         val can = champ != null && r.bossBeast != null && !r.isConquered
         GoldCta(
             text = when {
