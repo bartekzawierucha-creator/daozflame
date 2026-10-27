@@ -184,7 +184,7 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                         )
                     }
                     SheetTitle(d.name.substringBefore(" ("), size = 28)
-                    SheetBody("${d.realm.polishName} · ${d.role.polishName}", maxLines = 1, modifier = Modifier.offset(y = (-4).dp))
+                    SheetBody("${com.example.game.engine.Realms.label(d)} · ${d.role.polishName}", maxLines = 1, modifier = Modifier.offset(y = (-4).dp))
                     StatTriplet(
                         listOf(
                             "Atak" to "${d.attack}",
@@ -210,9 +210,10 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                         )
                         GhostButton("Kara", onClick = { viewModel.punish(d.id) }, danger = true, modifier = Modifier.weight(1f), height = 38.dp)
                         GhostButton("Łaska", onClick = { viewModel.pardon(d.id) }, modifier = Modifier.weight(1f), height = 38.dp)
+                        GhostButton("Księga", onClick = { legacy = "disciples" }, modifier = Modifier.weight(1f), height = 38.dp)
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        GhostButton("Księga", onClick = { legacy = "disciples" }, modifier = Modifier.weight(1f))
+                        GhostButton("Kultywacja", onClick = { legacy = "cultivation" }, modifier = Modifier.weight(1f))
                         GhostButton(
                             text = "Rola",
                             onClick = {
@@ -221,7 +222,16 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                             },
                             modifier = Modifier.weight(1f)
                         )
-                        if (isReady) {
+                        val needsPanel = com.example.game.engine.Realms.atPeak(d) &&
+                            (d.id in ui.bottlenecks || (d.majorRealm?.next?.tribulationStrikes ?: 0) > 0)
+                        if (isReady && needsPanel) {
+                            GoldCta(
+                                text = "Wielki przełom",
+                                onClick = { legacy = "cultivation" },
+                                modifier = Modifier.weight(1.6f),
+                                testTag = "adepts_major"
+                            )
+                        } else if (isReady) {
                             GoldCta(
                                 text = "Przełom",
                                 trailing = if (pills > 0) "+pigułka" else null,
@@ -262,6 +272,7 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                 SectSanctuaryScreen(viewModel = viewModel, uiState = ui, onNavigateToDisciples = { legacy = null })
             }
             "exam" -> ExamPanel(ui, viewModel, onClose = { legacy = null })
+            "cultivation" -> if (d != null) CultivationPanel(d, ui, viewModel, onClose = { legacy = null })
         }
     }
 }

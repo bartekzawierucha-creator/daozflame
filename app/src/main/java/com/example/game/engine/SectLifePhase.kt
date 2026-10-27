@@ -49,6 +49,8 @@ object SectLifePhase : TickPhase {
             val dueSince = if (due) d.promotionDueSinceDay ?: day else null
             if (d.has("ambitious") && dueSince != null && day - dueSince >= 10) loyalty -= 1
 
+            // Dobrze opłacana, syta sekta z niezłym morale odbudowuje zaufanie (do 70).
+            if (canPay && !hungry && morale >= 40 && loyalty < 70) loyalty += 1
             if (d.has("loyal")) loyalty = loyalty.coerceAtLeast(60)
             loyalty = loyalty.coerceIn(0, 100)
             d = d.copy(loyalty = loyalty, promotionDueSinceDay = dueSince)
@@ -99,7 +101,7 @@ object SectLifePhase : TickPhase {
         if (day % DiscipleRules.EXAM_EVERY_DAYS == 0) {
             val extra = frame.sectMods.flat(Stat.RECRUIT_POOL).toInt()
             frame.recruits = SectCommands.recruitPool(frame.ctx.rng("exam"), extra)
-                .map { DiscipleRules.enrich(it, frame.ctx.rng("exam-${it.id}"), candidate = true) }
+                .map { GameEngine.prepareCandidate(it, frame.ctx.rng("exam-${it.id}"), s) }
             frame.examOpenUntilDay = day + DiscipleRules.EXAM_OPEN_DAYS - 1
             frame.admittedInExam = 0
             notices += "Egzamin wstępny! Przed bramą czeka ${frame.recruits.size} kandydatów (${DiscipleRules.EXAM_OPEN_DAYS} dni)."
@@ -132,16 +134,26 @@ object Tournament {
             }
         }
         val winnerId = bracket.single()
+        var prize: String? = null
         frame.disciples = frame.disciples.map { d ->
             when {
-                d.id == winnerId -> d.copy(loyalty = (d.loyalty + 20).coerceAtMost(100))
+                d.id == winnerId -> {
+                    // Nagroda: zwój metody o stopień wyżej na ścieżce zwycięzcy.
+                    val path = d.path
+                    if (frame.before.e3Initialized && path != null) {
+                        val grade = com.example.model.MethodGrade.entries.getOrNull(Realms.method(d.methodId).grade.ordinal + 1)
+                        if (grade != null) prize = Realms.methodOf(path, grade).scrollItem
+                    }
+                    d.copy(loyalty = (d.loyalty + 20).coerceAtMost(100))
+                }
                 d.id in losers && d.has("hotheaded") -> d.copy(loyalty = (d.loyalty - 5).coerceAtLeast(0))
                 else -> d
             }
         }
         frame.reputationGained += 30
         frame.morale = (frame.morale + 15).coerceAtMost(100)
+        prize?.let { frame.add(it, 1) }
         val name = frame.disciples.find { it.id == winnerId }?.name ?: "?"
-        return "Turniej Uczniów wygrał $name! (+30 reputacji, +15 morale)"
+        return "Turniej Uczniów wygrał $name! (+30 reputacji, +15 morale" + (prize?.let { ", nagroda: $it" } ?: "") + ")"
     }
 }

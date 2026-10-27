@@ -87,9 +87,10 @@ class GameEngineTest {
 
     @Test
     fun meditationNeverExceedsHundredPercent() {
-        val s = ticks(GameEngine.newGame(4L).copy(autoBreakthroughEnabled = false), 200)
+        val start = GameEngine.newGame(4L).copy(autoBreakthroughEnabled = false)
+        val s = ticks(start, 200)
         assertTrue(s.disciples.all { it.realmProgress in 0..100 })
-        assertTrue(s.disciples.any { it.realmProgress == 100 })
+        assertTrue("Qi rośnie", s.disciples.zip(start.disciples).any { (a, b) -> a.stage > b.stage || a.stageQi > b.stageQi })
     }
 
     @Test
@@ -113,9 +114,9 @@ class GameEngineTest {
     @Test
     fun autoBreakthroughHappensForReadyDisciples() {
         var s = GameEngine.newGame(8L)
-        val start = s.disciples.associate { it.id to it.realm }
-        s = ticks(s, 600)
-        assertTrue(s.disciples.any { it.realm.ordinal > (start[it.id]?.ordinal ?: 0) })
+        val start = s.disciples.associate { it.id to it.stage }
+        s = ticks(s, 2000)
+        assertTrue("Małe przełomy zachodzą same", s.disciples.any { it.stage > (start[it.id] ?: 99) })
     }
 
     // --- Komendy ---
@@ -158,12 +159,13 @@ class GameEngineTest {
     @Test
     fun breakthroughConsumesPillAndFollowsChanceRules() {
         val s = GameEngine.newGame(13L)
-        val d = s.disciples.first().copy(realmProgress = 100)
+        val base = s.disciples.first().copy(majorRealm = com.example.model.MajorRealm.QI_CONDENSATION, stage = 9)
+        val d = Realms.sync(base.copy(stageQi = Realms.required(base)))
         val ready = s.copy(disciples = listOf(d) + s.disciples.drop(1))
         val r = GameEngine.apply(ready, GameCommand.AttemptBreakthrough(d.id, usePill = true))
         assertEquals((ready.inventory[GameContent.BREAKTHROUGH_PILL] ?: 0) - 1, r.state.inventory[GameContent.BREAKTHROUGH_PILL])
         val after = r.state.disciple(d.id)!!
-        assertTrue(after.realmProgress == 0 || after.realmProgress == 40)
+        assertTrue(after.majorRealm == com.example.model.MajorRealm.FOUNDATION || after.realmProgress == 40)
         assertEquals(
             40 + d.karmicLuck / 5 + 35 + 45,
             CultivationRules.breakthroughChance(d.copy(bloodline = com.example.model.BloodlineType.GOLDEN_DRAGON), 35, TimeOfDay.FULL_MOON)

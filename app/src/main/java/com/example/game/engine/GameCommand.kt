@@ -26,6 +26,15 @@ sealed interface GameCommand {
     data class BuyFood(val rations: Int) : GameCommand
     data object HoldFeast : GameCommand
 
+    // Etap 3: kultywacja
+    data class ChoosePath(val discipleId: String, val path: com.example.model.CultivationPath) : GameCommand
+    data class LearnMethod(val discipleId: String, val scrollItem: String) : GameCommand
+    data class ChooseLaw(val discipleId: String, val law: com.example.model.DaoLaw) : GameCommand
+    data class Seclude(val discipleId: String, val days: Int) : GameCommand
+    data class EndSeclusion(val discipleId: String) : GameCommand
+    data class AwakenBloodline(val discipleId: String) : GameCommand
+    data class Ascend(val discipleId: String) : GameCommand
+
     // Kultywacja
     data class ToggleAutoBreakthrough(val enabled: Boolean? = null) : GameCommand
     data class ToggleAutoPills(val enabled: Boolean? = null) : GameCommand
@@ -95,6 +104,7 @@ sealed interface GameEvent {
 
     data class CombatEnded(val victory: Boolean) : GameEvent
     data class Breakthrough(val discipleId: String, val success: Boolean) : GameEvent
+    data class Tribulation(val discipleId: String, val result: CultivationSystem.TribulationResult) : GameEvent
     data class OfflineSummary(val report: OfflineProgress.Report) : GameEvent
 }
 

@@ -112,6 +112,7 @@ object SectCommands {
     }
 
     fun breakthroughAll(s: GameState, ctx: EngineContext): StepResult {
+        if (s.e3Initialized) return breakthroughAllV2(s, ctx)
         val ready = s.disciples.filter { it.realmProgress >= 100 }
         if (ready.isEmpty()) return fail(s, "Żaden adept nie zgromadził jeszcze 100% Qi.")
         val rng = ctx.rng("breakthrough")
@@ -133,8 +134,47 @@ object SectCommands {
         )
     }
 
+    /** Etap 3: masowy przełom pomija tribulacje – te gracz przeprowadza osobno. */
+    private fun breakthroughAllV2(s: GameState, ctx: EngineContext): StepResult {
+        val rng = ctx.rng("breakthrough")
+        val inv = s.inventory.toMutableMap()
+        var rep = 0
+        var count = 0
+        val events = mutableListOf<GameEvent>()
+        val updated = s.disciples.map { d ->
+            if (!CultivationSystem.ready(d)) return@map d
+            val r = CultivationSystem.advance(s, d, s.autoUsePillsForBreakthrough, inv, rng, player = false)
+            if (r.disciple != d) count++
+            rep += r.reputation
+            if (r.attempted) events += GameEvent.Breakthrough(d.id, r.majorSuccess)
+            r.disciple ?: d
+        }
+        if (count == 0) return fail(s, "Nikt nie może teraz przejść przełomu bez tribulacji – sprawdź uczniów osobno.")
+        return ok(
+            s.copy(disciples = updated, inventory = inv.toMap(), sectReputation = s.sectReputation + rep),
+            "🌟 Przełom dla $count adeptów!",
+            *events.toTypedArray()
+        )
+    }
+
     fun attemptBreakthrough(s: GameState, ctx: EngineContext, id: String, usePill: Boolean): StepResult {
         val d = s.disciple(id) ?: return ok(s)
+        if (s.e3Initialized) {
+            if (!CultivationSystem.ready(d)) return fail(s, "Uczeń musi zgromadzić 100% Qi w swoim meridianie przed próbą przełomu!")
+            val inv = s.inventory.toMutableMap()
+            val r = CultivationSystem.advance(s, d, usePill, inv, ctx.rng("breakthrough"), player = true)
+            if (!r.attempted && r.disciple == d) return fail(s, r.message ?: "Przełom niemożliwy.")
+            val disciples = if (r.died) s.disciples.filter { it.id != id } else s.disciples.map { if (it.id == id) r.disciple ?: it else it }
+            val extra = listOfNotNull(
+                GameEvent.Breakthrough(id, r.majorSuccess || (!r.attempted && r.disciple != d)),
+                r.tribulation?.let { GameEvent.Tribulation(id, it) }
+            )
+            return ok(
+                s.copy(disciples = disciples, inventory = inv.toMap(), sectReputation = s.sectReputation + r.reputation),
+                r.message ?: "${d.name}: ${Realms.label(r.disciple ?: d)}",
+                *extra.toTypedArray()
+            )
+        }
         if (d.realmProgress < 100) return fail(s, "Uczeń musi zgromadzić 100% Qi w swoim meridianie przed próbą przełomu!")
         val inv = s.inventory.toMutableMap()
         val r = CultivationRules.breakthrough(
@@ -178,6 +218,7 @@ object SectCommands {
         val count = s.inventory[pillName] ?: 0
         if (count < 1) return fail(s, "Brak pigułki: $pillName w magazynie!")
         val recipe = GameContent.recipeForPill(pillName) ?: return fail(s, "$pillName nie jest pigułką do zażycia.")
+        if (s.e3Initialized) return usePillV2(s, d, pillName, count, recipe)
         val progress = (d.realmProgress + recipe.breakthroughBonusPercent).coerceAtMost(100)
         val hp = (d.currentHp + recipe.hpRestore).coerceAtMost(d.maxHp)
         val effects = buildList {
@@ -195,6 +236,27 @@ object SectCommands {
     /**
      * Przełączenie edyktu. W wersji 2: limit aktywnych edyktów i 3 dni odnowienia po każdej zmianie.
      */
+    /** Etap 3: pigułka daje procent bieżącego etapu i dokłada toksyczności (ścieżka Pigułek: efekt ×2, toksyny ×1,5). */
+    private fun usePillV2(s: GameState, d: Disciple, pillName: String, count: Int, recipe: AlchemyRecipe): StepResult {
+        val pillsPath = d.path == CultivationPath.PILLS
+        val power = if (pillsPath) 2.0 else 1.0
+        val efficiency = d.majorRealm?.let { CultivationSystem.pillEfficiency(recipe.tier, it) } ?: 1.0
+        var x = CultivationSystem.gainPercent(d, recipe.breakthroughBonusPercent * power * efficiency)
+        val hp = (d.currentHp + recipe.hpRestore).coerceAtMost(d.maxHp)
+        val tox = (10 * recipe.tier * if (pillsPath) 1.5 else 1.0).toInt()
+        x = x.copy(currentHp = hp, daoPoints = x.daoPoints + recipe.daoPointsBonus, toxicity = (d.toxicity + tox).coerceAtMost(100))
+        val effects = buildList {
+            if (recipe.breakthroughBonusPercent > 0) add("Qi ${d.realmProgress}% → ${x.realmProgress}%")
+            if (recipe.hpRestore > 0) add("HP ${d.currentHp} → $hp")
+            if (recipe.daoPointsBonus > 0) add("+${recipe.daoPointsBonus} pkt Dao")
+            add("toksyczność ${x.toxicity}")
+        }.joinToString(", ")
+        return ok(
+            s.withDisciple(d.id) { x }.copy(inventory = s.inventory + (pillName to count - 1)),
+            "💊 ${d.name.substringBefore(" (")} zażywa: $pillName. $effects"
+        )
+    }
+
     fun toggleDecree(s: GameState, decreeId: String): StepResult {
         val decrees = EdictCatalog.asDecrees(s.sectLeader.activeDecrees)
         val target = decrees.find { it.id == decreeId } ?: return ok(s)

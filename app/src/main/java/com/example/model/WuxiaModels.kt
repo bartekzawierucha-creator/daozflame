@@ -254,7 +254,26 @@ data class Disciple(
     val loyalty: Int = 70,
     val ageYears: Int = 18,
     /** Dzień, od którego uczeń spełnia wymagania awansu, a go nie dostał (dla cechy Ambitny). */
-    val promotionDueSinceDay: Int? = null
+    val promotionDueSinceDay: Int? = null,
+    // --- Etap 3: kultywacja (realmProgress = procent bieżącego ETAPU, realm = zgodność z UI) ---
+    /** null = zapis sprzed Etapu 3; silnik uzupełnia z [realm]. */
+    val majorRealm: MajorRealm? = null,
+    val stage: Int = 1,
+    /** Qi zgromadzone w bieżącym etapie. */
+    val stageQi: Double = 0.0,
+    val foundationQuality: FoundationQuality? = null,
+    /** Grad złotego rdzenia 1–9 (0 = brak rdzenia). */
+    val coreGrade: Int = 0,
+    val soulShape: String? = null,
+    val path: CultivationPath? = null,
+    val methodId: String? = null,
+    /** Zrozumienie Praw Dao: nazwa prawa → 0–100%. */
+    val laws: Map<String, Double> = emptyMap(),
+    val bloodlineAwakening: Int = 0,
+    val secludedUntilDay: Int = 0,
+    val toxicity: Int = 0,
+    val injuredUntilDay: Int = 0,
+    val heartDemon: Boolean = false
 )
 
 enum class ResourceCategory { MINERAL, HERB, PILL, ESSENCE }

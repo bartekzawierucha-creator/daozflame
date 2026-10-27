@@ -4,6 +4,7 @@ import com.example.game.engine.GameCommand
 import com.example.game.engine.GameContent
 import com.example.game.engine.GameEngine
 import com.example.game.engine.GameState
+import com.example.game.engine.Realms
 import com.example.model.CultivationRealm
 import com.example.model.FacilityType
 import java.io.File
@@ -53,7 +54,10 @@ object BalanceSimulator {
     /** Cele tempa z planu wdrożenia (godziny gry gracza aktywnego). Do potwierdzenia przez autora. */
     val PACE_TARGETS_HOURS: Map<CultivationRealm, Double> = mapOf(
         CultivationRealm.CORE_FORMATION to 24.0,
-        CultivationRealm.NASCENT_SOUL to 7 * 24.0
+        CultivationRealm.NASCENT_SOUL to 7 * 24.0,
+        CultivationRealm.SOUL_TRANSFORMATION to 21 * 24.0,
+        CultivationRealm.VOID_TRIBULATION to 42 * 24.0,
+        CultivationRealm.MAHAYANA_GREAT_VEHICLE to 90 * 24.0
     )
 
     fun simulate(profile: Profile, seed: Long, hours: Double, snapshotEveryTicks: Int = 2250): Run {
@@ -138,6 +142,9 @@ object BalanceSimulator {
             s.availableRecruits.maxByOrNull { it.combatPower }?.let { s = apply(s, GameCommand.Recruit(it.id)) }
         }
 
+        // Etap 3: ścieżka, metody ze zwojów, techniki (wąskie gardło Złotego Rdzenia), Prawa, przełomy gracza.
+        if (s.e3Initialized) s = cultivate(s)
+
         // Wyprawa: najsłabsza niezbadana kraina, najsilniejszy zdrowy uczeń, jeśli ma szansę.
         if (s.combat == null) {
             val champ = s.disciples.filter { it.currentHp > it.maxHp / 2 }.maxByOrNull { it.attack }
@@ -152,6 +159,36 @@ object BalanceSimulator {
             }
         }
         return Triple(s, wins, losses)
+    }
+
+    private fun cultivate(start: GameState): GameState {
+        var s = start
+        for (d0 in start.disciples) {
+            var d = s.disciple(d0.id) ?: continue
+            val major = d.majorRealm ?: continue
+            if (d.path == null && major.ordinal >= com.example.model.MajorRealm.FOUNDATION.ordinal) {
+                s = apply(s, GameCommand.ChoosePath(d.id, com.example.model.CultivationPath.ORTHODOX))
+            }
+            d = s.disciple(d.id) ?: continue
+            s.inventory.filter { it.value > 0 && it.key.startsWith("Zwój: ") }.keys.sorted().forEach { scroll ->
+                s = apply(s, GameCommand.LearnMethod(d.id, scroll))
+            }
+            d = s.disciple(d.id) ?: continue
+            GameContent.skills
+                .filter { it.martialSchool == d.martialSchool && it.id !in d.unlockedSkillIds && it.tier <= d.rank.maxTechniqueTier }
+                .minByOrNull { it.costDaoPoints }
+                ?.let { s = apply(s, GameCommand.UnlockSkill(d.id, it.id)) }
+            d = s.disciple(d.id) ?: continue
+            if (d.laws.isEmpty() && (d.majorRealm?.ordinal ?: 0) >= com.example.model.MajorRealm.NASCENT_SOUL.ordinal) {
+                s = apply(s, GameCommand.ChooseLaw(d.id, com.example.model.DaoLaw.SWORD))
+            }
+            d = s.disciple(d.id) ?: continue
+            if (com.example.game.engine.CultivationSystem.ready(d) && Realms.atPeak(d) &&
+                com.example.game.engine.CultivationSystem.bottleneck(s, d) == null && d.currentHp > d.maxHp * 0.8) {
+                s = apply(s, GameCommand.AttemptBreakthrough(d.id, usePill = true))
+            }
+        }
+        return s
     }
 
     // --- Raport ---

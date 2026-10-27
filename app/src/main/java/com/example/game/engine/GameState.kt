@@ -70,6 +70,14 @@ data class GameState(
     val nextFeastDay: Int = 0,
     val lastTournamentDay: Int = 0,
 
+    // --- Etap 3: kultywacja ---
+    /** false = zapis sprzed Etapu 3; silnik przelicza królestwa na etapy przy wczytaniu. */
+    val e3Initialized: Boolean = false,
+    /** Karma sekty: −100 (demoniczna) … +100 (prawa). */
+    val karma: Int = 0,
+    /** Uczniowie, którzy wstąpili do Wyższego Świata (każdy daje stałą premię). */
+    val ascendedNames: List<String> = emptyList(),
+
     /** Krok samouczka; brak pola w starym zapisie = samouczek ukończony. */
     val tutorialStep: Int = Tutorial.DONE,
 

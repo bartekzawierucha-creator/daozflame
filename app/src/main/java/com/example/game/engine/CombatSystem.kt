@@ -120,6 +120,18 @@ object CombatSystem {
         return if (next.enemyHp <= 0) finish(s, next, true, hit) else ok(s.copy(combat = next), null, hit)
     }
 
+    /** Szansa (%) na zwój metody z bossa krainy i jego stopień wg numeru krainy. */
+    const val SCROLL_DROP_CHANCE = 25
+    /** Qi za zwycięstwo na ścieżkach walki – wyrażone w cyklach medytacji ucznia. */
+    const val SWORD_VICTORY_TICKS = 150
+    const val DEMONIC_VICTORY_TICKS = 200
+
+    fun scrollGrade(regionIndex: Int): com.example.model.MethodGrade = when {
+        regionIndex < 2 -> com.example.model.MethodGrade.BLACK
+        regionIndex < 6 -> com.example.model.MethodGrade.MYSTIC
+        else -> com.example.model.MethodGrade.HEAVENLY
+    }
+
     /** Koniec walki: łupy, eksploracja krainy, HP ucznia, reputacja. */
     private fun finish(s: GameState, c: ActiveCombat, victory: Boolean, vararg extra: GameEvent): StepResult {
         val beast = c.enemy
@@ -129,20 +141,49 @@ object CombatSystem {
         } else "☠️ Porażka! Adept musiał salwować się ucieczką z pola bitwy."
 
         val inv = s.inventory.toMutableMap()
+        var scroll: String? = null
         if (victory && beast != null && region != null) {
             inv[region.mineralResource] = (inv[region.mineralResource] ?: 0) + 3
             inv[region.herbResource] = (inv[region.herbResource] ?: 0) + 2
             inv[beast.dropItemName] = (inv[beast.dropItemName] ?: 0) + 1
+            if (s.e3Initialized) {
+                val rng = GameRng.stream(s.worldSeed, s.step, "scroll-drop")
+                if (rng.nextInt(100) < SCROLL_DROP_CHANCE) {
+                    // Zwój zwykle pasuje do ścieżki zwycięzcy (75%), czasem to cudza nauka.
+                    val own = s.disciple(c.discipleId)?.path
+                    val path = if (own != null && rng.nextInt(100) < 75) own else com.example.model.CultivationPath.entries.random(rng)
+                    val m = Realms.methodOf(path, scrollGrade(s.regions.indexOfFirst { it.id == region.id }))
+                    inv[m.scrollItem] = (inv[m.scrollItem] ?: 0) + 1
+                    scroll = m.scrollItem
+                }
+            }
         }
+        // Ścieżki Miecza i Demoniczna czerpią Qi z walki; demoniczna walka obniża karmę.
+        val fighter = s.disciple(c.discipleId)
+        val pathTicks = when {
+            !s.e3Initialized || fighter == null -> 0
+            fighter.path == com.example.model.CultivationPath.SWORD && victory -> SWORD_VICTORY_TICKS
+            fighter.path == com.example.model.CultivationPath.DEMONIC && victory -> DEMONIC_VICTORY_TICKS
+            else -> 0
+        }
+        val pathQi = if (fighter != null && pathTicks > 0) CultivationSystem.ticksWorth(s, fighter, pathTicks) else 0.0
+        val karmaDelta = if (s.e3Initialized && fighter?.path == com.example.model.CultivationPath.DEMONIC) -2 else 0
         val state = s.copy(
             inventory = inv.toMap(),
             regions = s.regions.map {
                 if (it.id == c.regionId) it.copy(explorationProgress = (it.explorationProgress + 25).coerceAtMost(100)) else it
             },
-            disciples = s.disciples.map { if (it.id == c.discipleId) it.copy(currentHp = c.discipleHp.coerceAtLeast(10)) else it },
+            disciples = s.disciples.map {
+                if (it.id == c.discipleId) CultivationSystem.gainQi(it.copy(currentHp = c.discipleHp.coerceAtLeast(10)), pathQi) else it
+            },
+            karma = (s.karma + karmaDelta).coerceIn(-100, 100),
             spiritStones = s.spiritStones + if (victory) beast?.spiritStoneReward ?: 0 else 0,
             sectReputation = s.sectReputation + if (victory) (35 * Modifiers.sect(s).factor(Stat.REPUTATION_GAIN)).toInt() else -5,
-            combat = c.copy(outcome = victory, rewardText = reward, logs = c.logs + CombatLogEntry(c.round + 1, reward)),
+            combat = c.copy(
+                outcome = victory,
+                rewardText = reward + (scroll?.let { " Znaleziono: $it!" } ?: ""),
+                logs = c.logs + CombatLogEntry(c.round + 1, reward + (scroll?.let { " Znaleziono: $it!" } ?: ""))
+            ),
             morale = if (s.e2Initialized) (s.morale + if (victory) 2 else -3).coerceIn(0, 100) else s.morale
         )
         return StepResult(state, extra.toList() + GameEvent.CombatEnded(victory))

@@ -33,7 +33,7 @@ data class Modifier(val source: String, val stat: Stat, val op: ModOp, val value
  * Jedyne miejsce liczenia premii. Kolejność: (baza + FLAT) × (1 + ΣPERCENT/100) × ΠMULTIPLY.
  * Ta sama funkcja liczy wartość w logice i rozbicie w tooltipie, więc nie mogą się rozjechać.
  */
-data class ModifierStack(val modifiers: List<Modifier>) {
+data class ModifierStack(val modifiers: List<Modifier>, val day: Int = 0) {
 
     fun of(stat: Stat): List<Modifier> = modifiers.filter { it.stat == stat }
 
@@ -52,7 +52,7 @@ data class ModifierStack(val modifiers: List<Modifier>) {
     fun factor(stat: Stat): Double = (1.0 + percent(stat) / 100.0) *
         of(stat).filter { it.op == ModOp.MULTIPLY }.fold(1.0) { acc, m -> acc * m.value }
 
-    operator fun plus(other: List<Modifier>) = ModifierStack(modifiers + other)
+    operator fun plus(other: List<Modifier>) = ModifierStack(modifiers + other, day)
 
     /** Tekst do tooltipa „skąd to?”. */
     fun breakdown(stat: Stat): List<String> = of(stat).map { m ->
@@ -87,7 +87,10 @@ object Modifiers {
         val alliances = s.rivalSects.filter { it.status == DiplomaticStatus.ALLIANCE }.sumOf { it.cultivationBuffBonusPercent }
         if (alliances != 0) list += Modifier("Sojusze sekt", Stat.QI_GAIN, ModOp.PERCENT, alliances.toDouble())
         list += DiscipleRules.sectModifiers(s)
-        return ModifierStack(list)
+        if (s.ascendedNames.isNotEmpty()) {
+            list += Modifier("Dziedzictwo Wniebowstąpienia (${s.ascendedNames.size})", Stat.QI_GAIN, ModOp.PERCENT, 5.0 * s.ascendedNames.size)
+        }
+        return ModifierStack(list, s.currentDay)
     }
 
     /** Premie sekty + cechy konkretnego ucznia. */
@@ -99,6 +102,7 @@ object Modifiers {
         }
         if (d.ancientClan.name.contains("Ye")) list += Modifier("Ród Ye", Stat.QI_GAIN, ModOp.PERCENT, 50.0)
         list += DiscipleRules.discipleModifiers(d)
+        list += CultivationModifiers.of(d, sect.day)
         return sect + list
     }
 }

@@ -78,7 +78,25 @@ data class WuxiaUiState(
     val examDaysLeft: Int = 0,
     val nextExamInDays: Int = 0,
     val admissionCost: Int = 0,
-    val feastReadyInDays: Int = 0
+    val feastReadyInDays: Int = 0,
+    // Etap 3
+    /** Uczeń → powód blokady wielkiego przełomu (brak wpisu = można próbować albo nie jest na szczycie). */
+    val bottlenecks: Map<String, String> = emptyMap(),
+    /** Zwoje metod w magazynie. */
+    val scrolls: List<String> = emptyList(),
+    val karma: Int = 0,
+    val tribulation: TribulationUi? = null
+)
+
+data class TribulationUi(
+    val id: Long,
+    val discipleName: String,
+    val strikes: Int,
+    val damage: List<Int>,
+    val maxHp: Int,
+    val survived: Boolean,
+    val perfect: Boolean,
+    val catastrophe: Boolean
 )
 
 data class TutorialUi(val index: Int, val total: Int, val title: String, val text: String, val waitingForAction: Boolean)
@@ -109,6 +127,7 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     private var combatFx = CombatFx()
     private var offlineReport: OfflineProgress.Report? = null
     private var celebration: CelebrationUi? = null
+    private var tribulation: TribulationUi? = null
 
     private val _uiState = MutableStateFlow(buildUi())
     val uiState: StateFlow<WuxiaUiState> = _uiState.asStateFlow()
@@ -218,6 +237,9 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
                 celebration = CelebrationUi(System.nanoTime(), "${d?.name?.substringBefore(" (") ?: "Uczeń"}: ${d?.realm?.polishName ?: "przełom"}!")
             }
             is GameEvent.OfflineSummary -> offlineReport = event.report
+            is GameEvent.Tribulation -> tribulation = event.result.let { r ->
+                TribulationUi(System.nanoTime(), game.disciple(event.discipleId)?.name ?: "Uczeń", r.strikes, r.damagePerStrike, r.maxHp, r.survived, r.perfect, r.catastrophe)
+            }
         }
     }
 
@@ -278,6 +300,21 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     fun testCandidate(candidateId: String) = dispatch(GameCommand.TestCandidate(candidateId))
     fun buyFood(rations: Int) = dispatch(GameCommand.BuyFood(rations))
     fun holdFeast() = dispatch(GameCommand.HoldFeast)
+
+    // --- Etap 3: kultywacja ---
+
+    fun choosePath(discipleId: String, path: CultivationPath) = dispatch(GameCommand.ChoosePath(discipleId, path))
+    fun learnMethod(discipleId: String, scroll: String) = dispatch(GameCommand.LearnMethod(discipleId, scroll))
+    fun chooseLaw(discipleId: String, law: DaoLaw) = dispatch(GameCommand.ChooseLaw(discipleId, law))
+    fun seclude(discipleId: String, days: Int) = dispatch(GameCommand.Seclude(discipleId, days))
+    fun endSeclusion(discipleId: String) = dispatch(GameCommand.EndSeclusion(discipleId))
+    fun awakenBloodline(discipleId: String) = dispatch(GameCommand.AwakenBloodline(discipleId))
+    fun ascend(discipleId: String) = dispatch(GameCommand.Ascend(discipleId))
+
+    fun dismissTribulation() {
+        tribulation = null
+        _uiState.value = buildUi()
+    }
 
     // --- Rzemiosło ---
 
@@ -457,6 +494,13 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
         examDaysLeft = (game.examOpenUntilDay - game.currentDay + 1).coerceAtLeast(0),
         nextExamInDays = DiscipleRules.EXAM_EVERY_DAYS - game.currentDay % DiscipleRules.EXAM_EVERY_DAYS,
         admissionCost = SectCommands.admissionCost(game),
-        feastReadyInDays = (game.nextFeastDay - game.currentDay).coerceAtLeast(0)
+        feastReadyInDays = (game.nextFeastDay - game.currentDay).coerceAtLeast(0),
+        bottlenecks = if (!game.e3Initialized) emptyMap() else game.disciples
+            .filter { com.example.game.engine.Realms.atPeak(it) }
+            .mapNotNull { d -> com.example.game.engine.CultivationSystem.bottleneck(game, d)?.let { d.id to it } }
+            .toMap(),
+        scrolls = game.inventory.filter { it.value > 0 && it.key.startsWith("Zwój: ") }.keys.sorted(),
+        karma = game.karma,
+        tribulation = tribulation
     )
 }
