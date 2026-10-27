@@ -36,6 +36,19 @@ jobs:
         env:
           DAOZ_SIM_HOURS: "48"
 
+      - name: Nieudane testy jako adnotacje
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import glob, xml.etree.ElementTree as ET
+          for f in glob.glob("app/build/test-results/**/*.xml", recursive=True):
+              for case in ET.parse(f).getroot().iter("testcase"):
+                  for bad in list(case.findall("failure")) + list(case.findall("error")):
+                      msg = (bad.get("message") or bad.text or "")[:300].replace("\n", " ")
+                      print(f"::error title={case.get('classname')}.{case.get('name')}::{msg}")
+          PY
+          grep -h "^e: " app/build/**/*.log 2>/dev/null | head -20 || true
+
       - name: Raport balansu w podsumowaniu
         if: always()
         run: cat app/build/sim/raport.md >> "$GITHUB_STEP_SUMMARY" || true
