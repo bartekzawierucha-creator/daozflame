@@ -58,6 +58,12 @@ sealed interface GameCommand {
     data class SetActiveBeast(val beastId: String) : GameCommand
     data class FeedBeast(val beastId: String, val herbName: String) : GameCommand
     data class EvolveBeast(val beastId: String) : GameCommand
+
+    // Narzędzia debug (panel tylko w buildzie debug)
+    data class DebugAddStones(val amount: Int) : GameCommand
+    data class DebugAddItem(val item: String, val amount: Int) : GameCommand
+    data object DebugForceEvent : GameCommand
+    data object DebugFillQi : GameCommand
 }
 
 /** Co się wydarzyło – UI zamienia to na komunikaty, dźwięki i animacje. */

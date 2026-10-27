@@ -108,6 +108,18 @@ object GameEngine {
             is GameCommand.ArenaDuel -> WorldCommands.arenaDuel(state, ctx, command.discipleId, command.rivalSectName)
             is GameCommand.EventChoice -> WorldCommands.eventChoice(state, command.choiceIndex)
             GameCommand.DismissEvent -> ok(state.copy(activeEventId = null))
+
+            is GameCommand.DebugAddStones -> ok(state.copy(spiritStones = state.spiritStones + command.amount), "[debug] +${command.amount} kamieni")
+            is GameCommand.DebugAddItem -> ok(
+                state.copy(inventory = state.inventory + (command.item to (state.inventory[command.item] ?: 0) + command.amount)),
+                "[debug] +${command.amount}× ${command.item}"
+            )
+            GameCommand.DebugForceEvent -> {
+                val pool = GameContent.events.filter { it.id !in state.recentEventIds }
+                val picked = pool.randomOrNull(ctx.rng("debug")) ?: GameContent.events.first()
+                ok(state.copy(activeEventId = picked.id, recentEventIds = (state.recentEventIds + picked.id).takeLast(RandomEventPhase.MEMORY)))
+            }
+            GameCommand.DebugFillQi -> ok(state.copy(disciples = state.disciples.map { it.copy(realmProgress = 100) }), "[debug] Qi wszystkich uczniów = 100%")
         }
         return result.copy(state = result.state.copy(step = state.step + 1))
     }

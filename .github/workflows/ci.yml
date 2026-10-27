@@ -31,8 +31,14 @@ jobs:
             -keypass android -keyalg RSA -keysize 2048 -validity 10000 \
             -dname "CN=Android Debug,O=Android,C=US"
 
-      - name: Testy jednostkowe
+      - name: Testy jednostkowe i symulator balansu
         run: ./gradlew --no-daemon testDebugUnitTest
+        env:
+          DAOZ_SIM_HOURS: "48"
+
+      - name: Raport balansu w podsumowaniu
+        if: always()
+        run: cat app/build/sim/raport.md >> "$GITHUB_STEP_SUMMARY" || true
 
       - name: Budowa APK
         run: ./gradlew --no-daemon assembleDebug
@@ -45,6 +51,7 @@ jobs:
           path: |
             app/build/reports/tests/
             app/build/sim/
+            app/build/golden/
           if-no-files-found: ignore
 
       - name: APK

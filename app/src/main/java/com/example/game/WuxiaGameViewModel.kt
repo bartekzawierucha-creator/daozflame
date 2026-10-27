@@ -9,15 +9,19 @@ import com.example.game.engine.GameContent
 import com.example.game.engine.GameEngine
 import com.example.game.engine.GameEvent
 import com.example.game.engine.GameState
+import com.example.game.save.SaveStore
 import com.example.model.*
 import com.example.ui.audio.WuxiaAudioEngine
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.io.File
 
 /** Kształt danych dla interfejsu. Budowany z [GameState] – nigdy nie zmieniany bezpośrednio. */
 data class WuxiaUiState(
@@ -61,10 +65,17 @@ data class WuxiaUiState(
  */
 class WuxiaGameViewModel(application: Application) : AndroidViewModel(application) {
 
-    private var game: GameState = GameEngine.newGame(worldSeed = System.currentTimeMillis(), nowMs = System.currentTimeMillis())
+    companion object {
+        const val AUTOSAVE_MS = 30_000L
+    }
 
-    // Stan wyłącznie interfejsu (nie trafia do zapisu).
+    // Stan wyłącznie interfejsu (nie trafia do zapisu). Zadeklarowany PRZED wczytaniem gry,
+    // bo loadOrNewGame() może ustawić komunikat.
     private var notification: String? = null
+
+    private val store = SaveStore(File(application.filesDir, "saves"))
+    private var game: GameState = loadOrNewGame()
+
     private var selectedDiscipleId: String? = game.disciples.firstOrNull()?.id
     private var speed: Int = 1
     private var ping: Int = 14
@@ -78,7 +89,66 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
 
     init {
         startGameLoop()
+        startAutosave()
+        if (game.combat?.finished == false) startCombatLoop()
     }
+
+    // --- Zapis gry ---
+
+    private fun loadOrNewGame(): GameState {
+        val now = System.currentTimeMillis()
+        val loaded = runCatching { store.load() }.getOrNull()
+        loaded?.state?.let { state ->
+            if (loaded.fromBackup) notification = "Główny zapis był uszkodzony – wczytano kopię zapasową."
+            return state.copy(lastActiveAtMs = now)
+        }
+        if (loaded?.error != null) notification = "Nie udało się wczytać zapisu – rozpoczęto nową grę."
+        return GameEngine.newGame(worldSeed = now, nowMs = now)
+    }
+
+    private fun startAutosave() {
+        viewModelScope.launch {
+            while (isActive) {
+                delay(AUTOSAVE_MS)
+                saveNow()
+            }
+        }
+    }
+
+    /** Zapis w tle. Stan jest niemutowalny, więc wysyłamy migawkę bez kopiowania. */
+    fun saveNow() {
+        val snapshot = game.copy(lastActiveAtMs = System.currentTimeMillis())
+        viewModelScope.launch(Dispatchers.IO + NonCancellable) {
+            runCatching { store.save(snapshot, snapshot.lastActiveAtMs) }
+        }
+    }
+
+    /** Zapis synchroniczny – przy niszczeniu ViewModelu nie ma już zakresu korutyn. */
+    override fun onCleared() {
+        runCatching { store.save(game.copy(lastActiveAtMs = System.currentTimeMillis()), System.currentTimeMillis()) }
+        super.onCleared()
+    }
+
+    /** Nowa gra (z potwierdzeniem w UI). Usuwa zapis. */
+    fun startNewGame() {
+        combatJob?.cancel()
+        store.delete()
+        val now = System.currentTimeMillis()
+        game = GameEngine.newGame(worldSeed = now, nowMs = now)
+        selectedDiscipleId = game.disciples.firstOrNull()?.id
+        combatFx = CombatFx()
+        notification = "Rozpoczęto nową grę."
+        _uiState.value = buildUi()
+        saveNow()
+    }
+
+    fun exportSave(): String? = store.exportText()
+
+    fun importSave(text: String): Boolean = runCatching {
+        game = store.import(text, System.currentTimeMillis())
+        notification = "Wczytano zapis."
+        _uiState.value = buildUi()
+    }.isSuccess
 
     /** Jedyna droga zmiany stanu gry. */
     private fun dispatch(command: GameCommand) {
@@ -152,6 +222,10 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     fun startExpedition(regionId: String, discipleId: String) {
         combatFx = CombatFx()
         dispatch(GameCommand.StartExpedition(regionId, discipleId))
+        startCombatLoop()
+    }
+
+    private fun startCombatLoop() {
         combatJob?.cancel()
         combatJob = viewModelScope.launch {
             while (isActive) {
@@ -219,6 +293,23 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     fun setActiveBeast(beastId: String) = dispatch(GameCommand.SetActiveBeast(beastId))
     fun feedSectBeast(beastId: String, herbName: String) = dispatch(GameCommand.FeedBeast(beastId, herbName))
     fun evolveSectBeast(beastId: String) = dispatch(GameCommand.EvolveBeast(beastId))
+
+    // --- Narzędzia debug (tylko build debug) ---
+
+    fun debug(command: GameCommand) {
+        if (FeatureFlags.debugPanel) dispatch(command)
+    }
+
+    /** Przewija [count] cykli gry bez rysowania każdego z osobna. */
+    fun debugSkipTicks(count: Int) {
+        if (!FeatureFlags.debugPanel) return
+        repeat(count) { game = GameEngine.apply(game, GameCommand.Tick).state }
+        notification = "[debug] przewinięto $count cykli (dzień ${game.currentDay})"
+        _uiState.value = buildUi()
+    }
+
+    fun debugInfo(): String =
+        "ziarno ${game.worldSeed} · krok ${game.step} · tick ${game.tick} · dzień ${game.currentDay}"
 
     // --- Mapowanie stanu gry na interfejs ---
 
