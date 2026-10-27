@@ -210,6 +210,7 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                         )
                         GhostButton("Kara", onClick = { viewModel.punish(d.id) }, danger = true, modifier = Modifier.weight(1f), height = 38.dp)
                         GhostButton("Łaska", onClick = { viewModel.pardon(d.id) }, modifier = Modifier.weight(1f), height = 38.dp)
+                        GhostButton("Życie", onClick = { legacy = "life" }, modifier = Modifier.weight(1f), height = 38.dp)
                         GhostButton("Księga", onClick = { legacy = "disciples" }, modifier = Modifier.weight(1f), height = 38.dp)
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -275,6 +276,7 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
             "exam" -> ExamPanel(ui, viewModel, onClose = { legacy = null })
             "cultivation" -> if (d != null) CultivationPanel(d, ui, viewModel, onClose = { legacy = null })
             "secrets" -> if (d != null) SecretsPanel(d, ui, viewModel, onClose = { legacy = null })
+            "life" -> if (d != null) LifePanel(d, ui, viewModel, onClose = { legacy = null })
         }
     }
 }
@@ -328,6 +330,7 @@ private fun RosterTile(disciple: Disciple, selected: Boolean, onClick: () -> Uni
 @Composable
 fun PalaceModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> Unit) {
     var eco by remember { mutableStateOf<EconomyTab?>(null) }
+    var sect by remember { mutableStateOf(false) }
     ModuleScaffold(
         module = GameModule.PALACE,
         subtitle = "${ui.sectLeader.name} · prestiż ${ui.sectLeader.prestigeLevel}",
@@ -352,6 +355,7 @@ fun PalaceModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                         GhostButton("Żyła ${ui.economy.veinLevel}", onClick = { eco = EconomyTab.VEIN }, modifier = Modifier.weight(1f), height = 36.dp)
                         GhostButton("Kontrakty", onClick = { eco = EconomyTab.CONTRACTS }, modifier = Modifier.weight(1f), height = 36.dp)
                         GhostButton("Targ", onClick = { eco = EconomyTab.MARKET }, modifier = Modifier.weight(1f), height = 36.dp)
+                        GhostButton("Sekta", onClick = { sect = true }, modifier = Modifier.weight(1f), height = 36.dp)
                     }
                 }
                 Box(Modifier.weight(1f)) {
@@ -361,6 +365,7 @@ fun PalaceModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
         }
     }
     eco?.let { EconomyPanel(ui, viewModel, it, onClose = { eco = null }) }
+    if (sect) SectPanel(ui, viewModel, onClose = { sect = false })
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

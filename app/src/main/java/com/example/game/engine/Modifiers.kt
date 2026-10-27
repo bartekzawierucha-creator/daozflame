@@ -92,6 +92,10 @@ object Modifiers {
         val alliances = s.rivalSects.filter { it.status == DiplomaticStatus.ALLIANCE }.sumOf { it.cultivationBuffBonusPercent }
         if (alliances != 0) list += Modifier("Sojusze sekt", Stat.QI_GAIN, ModOp.PERCENT, alliances.toDouble())
         list += DiscipleRules.sectModifiers(s)
+        if (s.e7Initialized) {
+            list += Identity.modifiers(s)
+            FengShui.total(s).takeIf { it != 0.0 }?.let { list += Modifier("Feng shui", Stat.QI_GAIN, ModOp.PERCENT, it) }
+        }
         if (s.e5Initialized && Catastrophes.qiPenaltyPercent(s) != 0.0) {
             list += Modifier("Burza Qi", Stat.QI_GAIN, ModOp.PERCENT, Catastrophes.qiPenaltyPercent(s))
         }
@@ -118,7 +122,15 @@ object Modifiers {
         list += DiscipleRules.discipleModifiers(d)
         list += CultivationModifiers.of(d, sect.day)
         d.spiritRoot?.let { list += Seasons.discipleModifiers(Seasons.of(sect.day), it.elements) }
-        sect.state?.let { list += SecretModifiers.of(it, d) }
+        sect.state?.let {
+            list += SecretModifiers.of(it, d)
+            if (it.e7Initialized) {
+                list += Lifecycle.modifiers(it, d)
+                list += Story.modifiers(it, d)
+                list += Creatures.modifiers(it, d)
+                list += DailyLife.modifiers(it, d)
+            }
+        }
         return sect + list
     }
 }

@@ -204,10 +204,15 @@ object Secrets {
     fun allIds(r: WorldRules): List<String> =
         r.constellations.map { constellation(it.id) } + r.breath.keys.map { breath(it) } + r.lawObjects.keys.map { law(it) } +
             r.derivedLaws.map { derived(it.name) } + r.herbAttributes.flatMap { (h, a) -> a.keys.map { herb(h, it) } } +
-            r.forms.map { form(it.id) } + r.blockages.map { blockage(it) } + listOf(CYCLE_EXCESS, CYCLE_REBELLION, CYCLE_YINYANG) + SecretState.entries.map { state(it) }
+            r.forms.map { form(it.id) } + r.blockages.map { blockage(it) } + r.fengShui.indices.map { FengShui.secretId(it) } + listOf(CYCLE_EXCESS, CYCLE_REBELLION, CYCLE_YINYANG) + SecretState.entries.map { state(it) }
 
     /** Reguły losuje się raz – stare zapisy dostają je przy pierwszym wczytaniu, nowe przy tworzeniu gry. */
-    fun normalize(s: GameState): GameState = if (s.rules != null) s else s.copy(rules = RulesGen.generate(s.worldSeed))
+    fun normalize(s: GameState): GameState {
+        val base = s.rules ?: RulesGen.generate(s.worldSeed)
+        // Nowa treść (v2) dopisywana z osobnego strumienia, bez ruszania starych reguł.
+        val extended = FengShui.extend(base, s.worldSeed)
+        return if (extended === s.rules) s else s.copy(rules = extended)
+    }
 }
 
 /** Etap 6, krok 2: Dziennik – jedyne miejsce zapisu wiedzy o tajemnicach. */
@@ -600,6 +605,7 @@ object JournalView {
             })
             "state" -> SecretState.valueOf(parts[1]).let { Triple("Stany", it.polishName, it.description) }
             "block" -> Triple("Zatory", "Punkt ${parts[1].toInt() + 1}", "otwarcie ×3 kosztu")
+            "fengshui" -> Triple("Feng shui", "Miejsce ${parts[1].toInt() + 1}", r.fengShui.getOrNull(parts[1].toInt())?.let { "${it.glyph} ${it.polishName}" } ?: "")
             else -> Triple("Inne", id, "")
         }
     }

@@ -15,6 +15,14 @@ object WorldDaily {
         Empire.daily(s, ctx).let { (st, n) -> s = st; notes += n }
         Catastrophes.daily(s, ctx).let { (st, n) -> s = st; notes += n }
         SecretRealms.daily(s).let { (st, n) -> s = st; notes += n }
+        // Etap 7: fabuła i cykl życia.
+        Story.daily(s).let { (st, n) -> s = st; notes += n }
+        Lifecycle.daily(s, ctx).let { (st, n) -> s = st; notes += n }
+        if (s.e7Initialized) {
+            Creatures.daily(s).let { (st, n) -> s = st; notes += n }
+            Creatures.awakenFlameSpirits(s).let { (st, n) -> s = st; notes += n }
+            DailyLife.daily(s, ctx).let { (st, n) -> s = st; notes += n }
+        }
         // Etap 6: tajemnice.
         s = Breath.daily(s)
         s = SecretStates.daily(s, ctx)

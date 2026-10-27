@@ -77,7 +77,7 @@ object GameEngine {
     }
 
     /** Wywoływane po wczytaniu zapisu: jednorazowe migracje logiczne (korzenie w Etapie 2, etapy w Etapie 3). */
-    fun normalize(state: GameState): GameState = Secrets.normalize(Fog.normalize(WorldAI.normalize(economy(Realms.normalize(DiscipleRules.normalize(state))))))
+    fun normalize(state: GameState): GameState = Lifecycle.normalize(Secrets.normalize(Fog.normalize(WorldAI.normalize(economy(Realms.normalize(DiscipleRules.normalize(state)))))))
 
     /** Migracja do Etapu 4: stare zapisy zachowują wszystkie płomienie i znają wszystkie receptury. */
     private fun economy(s: GameState): GameState {
@@ -143,6 +143,24 @@ object GameEngine {
             is GameCommand.Contemplate -> Contemplation.contemplate(state, command.discipleId, command.objectName)
             is GameCommand.SetResearcher -> SecretTools.setResearcher(state, command.discipleId)
             is GameCommand.UseMirror -> SecretTools.mirror(state, command.discipleId)
+            is GameCommand.AssignMentor -> Lifecycle.assignMentor(state, command.studentId, command.mentorId)
+            is GameCommand.BindCompanions -> Lifecycle.bind(state, command.a, command.b)
+            is GameCommand.ChoosePatron -> Identity.choosePatron(state, command.patronId)
+            GameCommand.UpgradeTemple -> Identity.upgradeTemple(state)
+            is GameCommand.PlaceTreasure -> Identity.placeTreasure(state, command.vaultIndex)
+            is GameCommand.RemoveTreasure -> Identity.removeTreasure(state, command.index)
+            is GameCommand.SwapBuildings -> FengShui.swap(state, command.a, command.b)
+            is GameCommand.DelveDungeon -> Dungeon.delve(state, ctx, command.discipleId)
+            is GameCommand.CopyScroll -> Library.copy(state, command.scroll)
+            GameCommand.UpgradeCave -> Library.upgradeCave(state)
+            GameCommand.IncubateEgg -> Creatures.incubate(state, ctx)
+            is GameCommand.MountBeast -> Creatures.mount(state, command.beastId, command.discipleId)
+            is GameCommand.FuseFlames -> Creatures.fuse(state, ctx, command.a, command.b, command.confirmed, command.confirmedTwice)
+            is GameCommand.DevourFlame -> Creatures.devour(state, command.eater, command.food)
+            is GameCommand.AssignArt -> DailyLife.assignArt(state, command.discipleId, command.art)
+            is GameCommand.Cure -> DailyLife.cure(state, command.discipleId)
+            is GameCommand.Cleanse -> DailyLife.cleanse(state, command.discipleId)
+            GameCommand.ReadStars -> DailyLife.readStars(state, ctx)
             GameCommand.DebugRevealSecrets -> state.rules?.let { r ->
                 ok(Secrets.allIds(r).fold(state) { st, id -> Journal.reveal(st, id, "[debug]") }, "[debug] Odsłonięto wszystkie tajemnice")
             } ?: ok(state)
@@ -169,7 +187,10 @@ object GameEngine {
             is GameCommand.ChangePolicy -> SectCommands.changePolicy(state, command.policy)
             is GameCommand.SetActiveBeast -> SectCommands.setActiveBeast(state, command.beastId)
             is GameCommand.FeedBeast -> SectCommands.feedBeast(state, command.beastId, command.herbName)
-            is GameCommand.EvolveBeast -> SectCommands.evolveBeast(state, command.beastId)
+            is GameCommand.EvolveBeast ->
+                if (state.e7Initialized && (state.sectBeasts.find { it.id == command.beastId }?.tier ?: 0) >= Creatures.MAX_TIER)
+                    fail(state, "Bestia osiągnęła ostatni, trzeci etap ewolucji.")
+                else SectCommands.evolveBeast(state, command.beastId)
 
             is GameCommand.BrewPill -> if (state.e4Initialized) CraftV2.brew(state, ctx, command.recipeId) else CraftCommands.brewPill(state, command.recipeId)
             is GameCommand.ForgeArtifact -> if (state.e4Initialized) CraftV2.forge(state, ctx, command.recipeId) else CraftCommands.forgeArtifact(state, command.recipeId)
@@ -195,7 +216,10 @@ object GameEngine {
             is GameCommand.AttackWorldBoss -> WorldCommands.attackWorldBoss(state, ctx, command.discipleId)
             is GameCommand.ArenaDuel -> WorldCommands.arenaDuel(state, ctx, command.discipleId, command.rivalSectName)
             is GameCommand.EventChoice -> EventScripts.choose(state, command.choiceIndex)
-            GameCommand.DismissEvent -> ok(state.copy(activeEventId = null))
+            // Zdarzeń planowanych (fabuła, łańcuchy) nie da się zgubić – odłożone wracają następnego dnia.
+            GameCommand.DismissEvent -> GameContent.script(state.activeEventId)?.takeIf { !it.random }?.let { e ->
+                ok(state.copy(activeEventId = null, scheduledEvents = state.scheduledEvents + com.example.model.ScheduledEvent(state.currentDay + 1, e.id)), "Odłożono: ${e.title}.")
+            } ?: ok(state.copy(activeEventId = null))
 
             is GameCommand.OfflineCatchUp -> OfflineProgress.apply(state, command.elapsedMs, ctx)
             GameCommand.TutorialNext -> ok(state.copy(tutorialStep = Tutorial.next(state.tutorialStep)))

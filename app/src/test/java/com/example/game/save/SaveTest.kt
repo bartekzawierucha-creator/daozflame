@@ -24,6 +24,23 @@ class SaveTest {
         return s
     }
 
+    /** Etap 7: zapis po 5 latach gry (600 dni) ma < 2 MB i wczytuje się < 1 s. */
+    @Test
+    fun fiveYearSaveIsSmallAndLoadsFast() {
+        var s = GameEngine.newGame(91L, nowMs = 1_000L)
+        while (s.currentDay < 600) {
+            s = GameEngine.apply(s, GameCommand.Tick).state
+            if (s.activeEventId != null) s = GameEngine.apply(s, GameCommand.EventChoice(0)).state
+        }
+        val text = SaveCodec.encode(s, 0L)
+        assertTrue("rozmiar ${text.length / 1024} KB", text.toByteArray().size < 2 * 1024 * 1024)
+        val t0 = System.nanoTime()
+        val loaded = SaveCodec.decode(text)
+        val ms = (System.nanoTime() - t0) / 1_000_000
+        assertTrue("wczytanie $ms ms", ms < 1_000)
+        assertEquals(s, loaded)
+    }
+
     @Test
     fun roundTripKeepsEveryField() {
         val s = playedState()
