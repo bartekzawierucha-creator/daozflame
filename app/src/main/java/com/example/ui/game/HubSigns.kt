@@ -68,12 +68,12 @@ private fun first(name: String) = name.substringBefore(" (").substringBefore(" "
 fun hubSigns(ui: WuxiaUiState): List<HubSign> = buildList {
     ui.raid?.let { r ->
         val days = (r.arriveDay - ui.currentDay).coerceAtLeast(0)
-        add(HubSign("raid", 0.44f, 0.60f, "⚔", if (days == 0) "Najazd!" else "Najazd · ${days} d.", Aaa.Cinnabar, SignAction.Open(Shortcut.RAID, GameModule.CLANS)))
+        add(HubSign("raid", 0.82f, 0.66f, "⚔", if (days == 0) "Najazd!" else "Najazd · ${days} d.", Aaa.Cinnabar, SignAction.Open(Shortcut.RAID, GameModule.CLANS)))
     }
     val ripe = ui.economy.fields.count { it.herb != null && it.readyDay <= ui.currentDay }
-    if (ripe > 0) add(HubSign("harvest", 0.66f, 0.50f, "🌿", "Zbierz $ripe", Aaa.Jade, SignAction.Harvest))
+    if (ripe > 0) add(HubSign("harvest", 0.70f, 0.63f, "🌿", "Zbierz $ripe", Aaa.Jade, SignAction.Harvest))
     val deliverable = ui.economy.contracts.count { it.type == ContractType.DELIVER && (ui.inventory[it.item] ?: 0) >= it.quantity }
-    if (deliverable > 0) add(HubSign("contracts", 0.55f, 0.37f, "📜", "Kontrakt ×$deliverable", Aaa.Gold, SignAction.Open(Shortcut.CONTRACTS, GameModule.PALACE)))
+    if (deliverable > 0) add(HubSign("contracts", 0.44f, 0.50f, "📜", "Kontrakt ×$deliverable", Aaa.Gold, SignAction.Open(Shortcut.CONTRACTS, GameModule.PALACE)))
     if (ui.sectLife.eggs.isNotEmpty()) add(HubSign("eggs", 0.27f, 0.19f, "🥚", "Jajo ×${ui.sectLife.eggs.size}", Aaa.GoldHi, SignAction.Open(Shortcut.EGGS, GameModule.BEASTS)))
     ui.secretRealms.firstOrNull { it.open && !it.visited }?.let { add(HubSign("realm", 0.40f, 0.14f, "🌀", shortName(it.name, 2), Aaa.Violet, SignAction.Open(Shortcut.SECRET_REALMS, GameModule.WORLD))) }
 
@@ -87,7 +87,7 @@ fun hubSigns(ui: WuxiaUiState): List<HubSign> = buildList {
         }
     }.sortedBy { it.first }.take(2)
     thoughts.forEachIndexed { i, (_, glyph, text) ->
-        add(HubSign("mind_$i", 0.80f - 0.07f * i, 0.29f - 0.045f * i, glyph, text, Aaa.Azure, SignAction.Open(null, GameModule.ADEPTS)))
+        add(HubSign("mind_$i", 0.78f + 0.10f * i, 0.50f + 0.035f * i, glyph, text, Aaa.Azure, SignAction.Open(null, GameModule.ADEPTS)))
     }
 }.take(6)
 
