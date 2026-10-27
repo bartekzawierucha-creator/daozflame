@@ -96,6 +96,10 @@ data class GameState(
     val starsReadDay: Int = 0,
     /** Etap 8: postęp meta – jedyna część stanu przeżywająca odrodzenie sekty. */
     val meta: com.example.model.MetaProgress = com.example.model.MetaProgress(),
+    /** Etap 9: Sieć Dao – ranking i bilans bieżącej ery. */
+    val pvpRating: Int = 1_000,
+    val pvpWins: Int = 0,
+    val pvpLosses: Int = 0,
 
     val worldBoss: WorldBossRaid = com.example.game.WuxiaGenerator.getInitialWorldBoss(),
     val sectLeader: SectLeaderData = com.example.game.WuxiaGenerator.getInitialSectLeader(),

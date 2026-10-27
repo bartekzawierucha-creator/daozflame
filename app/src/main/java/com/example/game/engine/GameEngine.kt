@@ -168,6 +168,7 @@ object GameEngine {
             is GameCommand.SetTitle -> Achievements.setTitle(state, command.achievementId)
             is GameCommand.RealTime -> DailyGoals.realTime(state, command.nowMs)
             GameCommand.OfferToAncestors -> DailyGoals.offering(state)
+            is GameCommand.PvpDuel -> DaoNet.applyResult(state, command.opponent, command.seed)
             GameCommand.DebugRevealSecrets -> state.rules?.let { r ->
                 ok(Secrets.allIds(r).fold(state) { st, id -> Journal.reveal(st, id, "[debug]") }, "[debug] Odsłonięto wszystkie tajemnice")
             } ?: ok(state)

@@ -599,6 +599,7 @@ private data class DamagePop(val id: Long, val value: Long, val fx: Float, val f
 @Composable
 fun DaoNetModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> Unit) {
     var tab by remember { mutableIntStateOf(0) }
+    var shadowOpen by remember { mutableStateOf(false) }
     var legacy by remember { mutableStateOf(false) }
     val champ = champion(ui)
     val boss = ui.worldBoss
@@ -648,9 +649,9 @@ fun DaoNetModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
             topRight = { CurrencyPill(AaaGlyph.SPIRIT_STONE, ui.spiritStones) }
         ) {
             TextTabs(
-                listOf("Rajd", "Arena", "Ranking"),
+                listOf("Rajd", "Arena", "Ranking", "Cienie"),
                 tab,
-                { tab = it },
+                { if (it == 3) shadowOpen = true else tab = it },
                 Modifier
                     .safeTop()
                     .padding(start = 60.dp, top = 58.dp)
@@ -756,6 +757,7 @@ fun DaoNetModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                 }
             }
         }
+        if (shadowOpen) ShadowArenaPanel(ui, viewModel, onClose = { shadowOpen = false })
         if (legacy) {
             LegacyPanel("Sieć Dao", onClose = { legacy = false }) {
                 MultiplayerScreen(viewModel = viewModel, uiState = ui)

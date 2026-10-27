@@ -103,6 +103,8 @@ sealed interface GameCommand {
     /** Czas realny (ms) – tylko dla celów dziennych i ofiary przodkom. */
     data class RealTime(val nowMs: Long) : GameCommand
     data object OfferToAncestors : GameCommand
+    // Etap 9
+    data class PvpDuel(val opponent: DaoNet.ShadowTeam, val seed: Long) : GameCommand
     data class PlaceFormationNode(val element: com.example.model.SpiritElement) : GameCommand
     data class SendSpy(val discipleId: String, val sectId: String, val type: com.example.model.SpyType) : GameCommand
     data class SectBattle(val sectId: String, val discipleIds: List<String>) : GameCommand

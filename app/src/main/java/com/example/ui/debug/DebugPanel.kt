@@ -88,6 +88,11 @@ fun DebugPanel(viewModel: WuxiaGameViewModel, modifier: Modifier = Modifier) {
                     Chip("Anuluj") { confirmNewGame = false }
                 }
             }
+            viewModel.lastCrash?.let { crash ->
+                Text("Ostatnia awaria:", color = Color(0xFFFF8A73), fontSize = 12.sp)
+                Text(crash.take(1200), color = Color(0xFFAAAAAA), fontSize = 9.sp)
+                Chip("Kopiuj raport awarii") { clipboard.setText(AnnotatedString(crash)) }
+            }
             Chip("Zamknij") { open = false }
         }
     }

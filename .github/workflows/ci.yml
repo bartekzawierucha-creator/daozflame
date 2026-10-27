@@ -40,6 +40,13 @@ jobs:
         if: always()
         run: cat app/build/sim/raport.md >> "$GITHUB_STEP_SUMMARY" || true
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Zgodność walki Sieci Dao (Kotlin ↔ Edge Function)
+        run: node --experimental-strip-types --no-warnings supabase/functions/_shared/duel.parity.test.ts
+
       - name: Budowa APK
         run: ./gradlew --no-daemon assembleDebug
 

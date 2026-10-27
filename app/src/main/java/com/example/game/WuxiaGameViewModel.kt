@@ -122,7 +122,24 @@ data class WuxiaUiState(
     val meta: MetaProgress = MetaProgress(),
     val rebirthAvailable: Boolean = false,
     val essenceOnRebirth: Int = 0,
-    val achievements: List<AchievementUi> = emptyList()
+    val achievements: List<AchievementUi> = emptyList(),
+    // Etap 9
+    val arena: ArenaUi = ArenaUi()
+)
+
+data class ArenaUi(
+    val online: Boolean = false,
+    val busy: Boolean = false,
+    val rating: Int = 1_000,
+    val wins: Int = 0,
+    val losses: Int = 0,
+    val opponents: List<com.example.game.engine.DaoNet.ShadowTeam> = emptyList(),
+    val ranking: List<com.example.game.net.DaoNetClient.RankingRow> = emptyList(),
+    val myShadowId: String? = null,
+    val cloudLocal: com.example.game.engine.CloudSave.Summary? = null,
+    val cloudRemote: com.example.game.engine.CloudSave.Summary? = null,
+    val cloudSuggestion: com.example.game.engine.CloudSave.Choice? = null,
+    val error: String? = null
 )
 
 data class AchievementUi(val id: String, val name: String, val description: String, val unlocked: Boolean, val title: Boolean)
@@ -241,6 +258,11 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     // bo loadOrNewGame() może ustawić komunikat i czas nieobecności.
     private var notification: String? = null
     private var pendingOfflineMs: Long = 0L
+    // Etap 9: Sieć Dao (stan interfejsu, nie trafia do zapisu).
+    private var arena: ArenaUi = ArenaUi()
+    /** Treść ostatniej awarii (panel debug). */
+    var lastCrash: String? = CrashLog.consume(application.filesDir).also { if (it != null) notification = "Poprzednia sesja zakończyła się błędem – raport w panelu debug." }
+        private set
 
     private val store = SaveStore(File(application.filesDir, "saves"))
     private var game: GameState = loadOrNewGame()
@@ -506,6 +528,91 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     fun cleanse(discipleId: String) = dispatch(GameCommand.Cleanse(discipleId))
     fun readStars() = dispatch(GameCommand.ReadStars)
 
+    // --- Etap 9: Sieć Dao i chmura ---
+    // Leniwie: buildUi() działa już podczas konstrukcji ViewModelu, przed tymi polami.
+    private val prefs by lazy { getApplication<Application>().getSharedPreferences("daonet", android.content.Context.MODE_PRIVATE) }
+    private val net by lazy { com.example.game.net.DaoNetClient(
+        com.example.BuildConfig.SUPABASE_URL, com.example.BuildConfig.SUPABASE_ANON_KEY,
+        object : com.example.game.net.DaoNetClient.TokenStore {
+            override var accessToken: String?
+                get() = prefs.getString("token", null)
+                set(v) { prefs.edit().putString("token", v).apply() }
+            override var userId: String?
+                get() = prefs.getString("user", null)
+                set(v) { prefs.edit().putString("user", v).apply() }
+        }
+    ) }
+    private val cloudPayload by lazy { mutableMapOf<String, String>() }
+
+    private fun season() = com.example.game.engine.DaoNet.season(System.currentTimeMillis() / com.example.game.engine.DailyGoals.DAY_MS)
+
+    private fun arenaUpdate(f: (ArenaUi) -> ArenaUi) {
+        arena = f(arena)
+        _uiState.value = buildUi()
+    }
+
+    /** Odśwież arenę: online – wyślij swój cień i pobierz rywali; offline – cienie sekt-rywali. */
+    fun refreshArena() {
+        if (!net.enabled) {
+            arenaUpdate { it.copy(opponents = com.example.game.engine.DaoNet.offlineOpponents(game), error = null) }
+            return
+        }
+        arenaUpdate { it.copy(busy = true, error = null) }
+        viewModelScope.launch(Dispatchers.IO) {
+            val r = runCatching {
+                val id = net.uploadShadow(com.example.game.engine.DaoNet.shadow(game), season())
+                Triple(id, net.opponents(season(), game.pvpRating), net.ranking(season()))
+            }
+            launch(Dispatchers.Main) {
+                r.onSuccess { (id, opp, rank) -> arenaUpdate { it.copy(busy = false, myShadowId = id, opponents = opp.ifEmpty { com.example.game.engine.DaoNet.offlineOpponents(game) }, ranking = rank) } }
+                    .onFailure { e -> arenaUpdate { it.copy(busy = false, error = e.message, opponents = com.example.game.engine.DaoNet.offlineOpponents(game)) } }
+            }
+        }
+    }
+
+    fun fightShadow(opponent: com.example.game.engine.DaoNet.ShadowTeam) {
+        val seed = com.example.game.engine.GameRng.stream(game.worldSeed, game.step, "pvp").nextLong()
+        dispatch(GameCommand.PvpDuel(opponent, seed))
+        val me = arena.myShadowId
+        if (net.enabled && me != null && !opponent.id.startsWith("rival_")) {
+            viewModelScope.launch(Dispatchers.IO) { runCatching { net.verifyDuel(me, opponent.id, seed) } }
+        }
+    }
+
+    fun uploadCloud() {
+        if (!net.enabled) return arenaUpdate { it.copy(error = "Zapis w chmurze wymaga połączenia z Siecią Dao.") }
+        val text = store.exportText() ?: run { saveNow(); store.exportText() } ?: return
+        val sum = com.example.game.engine.CloudSave.summary(game, System.currentTimeMillis())
+        viewModelScope.launch(Dispatchers.IO) {
+            val r = runCatching { net.uploadSave(text, sum.day, sum.era, sum.topRealm) }
+            launch(Dispatchers.Main) { arenaUpdate { it.copy(error = r.exceptionOrNull()?.message, cloudLocal = sum) }; if (r.isSuccess) { notification = "Zapis wysłany do chmury."; _uiState.value = buildUi() } }
+        }
+    }
+
+    /** Pobierz zapis z chmury i pokaż porównanie – decyzję podejmuje gracz. */
+    fun checkCloud() {
+        if (!net.enabled) return arenaUpdate { it.copy(error = "Zapis w chmurze wymaga połączenia z Siecią Dao.") }
+        viewModelScope.launch(Dispatchers.IO) {
+            val r = runCatching { net.downloadSave() }
+            launch(Dispatchers.Main) {
+                val row = r.getOrNull()
+                if (row == null) { arenaUpdate { it.copy(error = r.exceptionOrNull()?.message ?: "W chmurze nie ma zapisu.") }; return@launch }
+                cloudPayload["remote"] = row.payload
+                val local = com.example.game.engine.CloudSave.summary(game, System.currentTimeMillis())
+                val remote = com.example.game.engine.CloudSave.Summary(row.game_day, row.era, row.top_realm, 0, 0L)
+                arenaUpdate { it.copy(cloudLocal = local, cloudRemote = remote, cloudSuggestion = com.example.game.engine.CloudSave.suggest(local, remote)) }
+            }
+        }
+    }
+
+    fun useCloudSave() {
+        val text = cloudPayload["remote"] ?: return
+        if (importSave(text)) arenaUpdate { it.copy(cloudRemote = null, cloudSuggestion = null) }
+        else arenaUpdate { it.copy(error = if (game.meta.ironWill) "Żelazna Wola: nie można wczytać innej kopii." else "Zapis z chmury jest uszkodzony.") }
+    }
+
+    fun keepLocalSave() = arenaUpdate { it.copy(cloudRemote = null, cloudSuggestion = null) }
+
     // --- Etap 8: meta ---
     fun rebirth(difficulty: Difficulty?, ironWill: Boolean?) = dispatch(GameCommand.Rebirth(confirmed = true, difficulty = difficulty, ironWill = ironWill))
     fun buyHeavenNode(id: String) = dispatch(GameCommand.BuyHeavenNode(id))
@@ -770,6 +877,7 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
         meta = game.meta,
         rebirthAvailable = com.example.game.engine.Rebirth.available(game),
         essenceOnRebirth = com.example.game.engine.Rebirth.essence(game),
+        arena = arena.copy(rating = game.pvpRating, wins = game.pvpWins, losses = game.pvpLosses, online = net.enabled),
         achievements = com.example.game.engine.Achievements.ALL.map { a ->
             val got = a.id in game.meta.achievements
             AchievementUi(a.id, if (a.secret && !got) "???" else a.name, if (a.secret && !got) "???" else a.description, got, a.title)

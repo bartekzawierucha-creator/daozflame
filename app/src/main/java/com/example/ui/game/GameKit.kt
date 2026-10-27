@@ -55,17 +55,20 @@ import kotlin.math.max
 val BrushFont = FontFamily(Font(R.font.ma_shan_zheng))
 
 /** Moduły gry otwierane ze sceny sekty. Znak = symbol pędzlem w tle modułu. */
-enum class GameModule(val title: String, val glyph: String) {
-    PALACE("Pałac Sekty", "殿"),
-    ADEPTS("Adepci", "剑"),
-    ALCHEMY("Alchemia", "丹"),
-    FORGE("Kuźnia", "锻"),
-    BEASTS("Bestie", "兽"),
-    WORLD("Świat", "界"),
-    CLANS("Klany", "盟"),
-    DAO_NET("Sieć Dao", "网"),
-    VAULT("Magazyn", "库"),
-    OMEN("Omen niebios", "命")
+enum class GameModule(private val pl: String, val glyph: String, private val en: String) {
+    PALACE("Pałac Sekty", "殿", "Sect Palace"),
+    ADEPTS("Adepci", "剑", "Disciples"),
+    ALCHEMY("Alchemia", "丹", "Alchemy"),
+    FORGE("Kuźnia", "锻", "Forge"),
+    BEASTS("Bestie", "兽", "Beasts"),
+    WORLD("Świat", "界", "World"),
+    CLANS("Klany", "盟", "Clans"),
+    DAO_NET("Sieć Dao", "网", "Dao Network"),
+    VAULT("Magazyn", "库", "Vault"),
+    OMEN("Omen niebios", "命", "Heavenly Omen");
+
+    /** Nazwa w języku urządzenia (Etap 9). */
+    val title: String get() = com.example.ui.i18n.Lang.t(pl, en)
 }
 
 typealias OpenModule = (GameModule, Offset) -> Unit
@@ -516,7 +519,7 @@ fun ModuleScaffold(
                     .testTag("module_back"),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Filled.ArrowBack, contentDescription = "Wróć do sekty", tint = Aaa.GoldHi, modifier = Modifier.size(19.dp))
+                Icon(Icons.Filled.ArrowBack, contentDescription = com.example.ui.i18n.Lang.t("Wróć do sekty", "Back to the sect"), tint = Aaa.GoldHi, modifier = Modifier.size(19.dp))
             }
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
