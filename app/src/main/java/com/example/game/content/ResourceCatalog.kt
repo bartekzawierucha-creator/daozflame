@@ -47,7 +47,7 @@ object ResourceCatalog {
         list.filter { it.tier == 1 || it.sourceRegionId == null || it.sourceRegionId in exploredRegionIds }
 
     /** Losuje surowiec: rzadsze poziomy mają mniejszą wagę (tier 1 = 16, tier 6 = 1). */
-    fun pickWeighted(pool: List<ResourceDef>, random: kotlin.random.Random = kotlin.random.Random): ResourceDef? {
+    fun pickWeighted(pool: List<ResourceDef>, random: kotlin.random.Random): ResourceDef? {
         if (pool.isEmpty()) return null
         val weights = pool.map { (32 shr it.tier.coerceIn(1, 6)).coerceAtLeast(1) }
         var roll = random.nextInt(weights.sum())
