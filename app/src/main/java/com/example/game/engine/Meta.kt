@@ -72,8 +72,8 @@ object EraModifiers {
 object Rebirth {
     const val MIN_DAY = 1_200
     const val SUCCESSION_DAY = 120
-    const val START_STONES_PER_TIER = 10_000
-    const val START_STATS_PER_TIER = 0.08
+    const val START_STONES_PER_TIER = 20_000
+    const val START_STATS_PER_TIER = 0.10
 
     fun power(s: GameState): Long =
         s.spiritStones.toLong() + 50L * s.sectReputation + 50L * s.disciples.sumOf { it.combatPower } + if (Story.ending(s) > 0) 1_000_000L else 0L

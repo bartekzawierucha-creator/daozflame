@@ -148,8 +148,19 @@ object BalanceSimulator {
         morale = s.morale
     )
 
-    private fun apply(s: GameState, c: GameCommand): GameState = GameEngine.apply(s, c).state
+    private fun apply(s: GameState, c: GameCommand): GameState {
+        val r = GameEngine.apply(s, c).state
+        tracker?.invoke(c::class.simpleName ?: "?", (r.spiritStones - s.spiritStones).toLong())
+        return r
+    }
     fun actPublic(s: GameState): GameState = act(s, Profile.ACTIVE).first
+
+    /** Diagnostyka: ta sama decyzja bota, ale każda komenda raportuje zmianę kamieni. */
+    fun actTracked(s: GameState, report: (String, Long) -> Unit): GameState {
+        tracker = report
+        return try { act(s, Profile.ACTIVE).first } finally { tracker = null }
+    }
+    private var tracker: ((String, Long) -> Unit)? = null
 
     /** Decyzje bota. Zwraca (stan, pokonani bossowie, porażki). */
     private fun act(start: GameState, profile: Profile): Triple<GameState, Int, Int> {
