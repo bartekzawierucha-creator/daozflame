@@ -36,7 +36,8 @@ object BalanceSimulator {
         val disciples: Int,
         val topRealm: CultivationRealm,
         val regionsExplored: Int,
-        val pills: Int
+        val pills: Int,
+        val morale: Int = 0
     )
 
     data class Run(
@@ -88,7 +89,8 @@ object BalanceSimulator {
         disciples = s.disciples.size,
         topRealm = s.disciples.maxOf { it.realm },
         regionsExplored = s.regions.count { it.explorationProgress > 0 },
-        pills = s.inventory[GameContent.BREAKTHROUGH_PILL] ?: 0
+        pills = s.inventory[GameContent.BREAKTHROUGH_PILL] ?: 0,
+        morale = s.morale
     )
 
     private fun apply(s: GameState, c: GameCommand): GameState = GameEngine.apply(s, c).state
@@ -104,21 +106,35 @@ object BalanceSimulator {
             val best = ev.choices.indices.maxBy { i -> ev.choices[i].stoneChange + ev.choices[i].repChange * 5 }
             s = apply(s, GameCommand.EventChoice(best))
         }
+        // Jedzenie: każdy gracz dokupuje ryż, gdy zostaje na mniej niż 5 dni.
+        val food = s.inventory[com.example.game.engine.DiscipleRules.FOOD] ?: 0
+        if (s.e2Initialized && food < s.disciples.size * 10) s = apply(s, GameCommand.BuyFood(s.disciples.size * 20))
         if (profile == Profile.PASSIVE) return Triple(s, 0, 0)
+
+        // Awanse i darmowe przyjęcia na egzaminie.
+        s.disciples.filter { com.example.game.engine.DiscipleRules.canPromote(s, it) }.forEach { s = apply(s, GameCommand.Promote(it.id)) }
+        if (s.e2Initialized && com.example.game.engine.SectCommands.admissionCost(s) == 0) {
+            s.availableRecruits.maxByOrNull { it.spiritRoot?.grade?.ordinal ?: 0 }?.let { s = apply(s, GameCommand.Recruit(it.id)) }
+        }
+
+        // Rezerwa: 5 dni pensji, utrzymania i jedzenia – rozsądny gracz nie schodzi poniżej.
+        val reserve = 5 * (s.disciples.sumOf { com.example.game.engine.DiscipleRules.salary(it) } +
+            com.example.game.engine.EdictCatalog.dailyUpkeep(s) + s.disciples.size * com.example.game.engine.DiscipleRules.FOOD_PRICE)
+        fun canSpend(amount: Int) = s.spiritStones - amount >= reserve
 
         // Warzenie pigułek przełomu, gdy są składniki.
         val pillRecipe = GameContent.recipeForPill(GameContent.BREAKTHROUGH_PILL)
-        if (pillRecipe != null && (s.inventory[GameContent.BREAKTHROUGH_PILL] ?: 0) < 5) {
+        if (pillRecipe != null && (s.inventory[GameContent.BREAKTHROUGH_PILL] ?: 0) < 5 && canSpend(pillRecipe.requiredSpiritStones)) {
             s = apply(s, GameCommand.BrewPill(pillRecipe.id))
         }
 
         // Rozbudowa Sali Alchemii, gdy stać nas z zapasem.
         s.facilities.find { it.type == FacilityType.ALCHEMY_CHAMBER }?.let { f ->
-            if (s.spiritStones > f.upgradeCostStones * 3) s = apply(s, GameCommand.UpgradeFacility(FacilityType.ALCHEMY_CHAMBER))
+            if (s.spiritStones > f.upgradeCostStones * 3 && canSpend(f.upgradeCostStones)) s = apply(s, GameCommand.UpgradeFacility(FacilityType.ALCHEMY_CHAMBER))
         }
 
         // Rekrutacja najlepszego kandydata przy nadwyżce.
-        if (s.spiritStones > 2000 && s.disciples.size < 30) {
+        if (s.spiritStones > 2000 && s.disciples.size < 30 && canSpend(com.example.game.engine.SectCommands.admissionCost(s))) {
             s.availableRecruits.maxByOrNull { it.combatPower }?.let { s = apply(s, GameCommand.Recruit(it.id)) }
         }
 
@@ -180,11 +196,13 @@ object BalanceSimulator {
         appendLine()
         appendLine("## Stan końcowy")
         appendLine()
-        appendLine("| Profil | Dzień gry | Kamienie | Reputacja | Uczniowie | Krainy | Bossowie | Porażki |")
-        appendLine("| --- | --- | --- | --- | --- | --- | --- | --- |")
+        appendLine("| Profil | Dzień gry | Kamienie | Reputacja | Uczniowie (min) | Morale (min) | Krainy | Bossowie | Porażki |")
+        appendLine("| --- | --- | --- | --- | --- | --- | --- | --- | --- |")
         runs.forEach { r ->
             val last = r.snapshots.last()
-            appendLine("| ${r.profile.label} | ${last.day} | ${last.stones} | ${last.reputation} | ${last.disciples} | ${last.regionsExplored} | ${r.bossesDefeated} | ${r.defeats} |")
+            val minD = r.snapshots.minOf { it.disciples }
+            val minM = r.snapshots.minOf { it.morale }
+            appendLine("| ${r.profile.label} | ${last.day} | ${last.stones} | ${last.reputation} | ${last.disciples} ($minD) | ${last.morale} ($minM) | ${last.regionsExplored} | ${r.bossesDefeated} | ${r.defeats} |")
         }
         appendLine()
         appendLine("## Ostrzeżenia")
@@ -202,6 +220,8 @@ object BalanceSimulator {
             if (last > 1_000_000) add("${r.profile.label}: ponad milion kamieni – sprawdź nieskończone źródła.")
             if (mid > 0 && last / mid > 50) add("${r.profile.label}: kamienie rosną wykładniczo (×${"%.0f".format(last / mid)} w drugiej połowie).")
             if (last < first && r.profile != Profile.PASSIVE) add("${r.profile.label}: kamienie spadły względem startu – możliwa spirala kosztów.")
+            if (r.snapshots.minOf { it.disciples } < r.snapshots.first().disciples / 2) add("${r.profile.label}: sekta straciła ponad połowę uczniów – sprawdź lojalność i pensje.")
+            if (r.snapshots.minOf { it.morale } < 20) add("${r.profile.label}: morale spadło poniżej 20.")
             if (r.realmReachedAtHours.keys.maxOrNull() == CultivationRealm.entries.last() && r.snapshots.last().hours < 24) {
                 add("${r.profile.label}: szczyt drabiny kultywacji w mniej niż dobę gry.")
             }

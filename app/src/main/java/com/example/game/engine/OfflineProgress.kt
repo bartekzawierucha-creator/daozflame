@@ -19,8 +19,7 @@ object OfflineProgress {
     const val EFFICIENCY = 0.6
     const val SECONDS_PER_TICK = 1.6
     const val MIN_ELAPSED_MS = 60_000L
-    /** Średnio ok. 4,3 cyklu na dzień (pełnia wydłuża noc w 30% przypadków). */
-    const val TICKS_PER_DAY = 4.3
+    val TICKS_PER_DAY = TimePhase.TICKS_PER_DAY
 
     data class Report(
         val elapsedMs: Long,
@@ -31,7 +30,9 @@ object OfflineProgress {
         val days: Int,
         val qiGained: Map<String, Int>,
         val readyForBreakthrough: Int,
-        val items: Map<String, Int>
+        val items: Map<String, Int>,
+        /** Ilu racji ryżu zabrakło w czasie nieobecności. */
+        val foodShortage: Int = 0
     ) {
         val capped: Boolean get() = countedMs < elapsedMs
     }
@@ -52,7 +53,8 @@ object OfflineProgress {
         val stones = (perTick * effective).toInt()
 
         val days = (ticks / TICKS_PER_DAY).toInt()
-        val upkeep = EdictCatalog.dailyUpkeep(s) * days
+        val salaries = if (s.e2Initialized) s.disciples.sumOf { DiscipleRules.salary(it) } else 0
+        val upkeep = (EdictCatalog.dailyUpkeep(s) + salaries) * days
 
         // Qi: wartość oczekiwana medytacji, z olśnieniem; stop na 99%.
         val qiGained = mutableMapOf<String, Int>()
@@ -93,6 +95,20 @@ object OfflineProgress {
         val inventory = s.inventory.toMutableMap()
         items.forEach { (k, v) -> inventory.merge(k, v, Int::plus) }
 
+        // Jedzenie: zużycie minus produkcja pól; braki obniżają morale raz (bez dezercji offline).
+        var morale = s.morale
+        var foodShort = 0
+        if (s.e2Initialized) {
+            val need = (s.disciples.size - DiscipleRules.dailyFoodProduction(s.disciples.size)) * days
+            val have = inventory[DiscipleRules.FOOD] ?: 0
+            if (have >= need) inventory[DiscipleRules.FOOD] = have - need
+            else {
+                inventory[DiscipleRules.FOOD] = 0
+                foodShort = need - have
+                morale = (morale - DiscipleRules.HUNGER_MORALE).coerceAtLeast(0)
+            }
+        }
+
         val report = Report(
             elapsedMs = elapsedMs,
             countedMs = counted,
@@ -102,14 +118,16 @@ object OfflineProgress {
             days = days,
             qiGained = qiGained,
             readyForBreakthrough = disciples.count { it.realmProgress >= 99 },
-            items = items
+            items = items,
+            foodShortage = foodShort
         )
         return ok(
             s.copy(
                 spiritStones = (s.spiritStones + stones - upkeep).coerceAtLeast(0),
                 currentDay = s.currentDay + days,
                 disciples = disciples,
-                inventory = inventory.toMap()
+                inventory = inventory.toMap(),
+                morale = morale
             ),
             null,
             GameEvent.OfflineSummary(report)

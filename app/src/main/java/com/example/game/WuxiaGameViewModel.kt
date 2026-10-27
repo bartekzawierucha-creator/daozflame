@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.game.engine.ActiveCombat
+import com.example.game.engine.DiscipleRules
+import com.example.game.engine.SectCommands
 import com.example.game.engine.GameCommand
 import com.example.game.engine.GameContent
 import com.example.game.engine.GameEngine
@@ -67,7 +69,16 @@ data class WuxiaUiState(
     /** Ostatnia celebracja (np. przełom) – id rośnie przy każdej nowej. */
     val celebration: CelebrationUi? = null,
     /** Rozbicie przyrostu Qi sekty: „źródło: wartość” (tooltip „skąd to?”). */
-    val qiBreakdown: List<String> = emptyList()
+    val qiBreakdown: List<String> = emptyList(),
+    // Etap 2
+    val morale: Int = 60,
+    val food: Int = 0,
+    val promotableIds: Set<String> = emptySet(),
+    /** Ile dni zostało do końca egzaminu (0 = zamknięty). */
+    val examDaysLeft: Int = 0,
+    val nextExamInDays: Int = 0,
+    val admissionCost: Int = 0,
+    val feastReadyInDays: Int = 0
 )
 
 data class TutorialUi(val index: Int, val total: Int, val title: String, val text: String, val waitingForAction: Boolean)
@@ -120,7 +131,7 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
         loaded?.state?.let { state ->
             if (loaded.fromBackup) notification = "Główny zapis był uszkodzony – wczytano kopię zapasową."
             pendingOfflineMs = if (FeatureFlags.OFFLINE_PROGRESS && state.lastActiveAtMs > 0) now - state.lastActiveAtMs else 0L
-            return state.copy(lastActiveAtMs = now)
+            return GameEngine.normalize(state).copy(lastActiveAtMs = now)
         }
         if (loaded?.error != null) notification = "Nie udało się wczytać zapisu – rozpoczęto nową grę."
         return GameEngine.newGame(worldSeed = now, nowMs = now)
@@ -258,6 +269,15 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     fun attemptBreakthrough(discipleId: String, usePill: Boolean) = dispatch(GameCommand.AttemptBreakthrough(discipleId, usePill))
     fun unlockSkill(discipleId: String, skillId: String) = dispatch(GameCommand.UnlockSkill(discipleId, skillId))
     fun usePill(discipleId: String, pillName: String) = dispatch(GameCommand.UsePill(discipleId, pillName))
+
+    // --- Etap 2: życie sekty ---
+
+    fun promote(discipleId: String) = dispatch(GameCommand.Promote(discipleId))
+    fun punish(discipleId: String) = dispatch(GameCommand.Punish(discipleId))
+    fun pardon(discipleId: String) = dispatch(GameCommand.Pardon(discipleId))
+    fun testCandidate(candidateId: String) = dispatch(GameCommand.TestCandidate(candidateId))
+    fun buyFood(rations: Int) = dispatch(GameCommand.BuyFood(rations))
+    fun holdFeast() = dispatch(GameCommand.HoldFeast)
 
     // --- Rzemiosło ---
 
@@ -430,6 +450,13 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
             TutorialUi(game.tutorialStep, Tutorial.steps.size, step.title, step.text, waitingForAction = step.goal != null)
         },
         celebration = celebration,
-        qiBreakdown = Modifiers.sect(game).breakdown(Stat.QI_GAIN)
+        qiBreakdown = Modifiers.sect(game).breakdown(Stat.QI_GAIN),
+        morale = game.morale,
+        food = game.inventory[DiscipleRules.FOOD] ?: 0,
+        promotableIds = game.disciples.filter { DiscipleRules.canPromote(game, it) }.map { it.id }.toSet(),
+        examDaysLeft = (game.examOpenUntilDay - game.currentDay + 1).coerceAtLeast(0),
+        nextExamInDays = DiscipleRules.EXAM_EVERY_DAYS - game.currentDay % DiscipleRules.EXAM_EVERY_DAYS,
+        admissionCost = SectCommands.admissionCost(game),
+        feastReadyInDays = (game.nextFeastDay - game.currentDay).coerceAtLeast(0)
     )
 }

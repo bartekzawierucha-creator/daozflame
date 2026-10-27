@@ -10,4 +10,7 @@ object FeatureFlags {
     const val EDICTS_V2 = true
     const val OFFLINE_PROGRESS = true
     const val TUTORIAL = true
+
+    // Etap 2
+    const val DISCIPLES_V2 = true
 }

@@ -12,6 +12,7 @@ class TickFrame(val before: GameState, val ctx: EngineContext) {
     val sectMods: ModifierStack = Modifiers.sect(before)
     var tick: Long = before.tick + 1
     var timeOfDay: TimeOfDay = before.timeOfDay
+    var phaseTick: Int = before.phaseTick
     var day: Int = before.currentDay
     var stonesGained: Int = 0
     var reputationGained: Int = 0
@@ -29,20 +30,35 @@ class TickFrame(val before: GameState, val ctx: EngineContext) {
         inventory[item] = (inventory[item] ?: 0) + amount
     }
 
-    /** Koszty utrzymania pobierane w tym cyklu (edykty). */
+    /** Koszty pobierane w tym cyklu (utrzymanie edyktów, pensje) – nie podlegają premiom dochodu. */
     var upkeepPaid: Int = 0
     var decrees = before.sectLeader.activeDecrees
+    var morale: Int = before.morale
+    var hungryOnDay: Int = before.hungryOnDay
+    var recruits = before.availableRecruits
+    var examOpenUntilDay: Int = before.examOpenUntilDay
+    var admittedInExam: Int = before.admittedInExam
+    var lastTournamentDay: Int = before.lastTournamentDay
+    val returnedArtifacts = mutableListOf<com.example.model.Artifact>()
 
     fun toResult(): StepResult {
         val income = (stonesGained * sectMods.factor(Stat.STONE_INCOME)).toInt()
         val rep = if (reputationGained > 0) (reputationGained * sectMods.factor(Stat.REPUTATION_GAIN)).toInt() else reputationGained
         val state = before.copy(
             tick = tick,
+            phaseTick = phaseTick,
             currentDay = day,
             timeOfDay = timeOfDay,
             spiritStones = (before.spiritStones + income - upkeepPaid).coerceAtLeast(0),
             sectReputation = before.sectReputation + rep,
             sectLeader = before.sectLeader.copy(activeDecrees = decrees),
+            morale = morale,
+            hungryOnDay = hungryOnDay,
+            availableRecruits = recruits,
+            examOpenUntilDay = examOpenUntilDay,
+            admittedInExam = admittedInExam,
+            lastTournamentDay = lastTournamentDay,
+            vaultArtifacts = before.vaultArtifacts + returnedArtifacts,
             inventory = inventory.toMap(),
             disciples = disciples,
             activeEventId = activeEventId,
@@ -58,9 +74,21 @@ fun interface TickPhase {
     fun run(frame: TickFrame)
 }
 
-/** 1. Pora dnia i dzień. */
+/**
+ * 1. Pora dnia i dzień. Każda pora trwa [TICKS_PER_PHASE] cykli (6 × 1,6 s ≈ 10 s),
+ * więc doba to ok. 40 s, a rok gry (120 dni) ok. 80 minut gry.
+ */
 object TimePhase : TickPhase {
+    const val TICKS_PER_PHASE = 6
+    /** Średnia długość doby w cyklach (pełnia dokłada noc w 30% dni). */
+    const val TICKS_PER_DAY = TICKS_PER_PHASE * 4.3
+
     override fun run(frame: TickFrame) {
+        if (frame.before.phaseTick + 1 < TICKS_PER_PHASE) {
+            frame.phaseTick = frame.before.phaseTick + 1
+            return
+        }
+        frame.phaseTick = 0
         val rng = frame.ctx.rng("time")
         frame.timeOfDay = when (frame.before.timeOfDay) {
             TimeOfDay.DAWN -> TimeOfDay.DAY
@@ -111,7 +139,7 @@ object DiscipleWorkPhase : TickPhase {
         val s = frame.before
         val rng = frame.ctx.rng("work")
         val exploredRegionIds = s.regions.filter { it.explorationProgress > 0 }.map { it.id }.toSet()
-        val gatherChance = 0.5 * frame.sectMods.factor(Stat.GATHER_YIELD)
+        fun gatherChance(d: com.example.model.Disciple) = 0.5 * Modifiers.disciple(frame.sectMods, d).factor(Stat.GATHER_YIELD)
 
         frame.disciples = frame.disciples.map { disciple ->
             when (disciple.role) {
@@ -130,14 +158,16 @@ object DiscipleWorkPhase : TickPhase {
                     )
                 }
                 DiscipleRole.HERB_GATHERING -> {
-                    if (rng.nextDouble() < gatherChance) {
+                    if (rng.nextDouble() < gatherChance(disciple)) {
                         ResourceCatalog.pickWeighted(ResourceCatalog.gatherable(ResourceCatalog.herbs, exploredRegionIds), rng)
                             ?.let { frame.add(it.name, 1) }
+                        // Pola ryżu duchowego przy zbieraniu ziół – źródło jedzenia sekty.
+                        if (frame.before.e2Initialized) frame.add(DiscipleRules.FOOD, 2)
                     }
                     disciple
                 }
                 DiscipleRole.MINING -> {
-                    if (rng.nextDouble() < gatherChance) {
+                    if (rng.nextDouble() < gatherChance(disciple)) {
                         ResourceCatalog.pickWeighted(ResourceCatalog.gatherable(ResourceCatalog.minerals, exploredRegionIds), rng)
                             ?.let { frame.add(it.name, 1) }
                     }

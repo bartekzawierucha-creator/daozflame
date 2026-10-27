@@ -86,6 +86,7 @@ object Modifiers {
         }
         val alliances = s.rivalSects.filter { it.status == DiplomaticStatus.ALLIANCE }.sumOf { it.cultivationBuffBonusPercent }
         if (alliances != 0) list += Modifier("Sojusze sekt", Stat.QI_GAIN, ModOp.PERCENT, alliances.toDouble())
+        list += DiscipleRules.sectModifiers(s)
         return ModifierStack(list)
     }
 
@@ -97,6 +98,7 @@ object Modifiers {
             list += Modifier("Cecha: ${it.name}", Stat.QI_GAIN, ModOp.PERCENT, it.cultivationBonusPercent.toDouble())
         }
         if (d.ancientClan.name.contains("Ye")) list += Modifier("Ród Ye", Stat.QI_GAIN, ModOp.PERCENT, 50.0)
+        list += DiscipleRules.discipleModifiers(d)
         return sect + list
     }
 }

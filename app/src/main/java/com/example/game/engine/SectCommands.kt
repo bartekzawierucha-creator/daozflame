@@ -27,21 +27,46 @@ object SectCommands {
     private fun GameState.withDisciple(id: String, f: (Disciple) -> Disciple) =
         copy(disciples = disciples.map { if (it.id == id) f(it) else it })
 
+    private fun examOpen(s: GameState) = s.examOpenUntilDay >= s.currentDay && s.availableRecruits.isNotEmpty()
+
+    /** Koszt przyjęcia kolejnego kandydata: pierwsi dwaj na egzaminie za darmo, potem 300 × liczba przyjętych. */
+    fun admissionCost(s: GameState): Int =
+        if (!s.e2Initialized) RECRUIT_COST
+        else if (s.admittedInExam < DiscipleRules.FREE_ADMISSIONS) 0
+        else DiscipleRules.ADMISSION_STEP_COST * s.admittedInExam
+
+    private fun admitted(d: Disciple): Disciple = d.copy(
+        traitIds = d.traitIds + d.hiddenTraitIds.filter { it != "traitor" },
+        hiddenTraitIds = d.hiddenTraitIds.filter { it == "traitor" },
+        rank = SectRank.OUTER,
+        loyalty = 60
+    )
+
     fun recruit(s: GameState, id: String): StepResult {
         val recruit = s.availableRecruits.find { it.id == id } ?: return ok(s)
-        if (s.spiritStones < RECRUIT_COST) return fail(s, "Zbyt mało Kamieni Ducha na ceremonię inicjacji ($RECRUIT_COST wymagane)!")
+        if (s.e2Initialized && !examOpen(s)) return fail(s, "Egzamin wstępny jest zamknięty.")
+        if (s.e2Initialized && s.disciples.size >= DiscipleRules.capacity(s)) {
+            return fail(s, "Pawilon Kultywacji mieści ${DiscipleRules.capacity(s)} uczniów. Rozbuduj go, by przyjąć więcej.")
+        }
+        val cost = admissionCost(s)
+        if (s.spiritStones < cost) return fail(s, "Zbyt mało Kamieni Ducha na ceremonię inicjacji ($cost wymagane)!")
         return ok(
             s.copy(
-                spiritStones = s.spiritStones - RECRUIT_COST,
+                spiritStones = s.spiritStones - cost,
                 sectReputation = s.sectReputation + 10,
-                disciples = s.disciples + recruit,
-                availableRecruits = s.availableRecruits.filter { it.id != id }
+                disciples = s.disciples + if (s.e2Initialized) admitted(recruit) else recruit,
+                availableRecruits = s.availableRecruits.filter { it.id != id },
+                admittedInExam = s.admittedInExam + 1
             ),
-            "Przyjęto nowego adepta: ${recruit.name} do Sekty!"
+            "Przyjęto nowego adepta: ${recruit.name} do Sekty!" + if (cost == 0 && s.e2Initialized) " (bez opłaty)" else ""
         )
     }
 
     fun refreshRecruits(s: GameState, ctx: EngineContext): StepResult {
+        if (s.e2Initialized) {
+            val next = (s.currentDay / DiscipleRules.EXAM_EVERY_DAYS + 1) * DiscipleRules.EXAM_EVERY_DAYS
+            return fail(s, "Kandydaci przybywają tylko na egzamin wstępny – następny za ${next - s.currentDay} dni.")
+        }
         if (s.spiritStones < REFRESH_COST) return fail(s, "Potrzeba $REFRESH_COST Kamieni Ducha na zwołanie próby rekrutacyjnej!")
         return ok(
             s.copy(
@@ -53,19 +78,18 @@ object SectCommands {
     }
 
     fun recruitAll(s: GameState): StepResult {
-        val recruits = s.availableRecruits
-        if (recruits.isEmpty()) return fail(s, "Brak kandydatów w Sali Rekrutacji!")
-        val total = recruits.size * RECRUIT_COST
-        if (s.spiritStones < total) return fail(s, "Zbyt mało Kamieni Ducha na masową rekrutację ($total wymagane)!")
-        return ok(
-            s.copy(
-                spiritStones = s.spiritStones - total,
-                sectReputation = s.sectReputation + recruits.size * 10,
-                disciples = s.disciples + recruits,
-                availableRecruits = emptyList()
-            ),
-            "Przyjęto jednocześnie ${recruits.size} nowych adeptów do Sekty!"
-        )
+        if (s.availableRecruits.isEmpty()) return fail(s, "Brak kandydatów w Sali Rekrutacji!")
+        if (s.e2Initialized && !examOpen(s)) return fail(s, "Egzamin wstępny jest zamknięty.")
+        var state = s
+        var count = 0
+        for (r in s.availableRecruits) {
+            val next = recruit(state, r.id)
+            if (next.state.availableRecruits.size == state.availableRecruits.size) break
+            state = next.state
+            count++
+        }
+        if (count == 0) return fail(s, "Zbyt mało Kamieni Ducha na przyjęcie kandydatów (${admissionCost(s)} wymagane)!")
+        return ok(state, "Przyjęto jednocześnie $count nowych adeptów do Sekty!")
     }
 
     fun assignRole(s: GameState, id: String, role: DiscipleRole): StepResult =
@@ -127,13 +151,17 @@ object SectCommands {
         val d = s.disciple(id) ?: return ok(s)
         val skill = GameContent.skill(skillId) ?: return ok(s)
         if (skillId in d.unlockedSkillIds) return fail(s, "Ta technika walki została już opanowana!")
-        if (d.daoPoints < skill.costDaoPoints) return fail(s, "Zbyt mało punktów Dao (${skill.costDaoPoints} wymagane)!")
+        if (s.e2Initialized && skill.tier > d.rank.maxTechniqueTier) {
+            return fail(s, "Technika stopnia ${skill.tier} wymaga rangi wyższej niż ${d.rank.polishName}.")
+        }
+        val cost = if (s.e2Initialized) DiscipleRules.skillCost(d, skill.costDaoPoints) else skill.costDaoPoints
+        if (d.daoPoints < cost) return fail(s, "Zbyt mało punktów Dao ($cost wymagane)!")
         if (d.martialSchool != skill.martialSchool) return fail(s, "Uczeń należy do innej szkoły walki!")
         val hp = d.maxHp + skill.hpBonus
         val atk = d.attack + skill.attackBonus
         val def = d.defense + skill.defenseBonus
         val updated = d.copy(
-            daoPoints = d.daoPoints - skill.costDaoPoints,
+            daoPoints = d.daoPoints - cost,
             unlockedSkillIds = d.unlockedSkillIds + skillId,
             attack = atk,
             defense = def,

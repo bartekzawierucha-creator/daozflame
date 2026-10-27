@@ -73,14 +73,14 @@ class GameEngineTest {
 
     @Test
     fun timeAdvancesAndDaysPass() {
-        val s = ticks(GameEngine.newGame(2L), 40)
-        assertTrue(s.currentDay >= 9)
-        assertEquals(40L, s.tick)
+        val s = ticks(GameEngine.newGame(2L), 240)
+        assertTrue("Dzień ${s.currentDay}", s.currentDay in 9..11)
+        assertEquals(240L, s.tick)
     }
 
     @Test
     fun baseIncomeIsTwoStonesPerDisciple() {
-        val s = GameEngine.newGame(3L).copy(territories = emptyList(), disciples = GameEngine.newGame(3L).disciples.map { it.copy(role = DiscipleRole.SECT_GUARD) })
+        val s = GameEngine.newGame(3L).copy(morale = 50, territories = emptyList(), disciples = GameEngine.newGame(3L).disciples.map { it.copy(role = DiscipleRole.SECT_GUARD) })
         val after = GameEngine.apply(s, GameCommand.Tick).state
         assertEquals(s.spiritStones + 2 * s.disciples.size, after.spiritStones)
     }
@@ -125,11 +125,11 @@ class GameEngineTest {
         val s = GameEngine.newGame(10L)
         val id = s.availableRecruits.first().id
         val after = run(s, GameCommand.Recruit(id))
-        assertEquals(s.spiritStones - SectCommands.RECRUIT_COST, after.spiritStones)
+        assertEquals(s.spiritStones - SectCommands.admissionCost(s), after.spiritStones)
         assertTrue(after.disciples.any { it.id == id })
         assertFalse(after.availableRecruits.any { it.id == id })
 
-        val poor = s.copy(spiritStones = 10)
+        val poor = s.copy(spiritStones = 10, admittedInExam = 5)
         val r = GameEngine.apply(poor, GameCommand.Recruit(id))
         assertEquals(10, r.state.spiritStones)
         assertNotNull(r.notice)

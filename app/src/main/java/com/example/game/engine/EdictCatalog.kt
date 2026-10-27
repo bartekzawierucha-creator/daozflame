@@ -7,8 +7,7 @@ import com.example.model.SectDecree
 /**
  * Edykty sekty: stała premia za stały koszt. Aktywne maks. 2 (3 od poziomu 5 Sali Dyplomacji),
  * zmiana edyktu ma 3 dni odnowienia, utrzymanie płatne o świcie.
- * Uwaga na skalę: dzień gry trwa dziś ok. 7 s, więc utrzymanie musi być małe względem dochodu
- * (~50 kamieni/dzień z samej podstawy). Skala czasu zostanie przebudowana w Etapie 3.
+ * Skala: doba ≈ 26 cykli, podstawa dochodu ≈ 52 kamienie na ucznia dziennie.
  *
  * Gdy [FeatureFlags.EDICTS_V2] jest wyłączone, działa tylko dawny Edykt Złotego Smoka (+35% Qi).
  */
@@ -41,9 +40,9 @@ object EdictCatalog {
 
     val all: List<Edict> = listOf(
         edict("dec_1", "Edykt Złotego Smoka", "🐉", "Podnosi absorpcję Qi dla wszystkich uczniów.",
-            "+35% Qi", "10 kamieni dziennie", 10, Stat.QI_GAIN pct 35.0),
+            "+35% Qi", "40 kamieni dziennie", 40, Stat.QI_GAIN pct 35.0),
         edict("dec_2", "Dekret Niebiańskiego Zaciągu", "🏮", "Na egzamin wstępny przybywa więcej kandydatów.",
-            "+2 kandydatów", "15 kamieni dziennie", 15, Stat.RECRUIT_POOL flat 2.0),
+            "+2 kandydatów", "60 kamieni dziennie", 60, Stat.RECRUIT_POOL flat 2.0),
         edict("dec_3", "Tarcza Ochronna Patriarchy", "🛡️", "Patriarcha osłania przełomy uczniów własnym Qi.",
             "+25 pkt szansy przełomu", "−10% Qi", 0, Stat.BREAKTHROUGH_CHANCE flat 25.0, Stat.QI_GAIN pct -10.0),
         edict("dec_4", "Imperialny Pakt Handlowy", "💎", "Szlaki ziół i minerałów są chronione przez Imperium.",

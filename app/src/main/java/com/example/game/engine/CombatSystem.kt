@@ -29,7 +29,7 @@ object CombatSystem {
         val beast = region.bossBeast ?: return ok(s)
         val penalty = hazardPenalty(region.hazard, d.constitution)
         val raw = d.attack + (s.activeFlame?.combatDamageBonus ?: 0) - penalty
-        val attack = (raw * Modifiers.sect(s).factor(Stat.COMBAT_DAMAGE)).toInt().coerceAtLeast(10)
+        val attack = (raw * Modifiers.disciple(Modifiers.sect(s), d).factor(Stat.COMBAT_DAMAGE)).toInt().coerceAtLeast(10)
         val combat = ActiveCombat(
             regionId = region.id,
             discipleId = d.id,
@@ -142,7 +142,8 @@ object CombatSystem {
             disciples = s.disciples.map { if (it.id == c.discipleId) it.copy(currentHp = c.discipleHp.coerceAtLeast(10)) else it },
             spiritStones = s.spiritStones + if (victory) beast?.spiritStoneReward ?: 0 else 0,
             sectReputation = s.sectReputation + if (victory) (35 * Modifiers.sect(s).factor(Stat.REPUTATION_GAIN)).toInt() else -5,
-            combat = c.copy(outcome = victory, rewardText = reward, logs = c.logs + CombatLogEntry(c.round + 1, reward))
+            combat = c.copy(outcome = victory, rewardText = reward, logs = c.logs + CombatLogEntry(c.round + 1, reward)),
+            morale = if (s.e2Initialized) (s.morale + if (victory) 2 else -3).coerceIn(0, 100) else s.morale
         )
         return StepResult(state, extra.toList() + GameEvent.CombatEnded(victory))
     }
