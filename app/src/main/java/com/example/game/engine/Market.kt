@@ -16,7 +16,8 @@ import kotlin.random.Random
  */
 object Market {
 
-    const val MIN_MULT = 0.6
+    /** Nasycenie rynku: zrzucanie towaru może zbić cenę do 10% (wcześniej 60% – źródło nieskończonych kamieni). */
+    const val MIN_MULT = 0.1
     const val MAX_MULT = 1.4
     const val SELL_PRESSURE = 0.02
     const val RECOVERY = 0.05
@@ -98,10 +99,21 @@ object Market {
     fun buy(s: GameState, item: String, quantity: Int): StepResult {
         if (!buyable(item)) return fail(s, "Kupcy nie sprzedają: $item.")
         if (quantity <= 0) return ok(s)
-        val cost = buyPrice(s, item) * quantity
+        // Każda kupiona sztuka podbija cenę o 2% – brak spekulacji na krachu.
+        val base = basePrice(item) ?: 0
+        var mult = multiplier(s, item)
+        var cost = 0
+        repeat(quantity) {
+            cost += (base * mult * BUY_MARKUP).roundToInt().coerceAtLeast(1)
+            mult = (mult * (1 + SELL_PRESSURE)).coerceAtMost(MAX_MULT)
+        }
         if (s.spiritStones < cost) return fail(s, "Zakup $quantity× $item kosztuje $cost kamieni.")
         return ok(
-            s.copy(spiritStones = s.spiritStones - cost, inventory = s.inventory + (item to (s.inventory[item] ?: 0) + quantity)),
+            s.copy(
+                spiritStones = s.spiritStones - cost,
+                inventory = s.inventory + (item to (s.inventory[item] ?: 0) + quantity),
+                marketMultipliers = s.marketMultipliers + (Quality.parse(item).first to mult)
+            ),
             "Kupiono $quantity× $item za $cost kamieni."
         )
     }

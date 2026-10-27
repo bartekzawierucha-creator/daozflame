@@ -20,6 +20,14 @@ android {
     versionName = "1.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+    // Etap 9: Sieć Dao (Supabase). Puste = gra offline. Źródło: zmienne środowiska albo local.properties.
+    val localProps = java.util.Properties().apply {
+      rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
+    }
+    fun daonet(key: String): String = (System.getenv(key) ?: localProps.getProperty(key) ?: "").replace("\"", "")
+    buildConfigField("String", "DAONET_URL", "\"${daonet("DAONET_URL")}\"")
+    buildConfigField("String", "DAONET_ANON_KEY", "\"${daonet("DAONET_ANON_KEY")}\"")
   }
 
   // Do not remove or modify these signingConfigs. They are necessary for building, installing,

@@ -3,7 +3,7 @@
 ## Kod (gotowe w repo)
 - [x] CI: testy JVM, symulator, zgodność walki Kotlin ↔ Edge Function, budowa APK
 - [x] Sieć Dao: schemat `supabase/schema.sql`, funkcja `supabase/functions/verify-duel`, klient `game/net/DaoNetClient.kt`
-- [x] Tryb offline bez konfiguracji (`SUPABASE_URL` puste)
+- [x] Tryb offline bez konfiguracji (`DAONET_URL` puste)
 - [x] Lokalny rejestr awarii (`CrashLog.kt`)
 - [x] Rama interfejsu po angielsku, glosariusz, plan lokalizacji treści
 
@@ -12,7 +12,7 @@
   - włączyć anonimowe logowanie;
   - wgrać `schema.sql`;
   - `supabase functions deploy verify-duel`;
-  - klucze wpisać do `.env` (`SUPABASE_URL`, `SUPABASE_ANON_KEY`).
+  - adres i klucz anon wpisać do `local.properties` albo zmiennych środowiska (`DAONET_URL`, `DAONET_ANON_KEY`).
 - [ ] Crashlytics: projekt Firebase i `google-services.json`. Plugin `google-services` jest już w buildzie i działa w trybie WARN.
 - [ ] Klucz wydania (upload key) i zmienne `KEYSTORE_PATH`, `STORE_PASSWORD`, `KEY_PASSWORD`.
 - [ ] `versionCode` / `versionName` dla wydania.

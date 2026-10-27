@@ -532,7 +532,7 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     // Leniwie: buildUi() działa już podczas konstrukcji ViewModelu, przed tymi polami.
     private val prefs by lazy { getApplication<Application>().getSharedPreferences("daonet", android.content.Context.MODE_PRIVATE) }
     private val net by lazy { com.example.game.net.DaoNetClient(
-        com.example.BuildConfig.SUPABASE_URL, com.example.BuildConfig.SUPABASE_ANON_KEY,
+        com.example.BuildConfig.DAONET_URL, com.example.BuildConfig.DAONET_ANON_KEY,
         object : com.example.game.net.DaoNetClient.TokenStore {
             override var accessToken: String?
                 get() = prefs.getString("token", null)
