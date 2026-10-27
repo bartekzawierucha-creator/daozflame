@@ -163,10 +163,10 @@ object CultivationSystem {
                 else -> CultivationRules.breakthroughChance(d, pillBonus, s.timeOfDay, mods.flat(Stat.BREAKTHROUGH_CHANCE).toInt())
             }
             return if (rng.nextInt(100) < chance) {
-                val entered = enter(d, target, pillBonus > 0, perfect = false, rng)
+                val entered = SecretStates.afterSuccess(enter(d, target, pillBonus > 0, perfect = false, rng), pillBonus > 0, s.currentDay)
                 Advance(entered, "🌟 ${d.name} wkracza w ${target.polishName}!", 25, majorSuccess = true, attempted = true)
             } else {
-                Advance(Realms.sync(d.copy(stageQi = Realms.required(d) * 0.4)), "Przełom ${d.name} się nie powiódł (postęp spadł do 40%).", attempted = true)
+                Advance(SecretStates.afterFailure(Realms.sync(d.copy(stageQi = Realms.required(d) * 0.4)), s.currentDay), "Przełom ${d.name} się nie powiódł (postęp spadł do 40%).", attempted = true)
             }
         }
 
@@ -174,11 +174,11 @@ object CultivationSystem {
         return when {
             trib.catastrophe -> Advance(null, "☠️ Katastrofa! ${d.name} nie przetrwał gniewu niebios.", -10, attempted = true, died = true, tribulation = trib)
             !trib.survived -> Advance(
-                Realms.sync(d.copy(stageQi = Realms.required(d) * 0.6, currentHp = (d.maxHp / 10).coerceAtLeast(1), injuredUntilDay = s.currentDay + 15)),
+                SecretStates.afterFailure(Realms.sync(d.copy(stageQi = Realms.required(d) * 0.6, currentHp = (d.maxHp / 10).coerceAtLeast(1), injuredUntilDay = s.currentDay + 15)), s.currentDay),
                 "⚡ ${d.name} padł pod piorunami tribulacji. Rany na 15 dni, postęp spadł do 60%.", attempted = true, tribulation = trib
             )
             else -> {
-                val entered = enter(d, target, pillBonus > 0, trib.perfect, rng)
+                val entered = SecretStates.afterSuccess(enter(d, target, pillBonus > 0, trib.perfect, rng), pillBonus > 0, s.currentDay)
                 Advance(
                     entered,
                     (if (trib.perfect) "⚡ Doskonała tribulacja! " else "⚡ ") + "${d.name} wkracza w ${target.polishName}!",

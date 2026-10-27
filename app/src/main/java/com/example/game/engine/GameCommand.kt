@@ -66,6 +66,14 @@ sealed interface GameCommand {
     // Etap 5c
     data class ScoutRegion(val regionId: String, val discipleId: String) : GameCommand
     data class EnterSecretRealm(val realmId: String, val discipleId: String) : GameCommand
+    // Etap 6
+    data class OpenMeridian(val discipleId: String, val point: Int) : GameCommand
+    data class SetBreath(val discipleId: String, val breath: Int, val place: Int) : GameCommand
+    data class DecipherScroll(val methodId: String) : GameCommand
+    data class Contemplate(val discipleId: String, val objectName: String) : GameCommand
+    data class SetResearcher(val discipleId: String?) : GameCommand
+    data class UseMirror(val discipleId: String) : GameCommand
+    data object DebugRevealSecrets : GameCommand
     data class PlaceFormationNode(val element: com.example.model.SpiritElement) : GameCommand
     data class SendSpy(val discipleId: String, val sectId: String, val type: com.example.model.SpyType) : GameCommand
     data class SectBattle(val sectId: String, val discipleIds: List<String>) : GameCommand

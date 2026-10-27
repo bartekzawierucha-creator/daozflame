@@ -198,8 +198,16 @@ object CraftV2 {
             return ok(paid.copy(knownRecipeIds = paid.knownRecipeIds + exact.id), "Odkrycie! Kocioł wydał ${exact.pillName}. Receptura zapisana w księdze.")
         }
         val near = unknown.any { it.requiredHerbName == main || it.requiredHerbName == second }
+        // Etap 6: przy braku receptury dominująca cecha ziół daje esencję emergentną.
+        val observed = Chemistry.observe(paid, main, second)
+        val essence = if (exact == null) observed.rules?.let { Chemistry.dominant(it, main, second) } else null
+        if (essence != null) {
+            val name = Chemistry.ESSENCE + essence.first
+            return ok(observed.copy(inventory = observed.inventory + (name to (observed.inventory[name] ?: 0) + 1)),
+                "Kocioł wydaje coś nieznanego: $name. Cecha „${essence.first}” przeważyła w mieszaninie.")
+        }
         return ok(
-            paid,
+            observed,
             when {
                 exact != null -> "Kocioł zabulgotał obiecująco… ale mieszanina się zważyła. Spróbuj jeszcze raz."
                 near -> "Kocioł zadrżał – ten składnik pasuje do czegoś, ale czegoś brakuje."

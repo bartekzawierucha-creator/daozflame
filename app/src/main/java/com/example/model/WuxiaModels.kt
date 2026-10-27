@@ -280,7 +280,19 @@ data class Disciple(
     val heartDemon: Boolean = false,
     // --- Etap 4 ---
     /** Płomień wchłonięty przez ucznia (nosiciel). */
-    val flameId: String? = null
+    val flameId: String? = null,
+    // --- Etap 6 ---
+    /** Otwarte punkty meridianów (siatka 6×6). */
+    val openedMeridians: Set<Int> = emptySet(),
+    /** Technika oddechu (0..4) i miejsce medytacji (0..4); null = nie ustawiono. */
+    val breath: Int? = null,
+    val meditationPlace: Int? = null,
+    /** Obiekt kontemplacji → ile razy kontemplowany (malejący efekt powtórzeń). */
+    val contemplations: Map<String, Int> = emptyMap(),
+    val secretState: SecretState? = null,
+    val secretStateUntil: Int = 0,
+    /** Nieudane wielkie przełomy z rzędu (Półkrok po 3). */
+    val majorFailures: Int = 0
 )
 
 enum class ResourceCategory { MINERAL, HERB, PILL, ESSENCE }

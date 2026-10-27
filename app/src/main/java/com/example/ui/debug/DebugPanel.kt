@@ -67,6 +67,8 @@ fun DebugPanel(viewModel: WuxiaGameViewModel, modifier: Modifier = Modifier) {
             Chip("+10 000 kamieni") { viewModel.debug(GameCommand.DebugAddStones(10_000)) }
             Chip("+10 pigułek przełomu") { viewModel.debug(GameCommand.DebugAddItem(GameContent.BREAKTHROUGH_PILL, 10)) }
             Chip("Qi uczniów = 100%") { viewModel.debug(GameCommand.DebugFillQi) }
+            // Etap 6: tylko w buildzie debug (cały panel jest pokazywany wyłącznie przy BuildConfig.DEBUG).
+            Chip("Pokaż tajemnice") { viewModel.debug(GameCommand.DebugRevealSecrets) }
             Chip("Wymuś zdarzenie") { viewModel.debug(GameCommand.DebugForceEvent) }
             Chip("Zapisz teraz") { viewModel.saveNow() }
             Chip("Kopiuj zapis do schowka") {

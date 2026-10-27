@@ -34,8 +34,9 @@ object CombatSystem {
         val raw = d.attack + flameBonus - penalty
         // Etap 5a: żywioł krainy kontra korzeń ucznia (+30% dla przewagi).
         val element = Elements.of(region.biome)
-        val elemAtk = if (s.e2Initialized) Elements.attackFactor(d, element) else 1.0
-        val elemDef = if (s.e2Initialized) Elements.defenseFactor(d, element) else 1.0
+        val cycles = if (s.rules != null) Cycles.apply(s, d, element, beast.defense) else Cycles.Effect(1.0, 1.0, emptyList())
+        val elemAtk = (if (s.e2Initialized) Elements.attackFactor(d, element) else 1.0) * cycles.attack
+        val elemDef = (if (s.e2Initialized) Elements.defenseFactor(d, element) else 1.0) * cycles.defense
         val attack = (raw * elemAtk * Modifiers.disciple(Modifiers.sect(s), d).factor(Stat.COMBAT_DAMAGE)).toInt().coerceAtLeast(10)
         val combat = ActiveCombat(
             regionId = region.id,
@@ -56,9 +57,11 @@ object CombatSystem {
                 CombatLogEntry(1, "Rozpoczęto starcie z mitycznym stworem: ${beast.name}!"),
                 if (elemAtk > 1.0) CombatLogEntry(1, "${element.glyph} Żywioł ucznia przełamuje ${element.polishName} bestii: +30% obrażeń!") else null,
                 if (elemDef > 1.0) CombatLogEntry(1, "${element.glyph} ${element.polishName} bestii tłumi korzeń ucznia: bestia rani mocniej!") else null
-            )
+            ) + cycles.observed.map { (id, text) -> CombatLogEntry(1, "☯ " + Cycles.label(s, id, text)) }
         )
-        return ok(s.copy(combat = combat))
+        var observed = s
+        cycles.observed.forEach { (id, text) -> observed = Journal.observe(observed, id, text) }
+        return ok(observed.copy(combat = combat))
     }
 
     /** Pół rundy: na zmianę cios ucznia i kontra bestii. */
@@ -132,6 +135,29 @@ object CombatSystem {
         )
         val hit = GameEvent.CombatHit(GameEvent.HitKind.ULTIMATE, dmg, onDisciple = false)
         return if (next.enemyHp <= 0) finish(s, next, true, hit) else ok(s.copy(combat = next), null, hit)
+    }
+
+    /** Etap 6: dopisuje ruch gracza i sprawdza, czy ostatnie trzy ruchy tworzą formę. */
+    fun withForm(result: StepResult, move: Char): StepResult {
+        val s = result.state
+        val c = s.combat ?: return result
+        if (c.finished) return result
+        val history = (c.moves + move).takeLast(6)
+        val form = Forms.detect(s, history, c.formsUsed) ?: return result.copy(state = s.copy(combat = c.copy(moves = history)))
+        val dmg = (c.effectiveAttack * form.bonusPercent / 100.0).toInt().coerceAtLeast(10)
+        val next = c.copy(
+            moves = history,
+            formsUsed = c.formsUsed + form.id,
+            enemyHp = (c.enemyHp - dmg).coerceAtLeast(0),
+            logs = c.logs + CombatLogEntry(c.logs.size + 1, "🌀 ${form.name}! Ruchy splatają się w formę: $dmg obrażeń.", isCrit = true)
+        )
+        val known = Journal.reveal(s, Secrets.form(form.id), "Sekwencja: ${form.sequence}")
+        val hit = GameEvent.CombatHit(GameEvent.HitKind.ULTIMATE, dmg, onDisciple = false)
+        if (next.enemyHp <= 0) {
+            val fin = finish(known, next, true, hit)
+            return fin.copy(events = result.events + fin.events)
+        }
+        return StepResult(known.copy(combat = next), result.events + hit)
     }
 
     /** Etap 4: talizman użyty w walce (z magazynu). */

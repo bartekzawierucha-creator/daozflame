@@ -77,7 +77,7 @@ object GameEngine {
     }
 
     /** Wywoływane po wczytaniu zapisu: jednorazowe migracje logiczne (korzenie w Etapie 2, etapy w Etapie 3). */
-    fun normalize(state: GameState): GameState = Fog.normalize(WorldAI.normalize(economy(Realms.normalize(DiscipleRules.normalize(state)))))
+    fun normalize(state: GameState): GameState = Secrets.normalize(Fog.normalize(WorldAI.normalize(economy(Realms.normalize(DiscipleRules.normalize(state))))))
 
     /** Migracja do Etapu 4: stare zapisy zachowują wszystkie płomienie i znają wszystkie receptury. */
     private fun economy(s: GameState): GameState {
@@ -128,7 +128,7 @@ object GameEngine {
             is GameCommand.UpgradeArtifact -> CraftV2.upgrade(state, ctx, command.vaultIndex)
             is GameCommand.CraftTalisman -> Talismans.craft(state, command.name)
             is GameCommand.HealWithTalisman -> Talismans.heal(state, command.discipleId)
-            is GameCommand.CombatTalisman -> CombatSystem.talisman(state, command.name)
+            is GameCommand.CombatTalisman -> CombatSystem.withForm(CombatSystem.talisman(state, command.name), 'T')
             is GameCommand.BeginExpedition -> Expeditions.begin(state, command.regionId, command.discipleId, command.auto, ctx)
             is GameCommand.ChooseNode -> Expeditions.choose(state, command.index, ctx)
             GameCommand.EnterLair -> Expeditions.toBoss(state)
@@ -137,6 +137,15 @@ object GameEngine {
             is GameCommand.ClimbTower -> Tower.climb(state, command.discipleId, ctx)
             is GameCommand.GuardGate -> Raids.assign(state, command.gate, command.discipleId)
             is GameCommand.ScoutRegion -> Fog.scout(state, ctx, command.regionId, command.discipleId)
+            is GameCommand.OpenMeridian -> Meridians.open(state, command.discipleId, command.point)
+            is GameCommand.SetBreath -> Breath.set(state, command.discipleId, command.breath, command.place)
+            is GameCommand.DecipherScroll -> Breath.decipher(state, command.methodId)
+            is GameCommand.Contemplate -> Contemplation.contemplate(state, command.discipleId, command.objectName)
+            is GameCommand.SetResearcher -> SecretTools.setResearcher(state, command.discipleId)
+            is GameCommand.UseMirror -> SecretTools.mirror(state, command.discipleId)
+            GameCommand.DebugRevealSecrets -> state.rules?.let { r ->
+                ok(Secrets.allIds(r).fold(state) { st, id -> Journal.reveal(st, id, "[debug]") }, "[debug] Odsłonięto wszystkie tajemnice")
+            } ?: ok(state)
             is GameCommand.EnterSecretRealm -> SecretRealms.enter(state, ctx, command.realmId, command.discipleId)
             is GameCommand.PlaceFormationNode -> Formation.place(state, command.element)
             is GameCommand.SendSpy -> Spies.send(state, ctx, command.discipleId, command.sectId, command.type)
@@ -175,9 +184,9 @@ object GameEngine {
 
             is GameCommand.StartExpedition -> CombatSystem.start(state, command.regionId, command.discipleId)
             GameCommand.CombatStep -> CombatSystem.step(state, ctx)
-            GameCommand.CombatManualAttack -> CombatSystem.manualAttack(state, ctx)
-            GameCommand.CombatUsePill -> CombatSystem.usePill(state)
-            GameCommand.CombatUltimate -> CombatSystem.ultimate(state, ctx)
+            GameCommand.CombatManualAttack -> CombatSystem.withForm(CombatSystem.manualAttack(state, ctx), 'M')
+            GameCommand.CombatUsePill -> CombatSystem.withForm(CombatSystem.usePill(state), 'P')
+            GameCommand.CombatUltimate -> CombatSystem.withForm(CombatSystem.ultimate(state, ctx), 'U')
             GameCommand.CloseCombat -> ok(state.copy(combat = null))
 
             is GameCommand.InteractRivalSect -> WorldCommands.interactRivalSect(state, command.sectId, command.action)

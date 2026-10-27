@@ -208,7 +208,14 @@ object Expeditions {
                 r = add(r, region.herbResource, 1)
             }
             ExpNodeType.HERB -> r = add(r.copy(log = r.log + "🌿 Polana ziół."), region.herbResource, 2 + rng.nextInt(3))
-            ExpNodeType.TREASURE -> r = add(r.copy(stones = r.stones + (boss?.spiritStoneReward ?: 100) / 4, log = r.log + "💎 Ukryta skrytka."), region.mineralResource, 2)
+            ExpNodeType.TREASURE -> {
+                r = add(r.copy(stones = r.stones + (boss?.spiritStoneReward ?: 100) / 4, log = r.log + "💎 Ukryta skrytka."), region.mineralResource, 2)
+                // Etap 6: szyfrowane fragmenty zwojów.
+                if (s.rules != null && rng.nextInt(100) < 25) {
+                    val m = Realms.methods.filter { it.id != Realms.BASIC_METHOD }.random(rng)
+                    r = add(r.copy(log = r.log + "📜 Wśród kosztowności leży szyfrowany fragment zwoju."), Breath.fragmentItem(m.id), 1)
+                }
+            }
             ExpNodeType.SHRINE -> r = r.copy(log = r.log + "⛩ Kapliczka przodków – uczeń medytuje.", loot = r.loot + ("@qi" to (r.loot["@qi"] ?: 0) + 60))
             ExpNodeType.TRAP -> {
                 val dmg = (d.maxHp * 0.15 * (if (d.defense > region.dangerLevel * 25) 0.5 else 1.0)).toInt()

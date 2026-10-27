@@ -33,7 +33,12 @@ data class Modifier(val source: String, val stat: Stat, val op: ModOp, val value
  * Jedyne miejsce liczenia premii. Kolejność: (baza + FLAT) × (1 + ΣPERCENT/100) × ΠMULTIPLY.
  * Ta sama funkcja liczy wartość w logice i rozbicie w tooltipie, więc nie mogą się rozjechać.
  */
-data class ModifierStack(val modifiers: List<Modifier>, val day: Int = 0) {
+data class ModifierStack(
+    val modifiers: List<Modifier>,
+    val day: Int = 0,
+    /** Etap 6: stan, z którego liczy się premie z tajemnic (reguły świata, Dziennik, pora dnia). */
+    val state: GameState? = null
+) {
 
     fun of(stat: Stat): List<Modifier> = modifiers.filter { it.stat == stat }
 
@@ -52,7 +57,7 @@ data class ModifierStack(val modifiers: List<Modifier>, val day: Int = 0) {
     fun factor(stat: Stat): Double = (1.0 + percent(stat) / 100.0) *
         of(stat).filter { it.op == ModOp.MULTIPLY }.fold(1.0) { acc, m -> acc * m.value }
 
-    operator fun plus(other: List<Modifier>) = ModifierStack(modifiers + other, day)
+    operator fun plus(other: List<Modifier>) = ModifierStack(modifiers + other, day, state)
 
     /** Tekst do tooltipa „skąd to?”. */
     fun breakdown(stat: Stat): List<String> = of(stat).map { m ->
@@ -99,7 +104,7 @@ object Modifiers {
         if (s.ascendedNames.isNotEmpty()) {
             list += Modifier("Dziedzictwo Wniebowstąpienia (${s.ascendedNames.size})", Stat.QI_GAIN, ModOp.PERCENT, 5.0 * s.ascendedNames.size)
         }
-        return ModifierStack(list, s.currentDay)
+        return ModifierStack(list, s.currentDay, s)
     }
 
     /** Premie sekty + cechy konkretnego ucznia. */
@@ -113,6 +118,7 @@ object Modifiers {
         list += DiscipleRules.discipleModifiers(d)
         list += CultivationModifiers.of(d, sect.day)
         d.spiritRoot?.let { list += Seasons.discipleModifiers(Seasons.of(sect.day), it.elements) }
+        sect.state?.let { list += SecretModifiers.of(it, d) }
         return sect + list
     }
 }

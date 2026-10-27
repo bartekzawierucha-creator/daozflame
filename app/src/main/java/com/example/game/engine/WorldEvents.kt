@@ -15,6 +15,10 @@ object WorldDaily {
         Empire.daily(s, ctx).let { (st, n) -> s = st; notes += n }
         Catastrophes.daily(s, ctx).let { (st, n) -> s = st; notes += n }
         SecretRealms.daily(s).let { (st, n) -> s = st; notes += n }
+        // Etap 6: tajemnice.
+        s = Breath.daily(s)
+        s = SecretStates.daily(s, ctx)
+        SecretTools.daily(s, ctx).let { (st, n) -> s = st; notes += n }
         return s to notes
     }
 }
@@ -159,7 +163,7 @@ object SecretRealms {
         Realm("sr_forge", "Kuźnia Upadłego Boga", 26, MajorRealm.CORE_FORMATION, 3_000,
             listOf("Starożytna Ruda Pustki" to 6, GameContent.FLAME_CRYSTAL to 5), "Ruiny boskiej kuźni dla adeptów do Złotego Rdzenia."),
         Realm("sr_library", "Zatopiona Biblioteka", 33, MajorRealm.CORE_FORMATION, 3_500,
-            listOf("Kwiat Niebiańskiego Zrozumienia" to 6, "Duchowy Nefryt" to 15), "Półki pod wodą; czasem leży tam zwój zapomnianej metody."),
+            listOf("Kwiat Niebiańskiego Zrozumienia" to 6, "Duchowy Nefryt" to 15, SecretTools.MIRROR to 1), "Półki pod wodą; czasem leży tam zwój zapomnianej metody."),
         Realm("sr_palace", "Pałac Gwiezdnego Cesarza", 38, MajorRealm.NASCENT_SOUL, 9_000,
             listOf("Rdzeń Gwiazdy" to 2, GameContent.BREAKTHROUGH_PILL to 4), "Pałac między gwiazdami, otwarty dla Narodzonych Dusz i młodszych.")
     )
