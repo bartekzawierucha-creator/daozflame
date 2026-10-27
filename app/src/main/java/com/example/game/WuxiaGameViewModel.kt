@@ -413,6 +413,8 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
                 celebration = CelebrationUi(System.nanoTime(), "${d?.name?.substringBefore(" (") ?: "Uczeń"}: ${d?.realm?.polishName ?: "przełom"}!")
             }
             is GameEvent.OfflineSummary -> offlineReport = event.report
+            // Wynik rady pokazuje już komunikat (słucha / odmawia).
+            is GameEvent.AdviceOutcome -> Unit
             is GameEvent.Tribulation -> tribulation = event.result.let { r ->
                 TribulationUi(System.nanoTime(), game.disciple(event.discipleId)?.name ?: "Uczeń", r.strikes, r.damagePerStrike, r.maxHp, r.survived, r.perfect, r.catastrophe)
             }
