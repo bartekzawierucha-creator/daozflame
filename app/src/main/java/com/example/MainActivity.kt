@@ -20,7 +20,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        com.example.game.CrashLog.install(filesDir)
+        com.example.CrashLog.install(filesDir)
         enableEdgeToEdge()
         enterImmersiveMode()
         setContent {

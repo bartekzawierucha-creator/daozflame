@@ -261,7 +261,7 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     // Etap 9: Sieć Dao (stan interfejsu, nie trafia do zapisu).
     private var arena: ArenaUi = ArenaUi()
     /** Treść ostatniej awarii (panel debug). */
-    var lastCrash: String? = CrashLog.consume(application.filesDir).also { if (it != null) notification = "Poprzednia sesja zakończyła się błędem – raport w panelu debug." }
+    var lastCrash: String? = com.example.CrashLog.consume(application.filesDir).also { if (it != null) notification = "Poprzednia sesja zakończyła się błędem – raport w panelu debug." }
         private set
 
     private val store = SaveStore(File(application.filesDir, "saves"))

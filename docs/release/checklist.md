@@ -4,7 +4,7 @@
 - [x] CI: testy JVM, symulator, zgodność walki Kotlin ↔ Edge Function, budowa APK
 - [x] Sieć Dao: schemat `supabase/schema.sql`, funkcja `supabase/functions/verify-duel`, klient `game/net/DaoNetClient.kt`
 - [x] Tryb offline bez konfiguracji (`SUPABASE_URL` puste)
-- [x] Lokalny rejestr awarii (`game/CrashLog.kt`)
+- [x] Lokalny rejestr awarii (`CrashLog.kt`)
 - [x] Rama interfejsu po angielsku, glosariusz, plan lokalizacji treści
 
 ## Do zrobienia poza kodem
