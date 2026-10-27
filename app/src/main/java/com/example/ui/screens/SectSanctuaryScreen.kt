@@ -460,6 +460,16 @@ fun PavilionHeroCard(
                 }
             }
 
+            if (uiState.qiBreakdown.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Skąd przyrost Qi sekty: " + uiState.qiBreakdown.joinToString(" · "),
+                    color = Color(0xFFB0A592),
+                    fontSize = 9.sp,
+                    modifier = Modifier.testTag("qi_breakdown")
+                )
+            }
+
             Spacer(modifier = Modifier.height(10.dp))
 
             // Auto-Breakthrough & Info Strip

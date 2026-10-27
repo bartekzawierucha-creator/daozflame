@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -14,15 +15,30 @@ import com.example.ui.game.GameRoot
 import com.example.ui.theme.WuxiaSectTheme
 
 class MainActivity : ComponentActivity() {
+    /** Ten sam egzemplarz co `viewModel()` w Compose (wspólny ViewModelStore aktywności). */
+    private val gameViewModel: WuxiaGameViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         enterImmersiveMode()
         setContent {
             WuxiaSectTheme {
-                WuxiaMainApp()
+                WuxiaMainApp(gameViewModel)
             }
         }
+    }
+
+    /** Powrót do gry: nadrobienie czasu nieobecności. */
+    override fun onStart() {
+        super.onStart()
+        gameViewModel.onForeground()
+    }
+
+    /** Wyjście z gry (przełączenie aplikacji, blokada ekranu): zapis i pauza. */
+    override fun onStop() {
+        super.onStop()
+        gameViewModel.onBackground()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {

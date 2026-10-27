@@ -1,7 +1,6 @@
 package com.example.game
 
 import com.example.model.*
-import java.util.UUID
 import kotlin.random.Random
 
 object WuxiaGenerator {
@@ -103,23 +102,24 @@ object WuxiaGenerator {
     }
 
     fun generateDisciple(
+        rng: Random,
         predefinedRealm: CultivationRealm = CultivationRealm.QI_CONDENSATION_1,
         guaranteedBloodline: BloodlineType? = null
     ): Disciple {
-        val clan = ancientClans.random()
-        val isMale = Random.nextBoolean()
+        val clan = ancientClans.random(rng)
+        val isMale = rng.nextBoolean()
         val gender = if (isMale) "Mężczyzna" else "Kobieta"
-        val firstName = if (isMale) maleFirstNames.random() else femaleFirstNames.random()
+        val firstName = if (isMale) maleFirstNames.random(rng) else femaleFirstNames.random(rng)
         val clanPrefix = clan.name.removePrefix("Ród ")
         val fullName = "$clanPrefix $firstName"
 
-        val origin = OriginType.values().random()
-        val bloodline = guaranteedBloodline ?: BloodlineType.values().random()
-        val constitution = ConstitutionType.values().random()
-        val school = MartialSchool.values().random()
+        val origin = OriginType.values().random(rng)
+        val bloodline = guaranteedBloodline ?: BloodlineType.values().random(rng)
+        val constitution = ConstitutionType.values().random(rng)
+        val school = MartialSchool.values().random(rng)
 
         // Losowanie Rangi Talentu (SSS: 4%, SS: 12%, S: 28%, A: 38%, B: 18%)
-        val roll = Random.nextInt(100)
+        val roll = rng.nextInt(100)
         val talentGrade = when {
             roll < 4 -> TalentGrade.SSS
             roll < 16 -> TalentGrade.SS
@@ -130,7 +130,7 @@ object WuxiaGenerator {
 
         // Losowanie 1 do 2 Cech Przeznaczenia (Fated Traits)
         val traitsCount = if (talentGrade == TalentGrade.SSS || talentGrade == TalentGrade.SS) 2 else 1
-        val assignedTraits = fatedTraitsPool.shuffled().take(traitsCount)
+        val assignedTraits = fatedTraitsPool.shuffled(rng).take(traitsCount)
 
         val talentMultiplier = when (talentGrade) {
             TalentGrade.SSS -> 1.75
@@ -141,28 +141,28 @@ object WuxiaGenerator {
         }
 
         val baseHp = (when (school) {
-            MartialSchool.BODY_ASURA -> 380 + Random.nextInt(60)
-            MartialSchool.SWORD_IMMORTAL -> 220 + Random.nextInt(40)
-            MartialSchool.ELEMENTAL_TAOIST -> 180 + Random.nextInt(35)
-            MartialSchool.SHADOW_VIPER -> 200 + Random.nextInt(35)
+            MartialSchool.BODY_ASURA -> 380 + rng.nextInt(60)
+            MartialSchool.SWORD_IMMORTAL -> 220 + rng.nextInt(40)
+            MartialSchool.ELEMENTAL_TAOIST -> 180 + rng.nextInt(35)
+            MartialSchool.SHADOW_VIPER -> 200 + rng.nextInt(35)
         } * talentMultiplier).toInt()
 
         val baseAtk = (when (school) {
-            MartialSchool.SWORD_IMMORTAL -> 40 + Random.nextInt(15)
-            MartialSchool.ELEMENTAL_TAOIST -> 36 + Random.nextInt(12)
-            MartialSchool.SHADOW_VIPER -> 34 + Random.nextInt(12)
-            MartialSchool.BODY_ASURA -> 26 + Random.nextInt(10)
+            MartialSchool.SWORD_IMMORTAL -> 40 + rng.nextInt(15)
+            MartialSchool.ELEMENTAL_TAOIST -> 36 + rng.nextInt(12)
+            MartialSchool.SHADOW_VIPER -> 34 + rng.nextInt(12)
+            MartialSchool.BODY_ASURA -> 26 + rng.nextInt(10)
         } * talentMultiplier).toInt()
 
         val baseDef = (when (school) {
-            MartialSchool.BODY_ASURA -> 30 + Random.nextInt(12)
-            MartialSchool.SWORD_IMMORTAL -> 16 + Random.nextInt(8)
-            MartialSchool.ELEMENTAL_TAOIST -> 14 + Random.nextInt(6)
-            MartialSchool.SHADOW_VIPER -> 15 + Random.nextInt(8)
+            MartialSchool.BODY_ASURA -> 30 + rng.nextInt(12)
+            MartialSchool.SWORD_IMMORTAL -> 16 + rng.nextInt(8)
+            MartialSchool.ELEMENTAL_TAOIST -> 14 + rng.nextInt(6)
+            MartialSchool.SHADOW_VIPER -> 15 + rng.nextInt(8)
         } * talentMultiplier).toInt()
 
-        val comprehension = (70 + Random.nextInt(30) * talentMultiplier).toInt().coerceAtMost(100)
-        val karmicLuck = (60 + Random.nextInt(40) * talentMultiplier).toInt().coerceAtMost(100)
+        val comprehension = (70 + rng.nextInt(30) * talentMultiplier).toInt().coerceAtMost(100)
+        val karmicLuck = (60 + rng.nextInt(40) * talentMultiplier).toInt().coerceAtMost(100)
 
         val finalHp = (baseHp * predefinedRealm.powerMultiplier).toInt()
         val finalAtk = (baseAtk * predefinedRealm.powerMultiplier).toInt()
@@ -171,19 +171,19 @@ object WuxiaGenerator {
         // Obliczanie unikalnej Siły Bojowej (Combat Power - CP)
         val calculatedCp = (finalHp / 2 + finalAtk * 14 + finalDef * 9 + comprehension * 6 + karmicLuck * 5)
 
-        val innateTech = innateTechniques.random()
+        val innateTech = innateTechniques.random(rng)
 
         return Disciple(
-            id = UUID.randomUUID().toString(),
+            id = (rng as? com.example.game.engine.GameRng)?.nextId("d") ?: "d_" + java.lang.Long.toHexString(rng.nextLong()),
             name = fullName,
             gender = gender,
-            avatarEmoji = avatarEmojis.random(),
+            avatarEmoji = avatarEmojis.random(rng),
             origin = origin,
             bloodline = bloodline,
             constitution = constitution,
             martialSchool = school,
             realm = predefinedRealm,
-            realmProgress = Random.nextInt(10, 45),
+            realmProgress = rng.nextInt(10, 45),
             maxHp = finalHp,
             currentHp = finalHp,
             attack = finalAtk,
@@ -585,54 +585,6 @@ object WuxiaGenerator {
         )
 
         return baseSkills + com.example.game.content.TechniqueCatalog.techniques
-    }
-
-    fun generateProceduralTechniques(count: Int = 30): List<SkillNode> {
-        val prefixes = listOf("Czystego Yang", "Głębokiego Yin", "Pradawnego Smoka", "Karmazynowego Feniksa", "Białego Tygrysa", "Mroźnego Lotosu", "Gwiezdnej Pustki", "Pioruna Tribulacji", "Nefrytowego Wichru", "Niebiańskiego Dao")
-        val roots = listOf(
-            Triple("Oddech", TechniqueCategory.CULTIVATION, "Wzmacnia meridiany i przyspiesza krążenie energii Qi"),
-            Triple("Kroki", TechniqueCategory.MOVEMENT, "Niezwykle zwinne manewry omijające wrogie cięcia"),
-            Triple("Pieczęć", TechniqueCategory.FORMATION, "Rytuał barierowy manifestujący ochronne runy"),
-            Triple("Cięcie", TechniqueCategory.ATTACK, "Śmiertelny atak przecinający linie obronne przeciwnika"),
-            Triple("Pancerz", TechniqueCategory.DEFENSE, "Wzmacnia ciało adepta esencją żywiołów")
-        )
-        val schools = MartialSchool.values()
-        val grades = listOf("Stopień Żółty", "Stopień Czarny", "Stopień Mistyczny", "Stopień Niebiański", "Stopień Pierwotnego Dao")
-
-        return List(count) { idx ->
-            val tier = (idx % 4) + 1
-            val root = roots[idx % roots.size]
-            val prefix = prefixes.random()
-            val school = schools[idx % schools.size]
-            val techName = "${root.first} $prefix"
-            val grade = grades[(tier - 1).coerceIn(0, grades.size - 1)]
-
-            val atk = if (root.second == TechniqueCategory.ATTACK) tier * 35 + Random.nextInt(10, 25) else tier * 10
-            val def = if (root.second == TechniqueCategory.DEFENSE || root.second == TechniqueCategory.FORMATION) tier * 25 + Random.nextInt(10, 20) else tier * 5
-            val hp = if (root.second == TechniqueCategory.DEFENSE || root.second == TechniqueCategory.CULTIVATION) tier * 200 + Random.nextInt(50, 150) else 0
-            val crit = if (root.second == TechniqueCategory.ATTACK || root.second == TechniqueCategory.MOVEMENT) tier * 5 + 3 else 0
-            val evasion = if (root.second == TechniqueCategory.MOVEMENT) tier * 10 + 5 else 0
-            val qiGain = if (root.second == TechniqueCategory.CULTIVATION) tier * 20 + 15 else 0
-
-            SkillNode(
-                id = "proc_tech_${idx + 1}",
-                name = techName,
-                tier = tier,
-                description = "${root.third}. Pochodzi ze starożytnych zwojów klanowych.",
-                costDaoPoints = tier,
-                martialSchool = school,
-                attackBonus = atk,
-                defenseBonus = def,
-                critBonusPercent = crit,
-                hpBonus = hp,
-                category = root.second,
-                gradeName = grade,
-                qiConsumption = 10 * tier,
-                qiGainBonusPercent = qiGain,
-                evasionBonusPercent = evasion,
-                activeTechniqueName = if (tier >= 2) techName else null
-            )
-        }
     }
 
     fun getGeocentricFlames(): List<GeocentricFlame> {
@@ -1395,51 +1347,6 @@ object WuxiaGenerator {
                 secondaryHerbCount = 3
             )
         ) + extra }
-    }
-
-    fun generateProceduralIngredients(count: Int = 50): List<ResourceItem> {
-        val ages = listOf(100, 300, 500, 800, 1000, 3000, 5000, 8000, 10000)
-        val elements = listOf("Czysty Yang", "Głębokie Yin", "Płomień", "Błyskawica", "Mróz Kunlun", "Pustka Przestrzeni", "Ziemia", "Święte Światło", "Mroczna Krew")
-        val herbBases = listOf("Lotos Oświecenia", "Żeń-szeń Smoka", "Korzeń Skorpiona", "Trawa Wiecznej Wiosny", "Grzyb Lingzhi", "Pąk Nefrytowej Orchidei", "Liść Purpurowej Mgły", "Ziele Przełomu Dantian", "Niebiańska Brzoskwinia Wieczności", "Złoty Pąk Słońca")
-        val mineralBases = listOf("Duchowy Nefryt", "Gwiezdne Żelazo", "Kryształ Geocentrycznego Ognia", "Kruszec Czarnego Złota", "Obsydian Błyskawic", "Ruda Pustki Kosmicznej", "Meteoryt Smoczego Serca", "Kamień Duszy Przodków")
-        val essenceBases = listOf("Esencja Płomiennego Feniksa", "Jądro Szmaragdowego Qilina", "Żółć Lodowego Węża", "Kieł Białego Tygrysa", "Łuska Czarnego Żółwia", "Krew Błękitnego Smoka", "Pióro Słonecznego Kruka")
-
-        return List(count) { idx ->
-            val cat = when (idx % 3) {
-                0 -> ResourceCategory.HERB
-                1 -> ResourceCategory.MINERAL
-                else -> ResourceCategory.ESSENCE
-            }
-            val age = ages[idx % ages.size]
-            val elem = elements[idx % elements.size]
-            val tier = (idx % 5) + 1
-            val baseName = when (cat) {
-                ResourceCategory.HERB -> herbBases[idx % herbBases.size]
-                ResourceCategory.MINERAL -> mineralBases[idx % mineralBases.size]
-                ResourceCategory.ESSENCE -> essenceBases[idx % essenceBases.size]
-                else -> "Składnik Dao"
-            }
-            val rarity = when (tier) {
-                1 -> "Zwykły"
-                2 -> "Rzadki"
-                3 -> "Mistyczny"
-                4 -> "Niebiański"
-                else -> "Boski"
-            }
-            val name = "${age}-letni $baseName"
-            ResourceItem(
-                id = "proc_res_${idx + 1}",
-                name = name,
-                category = cat,
-                rarity = rarity,
-                count = Random.nextInt(1, 8),
-                description = "Mistycyzm: $rarity ($elem). Wiek: $age lat. Odpowiedni dla receptur Rzędu $tier.",
-                tier = tier,
-                spiritualAgeYears = age,
-                elementAffinity = elem,
-                potency = tier * 30
-            )
-        }
     }
 
     fun getForgingRecipes(): List<ForgingRecipe> {

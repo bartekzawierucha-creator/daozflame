@@ -25,6 +25,7 @@ import com.example.game.WuxiaUiState
 import com.example.ui.aaa.Aaa
 import com.example.ui.aaa.AaaToastHost
 import com.example.ui.audio.WuxiaAudioEngine
+import com.example.ui.debug.DebugPanel
 import com.example.ui.screens.CombatScreenModal
 
 private val InkEase = CubicBezierEasing(0.7f, 0f, 0.25f, 1f)
@@ -117,6 +118,28 @@ fun GameRoot(viewModel: WuxiaGameViewModel) {
                 .safeTop()
                 .padding(top = 56.dp)
         )
+
+        TutorialBanner(
+            tutorial = if (shown == null) ui.tutorial else null,
+            onNext = { viewModel.tutorialNext() },
+            onSkip = { viewModel.tutorialSkip() },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .safeBottom()
+                .padding(bottom = 112.dp)
+        )
+
+        DebugPanel(
+            viewModel = viewModel,
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .safeBottom()
+                .padding(start = 8.dp, bottom = 96.dp)
+        )
+
+        ui.offlineReport?.let { report ->
+            OfflineSummaryDialog(report, onClaim = { viewModel.claimOfflineReport() })
+        }
 
         if (ui.combatState.active) {
             CombatScreenModal(

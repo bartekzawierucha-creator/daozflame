@@ -10,6 +10,7 @@ class WuxiaGameUnitTest {
     @Test
     fun testDiscipleGeneration() {
         val disciple = WuxiaGenerator.generateDisciple(
+            rng = com.example.game.engine.GameRng(1L),
             predefinedRealm = CultivationRealm.FOUNDATION_EARLY,
             guaranteedBloodline = BloodlineType.GOLDEN_DRAGON
         )
@@ -64,7 +65,7 @@ class WuxiaGameUnitTest {
 
     @Test
     fun testAutoBreakthroughDisciples() {
-        var disciple = WuxiaGenerator.generateDisciple(CultivationRealm.QI_CONDENSATION_1)
+        var disciple = WuxiaGenerator.generateDisciple(com.example.game.engine.GameRng(2L), CultivationRealm.QI_CONDENSATION_1)
         val initialRealm = disciple.realm
         val readyDisciple = disciple.copy(realmProgress = 100)
         assertEquals(100, readyDisciple.realmProgress)
