@@ -87,6 +87,9 @@ object Modifiers {
         val alliances = s.rivalSects.filter { it.status == DiplomaticStatus.ALLIANCE }.sumOf { it.cultivationBuffBonusPercent }
         if (alliances != 0) list += Modifier("Sojusze sekt", Stat.QI_GAIN, ModOp.PERCENT, alliances.toDouble())
         list += DiscipleRules.sectModifiers(s)
+        if (s.e4Initialized && s.veinLevel > 1) {
+            list += Modifier("Żyła: ${Vein.name(s.veinLevel)}", Stat.QI_GAIN, ModOp.MULTIPLY, Vein.qiMultiplier(s.veinLevel))
+        }
         if (s.ascendedNames.isNotEmpty()) {
             list += Modifier("Dziedzictwo Wniebowstąpienia (${s.ascendedNames.size})", Stat.QI_GAIN, ModOp.PERCENT, 5.0 * s.ascendedNames.size)
         }
@@ -103,6 +106,7 @@ object Modifiers {
         if (d.ancientClan.name.contains("Ye")) list += Modifier("Ród Ye", Stat.QI_GAIN, ModOp.PERCENT, 50.0)
         list += DiscipleRules.discipleModifiers(d)
         list += CultivationModifiers.of(d, sect.day)
+        d.spiritRoot?.let { list += Seasons.discipleModifiers(Seasons.of(sect.day), it.elements) }
         return sect + list
     }
 }

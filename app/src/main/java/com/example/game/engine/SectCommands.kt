@@ -217,7 +217,7 @@ object SectCommands {
         val d = s.disciple(id) ?: return ok(s)
         val count = s.inventory[pillName] ?: 0
         if (count < 1) return fail(s, "Brak pigułki: $pillName w magazynie!")
-        val recipe = GameContent.recipeForPill(pillName) ?: return fail(s, "$pillName nie jest pigułką do zażycia.")
+        val recipe = GameContent.recipeForPill(Quality.parse(pillName).first) ?: return fail(s, "$pillName nie jest pigułką do zażycia.")
         if (s.e3Initialized) return usePillV2(s, d, pillName, count, recipe)
         val progress = (d.realmProgress + recipe.breakthroughBonusPercent).coerceAtMost(100)
         val hp = (d.currentHp + recipe.hpRestore).coerceAtMost(d.maxHp)
@@ -239,11 +239,12 @@ object SectCommands {
     /** Etap 3: pigułka daje procent bieżącego etapu i dokłada toksyczności (ścieżka Pigułek: efekt ×2, toksyny ×1,5). */
     private fun usePillV2(s: GameState, d: Disciple, pillName: String, count: Int, recipe: AlchemyRecipe): StepResult {
         val pillsPath = d.path == CultivationPath.PILLS
-        val power = if (pillsPath) 2.0 else 1.0
+        val quality = Quality.parse(pillName).second
+        val power = (if (pillsPath) 2.0 else 1.0) * quality.effect
         val efficiency = d.majorRealm?.let { CultivationSystem.pillEfficiency(recipe.tier, it) } ?: 1.0
         var x = CultivationSystem.gainPercent(d, recipe.breakthroughBonusPercent * power * efficiency)
         val hp = (d.currentHp + recipe.hpRestore).coerceAtMost(d.maxHp)
-        val tox = (10 * recipe.tier * if (pillsPath) 1.5 else 1.0).toInt()
+        val tox = (10 * recipe.tier * (if (pillsPath) 1.5 else 1.0) * quality.toxicity).toInt()
         x = x.copy(currentHp = hp, daoPoints = x.daoPoints + recipe.daoPointsBonus, toxicity = (d.toxicity + tox).coerceAtMost(100))
         val effects = buildList {
             if (recipe.breakthroughBonusPercent > 0) add("Qi ${d.realmProgress}% → ${x.realmProgress}%")

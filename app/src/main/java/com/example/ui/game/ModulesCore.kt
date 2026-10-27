@@ -325,6 +325,7 @@ private fun RosterTile(disciple: Disciple, selected: Boolean, onClick: () -> Uni
 
 @Composable
 fun PalaceModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> Unit) {
+    var eco by remember { mutableStateOf<EconomyTab?>(null) }
     ModuleScaffold(
         module = GameModule.PALACE,
         subtitle = "${ui.sectLeader.name} · prestiż ${ui.sectLeader.prestigeLevel}",
@@ -343,9 +344,21 @@ fun PalaceModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                 .padding(top = 62.dp)
                 .safeBottom()
         ) {
-            SectSanctuaryScreen(viewModel = viewModel, uiState = ui, onNavigateToDisciples = onBack)
+            Column(Modifier.fillMaxSize()) {
+                if (ui.economy.enabled) {
+                    Row(Modifier.padding(horizontal = 12.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        GhostButton("Żyła ${ui.economy.veinLevel}", onClick = { eco = EconomyTab.VEIN }, modifier = Modifier.weight(1f), height = 36.dp)
+                        GhostButton("Kontrakty", onClick = { eco = EconomyTab.CONTRACTS }, modifier = Modifier.weight(1f), height = 36.dp)
+                        GhostButton("Targ", onClick = { eco = EconomyTab.MARKET }, modifier = Modifier.weight(1f), height = 36.dp)
+                    }
+                }
+                Box(Modifier.weight(1f)) {
+                    SectSanctuaryScreen(viewModel = viewModel, uiState = ui, onNavigateToDisciples = onBack)
+                }
+            }
         }
     }
+    eco?.let { EconomyPanel(ui, viewModel, it, onClose = { eco = null }) }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

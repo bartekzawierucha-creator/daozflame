@@ -145,6 +145,21 @@ object BalanceSimulator {
         // Etap 3: ścieżka, metody ze zwojów, techniki (wąskie gardło Złotego Rdzenia), Prawa, przełomy gracza.
         if (s.e3Initialized) s = cultivate(s)
 
+        // Etap 4: żyła, pola, kontrakty, sprzedaż nadwyżek.
+        if (s.e4Initialized) {
+            com.example.game.engine.Vein.upgradeCost(s.veinLevel)?.let { c ->
+                if (s.veinUpgradeDoneDay == 0 && canSpend(c.stones)) s = apply(s, GameCommand.UpgradeVein)
+            }
+            s = apply(s, GameCommand.HarvestFields)
+            s.fields.forEachIndexed { i, f ->
+                if (f.herb == null && (s.inventory["Trawa Wiecznej Wiosny"] ?: 0) > 0) s = apply(s, GameCommand.PlantHerb(i, "Trawa Wiecznej Wiosny"))
+            }
+            s.contracts.filter { !it.done && it.type == com.example.model.ContractType.DELIVER && (s.inventory[it.item] ?: 0) >= it.quantity }
+                .forEach { s = apply(s, GameCommand.FulfillContract(it.id)) }
+            s.inventory.filter { (k, v) -> v > 60 && (com.example.game.engine.Market.basePrice(k) ?: 0) > 0 && k != com.example.game.engine.DiscipleRules.FOOD }
+                .forEach { (k, v) -> s = apply(s, GameCommand.Sell(k, v - 40)) }
+        }
+
         // Wyprawa: najsłabsza niezbadana kraina, najsilniejszy zdrowy uczeń, jeśli ma szansę.
         if (s.combat == null) {
             val champ = s.disciples.filter { it.currentHp > it.maxHp / 2 }.maxByOrNull { it.attack }

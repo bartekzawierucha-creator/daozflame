@@ -212,7 +212,11 @@ data class Artifact(
     val rarity: String,
     val attackBonus: Int,
     val defenseBonus: Int,
-    val specialEffect: String
+    val specialEffect: String,
+    // --- Etap 4 ---
+    val quality: ItemQuality = ItemQuality.NORMAL,
+    /** Poziom ulepszenia +0 … +10. */
+    val plus: Int = 0
 )
 
 data class Disciple(
@@ -273,7 +277,10 @@ data class Disciple(
     val secludedUntilDay: Int = 0,
     val toxicity: Int = 0,
     val injuredUntilDay: Int = 0,
-    val heartDemon: Boolean = false
+    val heartDemon: Boolean = false,
+    // --- Etap 4 ---
+    /** Płomień wchłonięty przez ucznia (nosiciel). */
+    val flameId: String? = null
 )
 
 enum class ResourceCategory { MINERAL, HERB, PILL, ESSENCE }

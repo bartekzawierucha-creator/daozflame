@@ -78,6 +78,22 @@ data class GameState(
     /** Uczniowie, którzy wstąpili do Wyższego Świata (każdy daje stałą premię). */
     val ascendedNames: List<String> = emptyList(),
 
+    // --- Etap 4: gospodarka, rzemiosło, płomienie ---
+    val e4Initialized: Boolean = false,
+    val veinLevel: Int = 1,
+    /** Dzień zakończenia trwającej rozbudowy żyły (0 = brak). */
+    val veinUpgradeDoneDay: Int = 0,
+    val fields: List<com.example.model.FieldPlot> = emptyList(),
+    /** Mnożniki cen targu (przedmiot → mnożnik); brak wpisu = 1,0. */
+    val marketMultipliers: Map<String, Double> = emptyMap(),
+    val caravans: List<com.example.model.Caravan> = emptyList(),
+    val contracts: List<com.example.model.Contract> = emptyList(),
+    val contractsRefreshDay: Int = 0,
+    /** Znane receptury alchemii (puste = wszystkie, dla starych zapisów przed migracją). */
+    val knownRecipeIds: Set<String> = emptySet(),
+    /** Płomień w palenisku kuźni (activeFlameId = płomień w kotle alchemii). */
+    val forgeFlameId: String? = null,
+
     /** Krok samouczka; brak pola w starym zapisie = samouczek ukończony. */
     val tutorialStep: Int = Tutorial.DONE,
 
@@ -105,6 +121,8 @@ data class ActiveCombat(
     val round: Int = 1,
     /** Kto wykonuje następny ruch w [GameCommand.CombatStep]. */
     val discipleTurn: Boolean = true,
+    /** Talizman Pieczęci – przeciwnik traci następny ruch. */
+    val enemySealed: Boolean = false,
     val logs: List<CombatLogEntry> = emptyList(),
     /** null = trwa, true = zwycięstwo, false = porażka. */
     val outcome: Boolean? = null,

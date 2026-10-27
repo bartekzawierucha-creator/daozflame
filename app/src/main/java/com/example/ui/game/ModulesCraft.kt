@@ -100,7 +100,12 @@ private fun HerbDot(color: Color) {
 
 @Composable
 fun AlchemyModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> Unit) {
-    val recipes = remember { WuxiaGenerator.getAlchemyRecipes() }
+    val allRecipes = remember { WuxiaGenerator.getAlchemyRecipes() }
+    // Etap 4: widać tylko poznane receptury.
+    val recipes = remember(ui.economy.knownRecipeIds, ui.economy.enabled) {
+        if (!ui.economy.enabled) allRecipes else allRecipes.filter { it.id in ui.economy.knownRecipeIds }.ifEmpty { allRecipes.take(1) }
+    }
+    var eco by remember { mutableStateOf<EconomyTab?>(null) }
     var sel by remember { mutableIntStateOf(0) }
     val recipe: AlchemyRecipe = recipes.getOrElse(sel) { recipes.first() }
     val chamber = ui.facilities.firstOrNull { it.type == FacilityType.ALCHEMY_CHAMBER }?.level ?: 1
@@ -233,6 +238,16 @@ fun AlchemyModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () ->
                     main >= recipe.requiredHerbCount &&
                     (sec == null || (ui.inventory[sec] ?: 0) >= recipe.secondaryHerbCount) &&
                     ui.spiritStones >= recipe.requiredSpiritStones
+                if (ui.economy.enabled) {
+                    val q = com.example.model.ItemQuality.entries.filter { it.suffix.isNotEmpty() }
+                        .mapNotNull { k -> (ui.inventory[recipe.pillName + k.suffix] ?: 0).takeIf { it > 0 }?.let { "${k.polishName} $it" } }
+                    if (q.isNotEmpty()) SheetBody("Jakość w magazynie: " + q.joinToString(" · "), color = Aaa.TextLow, maxLines = 2)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        GhostButton("Pola", onClick = { eco = EconomyTab.FIELDS }, modifier = Modifier.weight(1f), height = 36.dp)
+                        GhostButton("Eksperyment", onClick = { eco = EconomyTab.WORKSHOP }, modifier = Modifier.weight(1.2f), height = 36.dp)
+                        GhostButton("Płomienie", onClick = { eco = EconomyTab.FLAMES }, modifier = Modifier.weight(1.1f), height = 36.dp)
+                    }
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     GhostButton("Księga", onClick = { legacy = true }, modifier = Modifier.weight(1f))
                     GoldCta(
@@ -261,6 +276,7 @@ fun AlchemyModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () ->
                 CraftingScreen(viewModel = viewModel, uiState = ui)
             }
         }
+        eco?.let { EconomyPanel(ui, viewModel, it, onClose = { eco = null }) }
     }
 }
 
@@ -332,6 +348,7 @@ fun ForgeModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
     val recipe: ForgingRecipe = recipes.getOrElse(sel) { recipes.first() }
     var hits by remember(sel) { mutableIntStateOf(0) }
     var legacy by remember { mutableStateOf(false) }
+    var eco by remember { mutableStateOf<EconomyTab?>(null) }
     val celebration = rememberCelebration()
     val scope = rememberCoroutineScope()
     val spark = remember { Animatable(1f) }
@@ -443,6 +460,12 @@ fun ForgeModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
                         }
                     }
                 }
+                if (ui.economy.enabled) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        GhostButton("Ulepsz i talizmany", onClick = { eco = EconomyTab.WORKSHOP }, modifier = Modifier.weight(1.4f), height = 36.dp)
+                        GhostButton("Płomienie", onClick = { eco = EconomyTab.FLAMES }, modifier = Modifier.weight(1f), height = 36.dp)
+                    }
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     GhostButton("Księga", onClick = { legacy = true }, modifier = Modifier.weight(1f))
                     GoldCta(
@@ -482,6 +505,7 @@ fun ForgeModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
                 CraftingScreen(viewModel = viewModel, uiState = ui)
             }
         }
+        eco?.let { EconomyPanel(ui, viewModel, it, onClose = { eco = null }) }
     }
 }
 

@@ -143,13 +143,19 @@ class GameEngineTest {
         val rich = s.copy(spiritStones = 99_999, inventory = s.inventory + (recipe.requiredHerbName to 50))
         val after = run(rich, GameCommand.BrewPill(recipe.id))
         assertEquals(50 - recipe.requiredHerbCount, after.inventory[recipe.requiredHerbName])
-        assertEquals((rich.inventory[recipe.pillName] ?: 0) + 1, after.inventory[recipe.pillName])
+        assertEquals(Quality.count(rich.inventory, recipe.pillName) + 1, Quality.count(after.inventory, recipe.pillName))
         assertEquals(rich.spiritStones - recipe.requiredSpiritStones, after.spiritStones)
     }
 
     @Test
     fun brewingRequiresChamberLevel() {
-        val s = GameEngine.newGame(12L).copy(spiritStones = 99_999)
+        // Receptura znana i gorący płomień – zostaje tylko wymóg poziomu Sali Alchemii.
+        val s = GameEngine.newGame(12L).copy(
+            spiritStones = 99_999,
+            knownRecipeIds = emptySet(),
+            flames = com.example.game.WuxiaGenerator.getGeocentricFlames(),
+            activeFlameId = "flame_12"
+        )
         val recipe = GameContent.alchemyRecipes.first { it.requiredAlchemyChamberLevel >= 6 }
         val r = GameEngine.apply(s.copy(inventory = s.inventory + (recipe.requiredHerbName to 99)), GameCommand.BrewPill(recipe.id))
         assertTrue(r.notice!!.contains("Zbyt niski poziom"))

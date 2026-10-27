@@ -85,7 +85,39 @@ data class WuxiaUiState(
     /** Zwoje metod w magazynie. */
     val scrolls: List<String> = emptyList(),
     val karma: Int = 0,
-    val tribulation: TribulationUi? = null
+    val tribulation: TribulationUi? = null,
+    // Etap 4
+    val economy: EconomyUi = EconomyUi()
+)
+
+data class MarketRow(val item: String, val have: Int, val sellPrice: Int, val buyPrice: Int?)
+data class FlameRow(val id: String, val name: String, val rank: String, val position: Int, val temperature: Int, val refinement: Int, val where: String, val bearerRealm: String)
+data class TalismanRow(val name: String, val have: Int, val cost: String, val description: String)
+
+data class EconomyUi(
+    val enabled: Boolean = false,
+    val season: Season = Season.SPRING,
+    val seasonDay: Int = 1,
+    val veinLevel: Int = 1,
+    val veinName: String = "",
+    val veinQi: Double = 1.0,
+    val veinUpgradeDoneDay: Int = 0,
+    val veinNextCost: String? = null,
+    val fieldTier: Int = 2,
+    val fields: List<FieldPlot> = emptyList(),
+    val fieldSize: Int = 4,
+    val seedHerbs: List<String> = emptyList(),
+    val sellable: List<MarketRow> = emptyList(),
+    val buyable: List<MarketRow> = emptyList(),
+    val caravans: List<Caravan> = emptyList(),
+    val contracts: List<Contract> = emptyList(),
+    val blackOpen: Boolean = false,
+    val blackOffers: List<com.example.game.engine.Market.BlackOffer> = emptyList(),
+    val knownRecipeIds: Set<String> = emptySet(),
+    val flames: List<FlameRow> = emptyList(),
+    val talismans: List<TalismanRow> = emptyList(),
+    /** Ulepszanie: indeks w magazynie → (szansa %, koszt). */
+    val upgrades: List<Triple<Int, Int, String>> = emptyList()
 )
 
 data class TribulationUi(
@@ -325,6 +357,25 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     fun refineFlame(flameId: String) = dispatch(GameCommand.RefineFlame(flameId))
     fun upgradeFacility(type: FacilityType) = dispatch(GameCommand.UpgradeFacility(type))
 
+    // --- Etap 4: gospodarka ---
+    fun upgradeVein() = dispatch(GameCommand.UpgradeVein)
+    fun plantHerb(index: Int, herb: String) = dispatch(GameCommand.PlantHerb(index, herb))
+    fun harvestFields() = dispatch(GameCommand.HarvestFields)
+    fun expandFields() = dispatch(GameCommand.ExpandFields)
+    fun sell(item: String, quantity: Int) = dispatch(GameCommand.Sell(item, quantity))
+    fun buy(item: String, quantity: Int) = dispatch(GameCommand.Buy(item, quantity))
+    fun sendCaravan(item: String, quantity: Int, guardId: String?) = dispatch(GameCommand.SendCaravan(item, quantity, guardId))
+    fun buyBlackMarket(index: Int) = dispatch(GameCommand.BuyBlackMarket(index))
+    fun fulfillContract(id: String) = dispatch(GameCommand.FulfillContract(id))
+    fun experiment(main: String, second: String?) = dispatch(GameCommand.Experiment(main, second))
+    fun upgradeArtifact(vaultIndex: Int) = dispatch(GameCommand.UpgradeArtifact(vaultIndex))
+    fun craftTalisman(name: String) = dispatch(GameCommand.CraftTalisman(name))
+    fun healWithTalisman(discipleId: String) = dispatch(GameCommand.HealWithTalisman(discipleId))
+    fun combatTalisman(name: String) = dispatch(GameCommand.CombatTalisman(name))
+    fun flameToForge(flameId: String) = dispatch(GameCommand.FlameToForge(flameId))
+    fun flameToCauldron(flameId: String) = dispatch(GameCommand.SelectFlame(flameId))
+    fun flameToDisciple(flameId: String, discipleId: String) = dispatch(GameCommand.FlameToDisciple(flameId, discipleId))
+
     // --- Walka ---
 
     fun startExpedition(regionId: String, discipleId: String) {
@@ -501,6 +552,50 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
             .toMap(),
         scrolls = game.inventory.filter { it.value > 0 && it.key.startsWith("Zwój: ") }.keys.sorted(),
         karma = game.karma,
-        tribulation = tribulation
+        tribulation = tribulation,
+        economy = economyUi(game)
     )
+
+    private fun economyUi(g: GameState): EconomyUi {
+        if (!g.e4Initialized) return EconomyUi()
+        val M = com.example.game.engine.Market
+        val V = com.example.game.engine.Vein
+        val catalog = com.example.game.content.ResourceCatalog
+        val tier = V.fieldTier(g.veinLevel)
+        val cost = V.upgradeCost(g.veinLevel)
+        val buyList = (catalog.herbs + catalog.minerals).map { it.name }.filter { M.buyable(it) } + M.SPIRIT_PAPER
+        return EconomyUi(
+            enabled = true,
+            season = com.example.game.engine.Seasons.of(g.currentDay),
+            seasonDay = com.example.game.engine.Seasons.dayOfSeason(g.currentDay),
+            veinLevel = g.veinLevel,
+            veinName = V.name(g.veinLevel),
+            veinQi = V.qiMultiplier(g.veinLevel),
+            veinUpgradeDoneDay = g.veinUpgradeDoneDay,
+            veinNextCost = cost?.let { "${it.stones} kamieni · ${it.mineralCount}× ${it.mineral} · ${it.days} dni" },
+            fieldTier = tier,
+            fields = g.fields,
+            fieldSize = com.example.game.engine.Fields.size(g),
+            seedHerbs = catalog.herbs.filter { it.tier <= tier && (g.inventory[it.name] ?: 0) > 0 }.map { it.name },
+            sellable = g.inventory.filter { it.value > 0 && M.basePrice(it.key) != null }.keys.sorted()
+                .map { MarketRow(it, g.inventory[it] ?: 0, M.sellPrice(g, it), if (M.buyable(it)) M.buyPrice(g, it) else null) },
+            buyable = buyList.map { MarketRow(it, g.inventory[it] ?: 0, M.sellPrice(g, it), M.buyPrice(g, it)) },
+            caravans = g.caravans,
+            contracts = g.contracts.filter { !it.done },
+            blackOpen = M.blackMarketOpen(g),
+            blackOffers = M.blackOffers(g),
+            knownRecipeIds = g.knownRecipeIds,
+            flames = g.flames.map { f ->
+                val info = com.example.game.engine.Flames.info(f.id)
+                FlameRow(f.id, f.name, info.rank.polishName, info.position, com.example.game.engine.Flames.temperature(f),
+                    f.refinementLevel, com.example.game.engine.Flames.where(g, f.id), info.rank.bearerRealm.polishName)
+            }.sortedBy { it.position },
+            talismans = com.example.game.engine.Talismans.recipes.map {
+                TalismanRow(it.name, g.inventory[it.name] ?: 0, "${it.paper}× papier · ${it.ingredientCount}× ${it.ingredient} · ${it.stones} kam.", it.description)
+            },
+            upgrades = g.vaultArtifacts.mapIndexed { i, a ->
+                Triple(i, com.example.game.engine.CraftV2.upgradeChance(a.plus), "${100 * (a.plus + 1) * (a.plus + 1)} kam.")
+            }
+        )
+    }
 }
