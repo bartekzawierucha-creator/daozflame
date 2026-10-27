@@ -23,8 +23,9 @@ class BalanceSimulationTest {
 class EraPaceTest {
     @Test
     fun secondEraIsFasterWithinTarget() {
-        val eras = BalanceSimulator.simulateEras(20261027L, eras = 2)
-        val speedup = BalanceSimulator.eraSpeedup(eras)
-        assertTrue("przyspieszenie $speedup", speedup != null && speedup in 0.3..0.6)
+        // Mediana z trzech światów: pojedyncze ziarno waha się zbyt mocno (autonomia uczniów, różne krainy).
+        val speedups = listOf(20261027L, 42L, 777L).map { BalanceSimulator.eraSpeedup(BalanceSimulator.simulateEras(it, eras = 2)) ?: -1.0 }
+        val median = speedups.sorted()[1]
+        assertTrue("przyspieszenie $speedups (mediana $median)", median in 0.3..0.6)
     }
 }

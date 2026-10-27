@@ -77,7 +77,7 @@ object GameEngine {
     }
 
     /** Wywoływane po wczytaniu zapisu: jednorazowe migracje logiczne (korzenie w Etapie 2, etapy w Etapie 3). */
-    fun normalize(state: GameState): GameState = Lifecycle.normalize(Secrets.normalize(Fog.normalize(WorldAI.normalize(economy(Realms.normalize(DiscipleRules.normalize(state)))))))
+    fun normalize(state: GameState): GameState = Autonomy.normalize(Lifecycle.normalize(Secrets.normalize(Fog.normalize(WorldAI.normalize(economy(Realms.normalize(DiscipleRules.normalize(state))))))))
 
     /** Migracja do Etapu 4: stare zapisy zachowują wszystkie płomienie i znają wszystkie receptury. */
     private fun economy(s: GameState): GameState {
@@ -100,7 +100,17 @@ object GameEngine {
     /** Jedyne wejście do zmiany stanu gry. */
     fun apply(state: GameState, command: GameCommand): StepResult {
         val ctx = EngineContext(state.worldSeed, state.step)
-        val result = when (command) {
+        val result = Autonomy.afterDirect(command, state, dispatch(state, command, ctx))
+        // Przyjęta rada liczy się jak wykonana komenda (samouczek, cele dnia, osiągnięcia).
+        val effective = if (command is GameCommand.Advise && result.events.any { it is GameEvent.AdviceOutcome && it.accepted }) command.command else command
+        val advanced = Tutorial.afterCommand(state, effective, result.state)
+        // Etap 8: liczniki, cele dzienne i osiągnięcia – liczone ze zdarzeń tego kroku.
+        val withMeta = Achievements.after(effective, state, result.copy(state = advanced))
+        return withMeta.copy(state = withMeta.state.copy(step = state.step + 1))
+    }
+
+    private fun dispatch(state: GameState, command: GameCommand, ctx: EngineContext): StepResult =
+        when (command) {
             GameCommand.Tick -> tick(state, ctx)
 
             is GameCommand.Recruit -> SectCommands.recruit(state, command.discipleId)
@@ -244,12 +254,11 @@ object GameEngine {
                 ok(EventScripts.activate(state, picked))
             }
             GameCommand.DebugFillQi -> ok(state.copy(disciples = state.disciples.map { it.copy(realmProgress = 100) }), "[debug] Qi wszystkich uczniów = 100%")
+
+            is GameCommand.Advise -> if (!state.autonomy) dispatch(state, command.command, ctx)
+                else Autonomy.advise(state, ctx, command.command) { st, c -> Autonomy.afterDirect(c, st, dispatch(st, c, ctx)) }
+            is GameCommand.Hold -> Autonomy.hold(state, command.discipleId)
         }
-        val advanced = Tutorial.afterCommand(state, command, result.state)
-        // Etap 8: liczniki, cele dzienne i osiągnięcia – liczone ze zdarzeń tego kroku.
-        val withMeta = Achievements.after(command, state, result.copy(state = advanced))
-        return withMeta.copy(state = withMeta.state.copy(step = state.step + 1))
-    }
 
     private fun tick(state: GameState, ctx: EngineContext): StepResult {
         val frame = TickFrame(state, ctx)
@@ -258,7 +267,9 @@ object GameEngine {
         if (result.state.currentDay == state.currentDay) return result
         // Systemy dobowe na pełnym stanie (Etap 5b: AI sekt, najazdy, szpiedzy) – po fazach cyklu, raz na dzień.
         val (world, notes) = WorldDaily.run(result.state, ctx)
-        return StepResult(world, result.events + notes.map { GameEvent.Notice(it) })
+        // Etap 10: uczniowie sami decydują o dniu.
+        val (lived, lives) = Autonomy.daily(world, ctx)
+        return StepResult(lived, result.events + notes.map { GameEvent.Notice(it) } + lives)
     }
 
     val STARTING_INVENTORY: Map<String, Int> = mapOf(

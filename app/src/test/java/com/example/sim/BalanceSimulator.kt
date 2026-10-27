@@ -148,8 +148,10 @@ object BalanceSimulator {
         morale = s.morale
     )
 
+    /** Bot gra jak gracz: polecenia dla uczniów to rady (Etap 10), które uczeń może odrzucić. */
     private fun apply(s: GameState, c: GameCommand): GameState {
-        val r = GameEngine.apply(s, c).state
+        val cmd = if (s.autonomy && com.example.game.engine.Autonomy.subject(c) != null) GameCommand.Advise(c) else c
+        val r = GameEngine.apply(s, cmd).state
         tracker?.invoke(c::class.simpleName ?: "?", (r.spiritStones - s.spiritStones).toLong())
         return r
     }

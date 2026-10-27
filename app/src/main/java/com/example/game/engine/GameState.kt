@@ -153,6 +153,9 @@ data class GameState(
     /** Płomień w palenisku kuźni (activeFlameId = płomień w kotle alchemii). */
     val forgeFlameId: String? = null,
 
+    /** Etap 10: uczniowie decydują sami, mistrz doradza. */
+    val autonomy: Boolean = false,
+
     /** Krok samouczka; brak pola w starym zapisie = samouczek ukończony. */
     val tutorialStep: Int = Tutorial.DONE,
 

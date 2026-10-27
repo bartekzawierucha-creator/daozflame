@@ -299,7 +299,25 @@ data class Disciple(
     val mentorId: String? = null,
     val art: DaoArt? = null,
     val illUntilDay: Int = 0,
-    val cursed: Boolean = false
+    val cursed: Boolean = false,
+    // --- Etap 10: autonomia ucznia ---
+    /** Zaufanie do mistrza 0–100: rośnie, gdy rady okazują się trafne. */
+    val trust: Int = 50,
+    /** Co uczeń sam postanowił i dlaczego (dla UI). */
+    val plan: String? = null,
+    /** Do tego dnia trzyma się przyjętej rady (np. roli). */
+    val committedUntilDay: Int = 0,
+    /** Do tego dnia obiecał nie ryzykować (przełomy wielkie, wyprawy). */
+    val holdUntilDay: Int = 0,
+    /** Ostatni dzień, w którym sam podjął wyzwanie (wieża, wyprawa, odosobnienie…). */
+    val ventureDay: Int = -100,
+    /** Dzień, w którym stanął u progu wielkiego królestwa (0 = nie stoi) – cierpliwość się kończy. */
+    val gateSinceDay: Int = 0,
+    /** Ile rad usłyszał w dniu [adviceDay] – zbyt wiele to naciskanie. */
+    val adviceDay: Int = -1,
+    val adviceCount: Int = 0,
+    /** Dziennik ucznia: ostatnie decyzje (najnowsze na końcu). */
+    val diary: List<String> = emptyList()
 )
 
 enum class ResourceCategory { MINERAL, HERB, PILL, ESSENCE }

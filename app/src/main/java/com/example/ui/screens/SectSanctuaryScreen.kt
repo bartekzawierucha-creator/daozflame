@@ -492,7 +492,7 @@ fun PavilionHeroCard(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = if (uiState.autoBreakthroughEnabled) "Adeptowie przy 100% Qi przełamują się na bieżąco" else "Wymagany ręczny rytuał Niebiańskiej Kary",
+                            text = if (uiState.autonomy) "Wielkie przełomy: adepci decydują sami – możesz doradzić" else if (uiState.autoBreakthroughEnabled) "Adeptowie przy 100% Qi przełamują się na bieżąco" else "Wymagany ręczny rytuał Niebiańskiej Kary",
                             color = Color(0xFFB0A592),
                             fontSize = 9.sp
                         )

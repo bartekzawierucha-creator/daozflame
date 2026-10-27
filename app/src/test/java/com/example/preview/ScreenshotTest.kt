@@ -162,6 +162,7 @@ class ScreenshotTest {
             shot("5${i}_sect_${t.name.lowercase()}", "Sekta – ${t.label}") { SectPanel(u, vm, t, noop) }
         }
         shot("55_life", "Życie ucznia") { LifePanel(chosen, u, vm, noop) }
+        shot("56_mind", "Umysł ucznia – zamiar, więź, rady, dziennik") { MindPanel(chosen, u, vm, noop) }
 
         // ── Etap 8: meta ────────────────────────────────────────────────────
         MetaTab.entries.forEachIndexed { i, t ->

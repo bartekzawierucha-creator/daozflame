@@ -31,4 +31,7 @@ object FeatureFlags {
 
     // Etap 8
     const val META = true
+
+    // Etap 10: autonomia uczniów
+    const val AUTONOMY = true
 }

@@ -268,7 +268,8 @@ object AutoBreakthroughPhase : TickPhase {
         frame.disciples = frame.disciples.map { d ->
             if (!CultivationSystem.ready(d)) return@map d
             val major = d.majorRealm ?: return@map d
-            if (d.stage >= major.stages && !s.autoBreakthroughEnabled) return@map d
+            // Etap 10: o wielkim przełomie decyduje sam uczeń (Autonomy.daily).
+            if (d.stage >= major.stages && (!s.autoBreakthroughEnabled || s.autonomy)) return@map d
             val r = CultivationSystem.advance(state, d, s.autoUsePillsForBreakthrough, frame.inventory, rng, player = false)
             frame.reputationGained += r.reputation
             if (r.attempted) {

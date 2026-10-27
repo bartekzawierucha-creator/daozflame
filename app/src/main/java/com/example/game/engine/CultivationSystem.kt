@@ -76,6 +76,26 @@ object CultivationSystem {
     }
 
     /** Powód, dla którego wielki przełom jest zablokowany (null = można próbować). */
+    /** Etap 10: uczeń stoi u progu wielkiego królestwa (bez wąskiego gardła). */
+    fun atMajorGate(s: GameState, d: Disciple): Boolean {
+        val major = d.majorRealm ?: return false
+        return ready(d) && d.stage >= major.stages && major.next != null && bottleneck(s, d) == null
+    }
+
+    /** Etap 10: czy następny wielki przełom to tribulacja. */
+    fun tribulationAhead(d: Disciple): Boolean = (d.majorRealm?.next?.tribulationStrikes ?: 0) > 0
+
+    /** Etap 10: szacowana szansa wielkiego przełomu bez tribulacji (null = tribulacja). */
+    fun majorOdds(s: GameState, d: Disciple, withPill: Boolean): Int? {
+        val target = d.majorRealm?.next ?: return null
+        if (target.tribulationStrikes > 0) return null
+        val mods = Modifiers.disciple(Modifiers.sect(s), d)
+        return when (target) {
+            MajorRealm.FOUNDATION -> if (withPill) 70 + d.karmicLuck / 10 else FOUNDATION_PILL_LESS_CHANCE
+            else -> CultivationRules.breakthroughChance(d, if (withPill) 35 else 0, s.timeOfDay, mods.flat(Stat.BREAKTHROUGH_CHANCE).toInt())
+        }
+    }
+
     fun bottleneck(s: GameState, d: Disciple): String? {
         val major = d.majorRealm ?: return "Brak danych kultywacji."
         val next = major.next ?: return "To szczyt drabiny kultywacji."

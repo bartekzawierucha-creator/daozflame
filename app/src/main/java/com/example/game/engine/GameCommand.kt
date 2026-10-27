@@ -110,6 +110,12 @@ sealed interface GameCommand {
     data class SectBattle(val sectId: String, val discipleIds: List<String>) : GameCommand
     data class HonorDuel(val sectId: String, val discipleId: String, val toDeath: Boolean, val confirmed: Boolean = false) : GameCommand
 
+    // Etap 10: autonomia – mistrz doradza
+    /** Rada zamiast rozkazu: uczeń sam rozstrzyga, czy wykona [command]. */
+    data class Advise(val command: GameCommand) : GameCommand
+    /** Rada „wstrzymaj się”: bez wielkich przełomów i wypraw przez kilka dni. */
+    data class Hold(val discipleId: String) : GameCommand
+
     // Kultywacja
     data class ToggleAutoBreakthrough(val enabled: Boolean? = null) : GameCommand
     data class ToggleAutoPills(val enabled: Boolean? = null) : GameCommand
@@ -181,6 +187,8 @@ sealed interface GameEvent {
     data class Breakthrough(val discipleId: String, val success: Boolean) : GameEvent
     data class Tribulation(val discipleId: String, val result: CultivationSystem.TribulationResult) : GameEvent
     data class OfflineSummary(val report: OfflineProgress.Report) : GameEvent
+    /** Etap 10: uczeń przyjął albo odrzucił radę mistrza. */
+    data class AdviceOutcome(val discipleId: String, val accepted: Boolean) : GameEvent
 }
 
 data class StepResult(val state: GameState, val events: List<GameEvent> = emptyList()) {

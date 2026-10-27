@@ -201,6 +201,7 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                     ThinBar(d.realmProgress / 100f, schoolColor(d.martialSchool))
                     DiscipleLifeInfo(d)
                     DiscipleStateTags(d, ui)
+                    if (ui.autonomy) DiscipleMindStrip(d, ui) { legacy = "mind" }
                     // Rozwój ucznia: trzy panele (kultywacja, Dao, życie) – stałe miejsce, zawsze widoczne.
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         GhostButton("Kultywacja", onClick = { legacy = "cultivation" }, modifier = Modifier.weight(1.2f), height = 36.dp)
@@ -222,10 +223,12 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         GhostButton(
-                            text = "Rola",
+                            text = if (ui.autonomy) "Doradź" else "Rola",
                             onClick = {
-                                val roles = DiscipleRole.values()
-                                viewModel.assignRole(d.id, roles[(d.role.ordinal + 1) % roles.size])
+                                if (ui.autonomy) legacy = "mind" else {
+                                    val roles = DiscipleRole.values()
+                                    viewModel.assignRole(d.id, roles[(d.role.ordinal + 1) % roles.size])
+                                }
                             },
                             modifier = Modifier.weight(1f)
                         )
@@ -240,7 +243,7 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                             )
                         } else if (isReady) {
                             GoldCta(
-                                text = "Przełom",
+                                text = if (ui.autonomy) "Doradź przełom" else "Przełom",
                                 trailing = if (pills > 0) "+pigułka" else null,
                                 onClick = {
                                     WuxiaAudioEngine.playThunderStrike()
@@ -252,7 +255,7 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                         } else {
                             val meditating = d.role == DiscipleRole.MEDITATING
                             GoldCta(
-                                text = if (meditating) "Medytuje" else "Medytacja",
+                                text = if (meditating) "Medytuje" else if (ui.autonomy) "Doradź medytację" else "Medytacja",
                                 enabled = !meditating,
                                 onClick = { viewModel.assignRole(d.id, DiscipleRole.MEDITATING) },
                                 modifier = Modifier.weight(1.6f),
@@ -282,6 +285,7 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
             "cultivation" -> if (d != null) CultivationPanel(d, ui, viewModel, onClose = { legacy = null })
             "secrets" -> if (d != null) SecretsPanel(d, ui, viewModel, onClose = { legacy = null })
             "life" -> if (d != null) LifePanel(d, ui, viewModel, onClose = { legacy = null })
+            "mind" -> if (d != null) MindPanel(d, ui, viewModel, onClose = { legacy = null })
         }
     }
 }

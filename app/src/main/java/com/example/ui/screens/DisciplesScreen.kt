@@ -174,7 +174,7 @@ fun DisciplesScreen(
                             )
                         }
                         Text(
-                            text = if (uiState.autoBreakthroughEnabled) "Uczniowie przy 100% Qi automatycznie przechodzą próbę" else "Wstrzymano próby przełomu (wymagany ręczny rytuał)",
+                            text = if (uiState.autonomy) "Wielkie przełomy: uczniowie decydują sami – możesz doradzić" else if (uiState.autoBreakthroughEnabled) "Uczniowie przy 100% Qi automatycznie przechodzą próbę" else "Wstrzymano próby przełomu (wymagany ręczny rytuał)",
                             color = Color(0xFFB0A592),
                             fontSize = 11.sp
                         )

@@ -124,7 +124,15 @@ data class WuxiaUiState(
     val essenceOnRebirth: Int = 0,
     val achievements: List<AchievementUi> = emptyList(),
     // Etap 9
-    val arena: ArenaUi = ArenaUi()
+    val arena: ArenaUi = ArenaUi(),
+    // Etap 10: autonomia – uczniowie decydują sami, mistrz doradza
+    val autonomy: Boolean = false,
+    /** Ogólna szansa (%), że uczeń posłucha rady. */
+    val obedience: Map<String, Int> = emptyMap(),
+    /** Szansa przyjęcia rady o zajęciu: uczeń → rola → %. */
+    val roleAdvice: Map<String, Map<DiscipleRole, Int>> = emptyMap(),
+    /** Zajęcie, które uczeń wybrałby sam. */
+    val preferredRoles: Map<String, DiscipleRole> = emptyMap()
 )
 
 data class ArenaUi(
@@ -387,7 +395,9 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
 
     /** Jedyna droga zmiany stanu gry. */
     private fun dispatch(command: GameCommand) {
-        val result = GameEngine.apply(game, command)
+        // Etap 10: polecenia dotyczące ucznia są radami – uczeń może odmówić.
+        val cmd = if (game.autonomy && com.example.game.engine.Autonomy.subject(command) != null) GameCommand.Advise(command) else command
+        val result = GameEngine.apply(game, cmd)
         game = result.state
         result.events.forEach(::onEvent)
         _uiState.value = buildUi()
@@ -453,7 +463,15 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     fun assignRole(discipleId: String, newRole: DiscipleRole) = dispatch(GameCommand.AssignRole(discipleId, newRole))
     fun toggleAutoBreakthrough(enabled: Boolean? = null) = dispatch(GameCommand.ToggleAutoBreakthrough(enabled))
     fun toggleAutoUsePills(enabled: Boolean? = null) = dispatch(GameCommand.ToggleAutoPills(enabled))
-    fun breakthroughAllReadyDisciples() = dispatch(GameCommand.BreakthroughAll)
+    fun breakthroughAllReadyDisciples() {
+        // Etap 10: wielkie przełomy to decyzja ucznia – mistrz doradza każdemu gotowemu z osobna.
+        if (!game.autonomy) return dispatch(GameCommand.BreakthroughAll)
+        val ready = game.disciples.filter { com.example.game.engine.CultivationSystem.atMajorGate(game, it) }
+        if (ready.isEmpty()) return dispatch(GameCommand.BreakthroughAll)
+        ready.forEach { dispatch(GameCommand.AttemptBreakthrough(it.id, game.autoUsePillsForBreakthrough)) }
+    }
+    /** Rada „wstrzymaj się z ryzykiem”. */
+    fun adviseHold(discipleId: String) = dispatch(GameCommand.Hold(discipleId))
     fun attemptBreakthrough(discipleId: String, usePill: Boolean) = dispatch(GameCommand.AttemptBreakthrough(discipleId, usePill))
     fun unlockSkill(discipleId: String, skillId: String) = dispatch(GameCommand.UnlockSkill(discipleId, skillId))
     fun usePill(discipleId: String, pillName: String) = dispatch(GameCommand.UsePill(discipleId, pillName))
@@ -886,6 +904,10 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
             starsReadToday = game.starsReadDay == game.currentDay
         ),
         meta = game.meta,
+        autonomy = game.autonomy,
+        obedience = game.disciples.associate { it.id to com.example.game.engine.Autonomy.chance(game, it) },
+        roleAdvice = game.disciples.associate { d -> d.id to DiscipleRole.entries.associateWith { com.example.game.engine.Autonomy.chance(game, d, GameCommand.AssignRole(d.id, it)) } },
+        preferredRoles = game.disciples.associate { it.id to com.example.game.engine.Autonomy.preferredRole(game, it) },
         rebirthAvailable = com.example.game.engine.Rebirth.available(game),
         essenceOnRebirth = com.example.game.engine.Rebirth.essence(game),
         arena = arena.copy(rating = game.pvpRating, wins = game.pvpWins, losses = game.pvpLosses, online = net.enabled),
