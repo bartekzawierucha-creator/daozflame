@@ -74,7 +74,11 @@ fun SectHub(
 
     Box(modifier.background(Aaa.Ink0)) {
         // 1. Świat
-        SceneLayer(ui = ui, ready = ready, onOpen = onOpen)
+        SceneLayer(ui = ui, ready = ready, onOpen = onOpen, onHarvest = {
+            WuxiaAudioEngine.playDivineGong()
+            viewModel.harvestFields()
+            celebration.fire("Zbiory!")
+        })
 
         // 2. Cienie krawędzi – czytelność HUD bez ramek
         Box(
@@ -170,7 +174,7 @@ fun SectHub(
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun SceneLayer(ui: WuxiaUiState, ready: Int, onOpen: OpenModule) {
+private fun SceneLayer(ui: WuxiaUiState, ready: Int, onOpen: OpenModule, onHarvest: () -> Unit) {
     val drift = rememberInfiniteTransition(label = "scene_drift")
     val d by drift.animateFloat(
         initialValue = 0f,
@@ -276,6 +280,9 @@ private fun SceneLayer(ui: WuxiaUiState, ready: Int, onOpen: OpenModule) {
                 badge = null,
                 tag = "hub_building_forge"
             ) { onOpen(GameModule.FORGE, it) }
+
+            // Znaki nad sektą: pływające ikony, które coś robią po dotknięciu.
+            HubSignLayer(ui, sceneW, sceneH, onHarvest = onHarvest, onOpen = onOpen)
         }
     }
 }

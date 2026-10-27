@@ -81,7 +81,7 @@ private fun IdentityTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     val life = ui.sectLife
     Text(life.karmaPath, fontFamily = BrushFont, color = Aaa.GoldHi, fontSize = 24.sp)
     KvRow("Karma", "${ui.karma}", valueColor = if (ui.karma >= 0) Aaa.Jade else Aaa.Cinnabar)
-    SheetBody("Karma ≥ 50: Sekta Prawa (+20% reputacji). Karma ≤ −50: Sekta Demoniczna (+15% obrażeń, −10% reputacji, klątwy).", color = Aaa.TextLow, maxLines = 3)
+    RuleHint("Karma ≥ 50: Sekta Prawa (+20% reputacji). Karma ≤ −50: Sekta Demoniczna (+15% obrażeń, −10% reputacji, klątwy).", color = Aaa.TextLow, maxLines = 3)
     KvRow("Opowieść", when {
         life.storyEnding == 1 -> "zakończona: Pieczęć Światła"
         life.storyEnding == 2 -> "zakończona: Pakt z Demonem"
@@ -107,7 +107,7 @@ private fun IdentityTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     }
 
     Section("Skarby sekty ${life.treasury.size}/5")
-    SheetBody("Artefakty w skarbcu wzmacniają Qi całej sekty, ale rabusie mogą je wynieść przy przełamanych bramach.", color = Aaa.TextLow, maxLines = 2)
+    RuleHint("Artefakty w skarbcu wzmacniają Qi całej sekty, ale rabusie mogą je wynieść przy przełamanych bramach.", color = Aaa.TextLow, maxLines = 2)
     life.treasury.forEachIndexed { i, a ->
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("${a.name} (${a.rarity})", style = AaaType.Label.copy(fontSize = 11.sp, color = rarityColor(a.rarity)), modifier = Modifier.weight(1f), maxLines = 1)
@@ -125,7 +125,7 @@ private fun IdentityTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
 @Composable
 private fun AncestorsTab(ui: WuxiaUiState) {
     val list = ui.sectLife.ancestors
-    SheetBody("Każdy przodek od Fundamentów wzwyż daje sekcie +1% Qi (najwyżej +15%).", maxLines = 2)
+    RuleHint("Każdy przodek od Fundamentów wzwyż daje sekcie +1% Qi (najwyżej +15%).", maxLines = 2)
     if (list.isEmpty()) SheetBody("Sala Przodków jest jeszcze pusta.", color = Aaa.TextLow)
     list.reversed().forEach { a ->
         InfoCard {
@@ -140,7 +140,7 @@ private fun AncestorsTab(ui: WuxiaUiState) {
 private fun PlacesTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     val life = ui.sectLife
     Overline("Feng shui · %+.1f%% Qi".format(life.fengShuiTotal))
-    SheetBody("Każde z 6 miejsc sekty ma swój żywioł. Budynek na zgodnym miejscu wzmacnia Qi, na wrogim – osłabia. Przeniesienie: 1500 kamieni, co 10 dni.", color = Aaa.TextLow, maxLines = 3)
+    RuleHint("Każde z 6 miejsc sekty ma swój żywioł. Budynek na zgodnym miejscu wzmacnia Qi, na wrogim – osłabia. Przeniesienie: 1500 kamieni, co 10 dni.", color = Aaa.TextLow, maxLines = 3)
     var first by remember { mutableStateOf<FacilityType?>(null) }
     FacilityType.entries.sortedBy { life.buildingSlots[it] ?: it.ordinal }.forEach { t ->
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -157,7 +157,7 @@ private fun PlacesTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     }
 
     Section("Lochy pod sektą · piętro ${life.dungeonDepth}")
-    SheetBody("Każde piętro silniejsze o 12%. Łupy: rudy, kryształy, fragmenty zwojów, czasem jajo bestii. 2 zejścia dziennie (zostało ${life.dungeonAttemptsLeft}).", color = Aaa.TextLow, maxLines = 3)
+    RuleHint("Każde piętro silniejsze o 12%. Łupy: rudy, kryształy, fragmenty zwojów, czasem jajo bestii. 2 zejścia dziennie (zostało ${life.dungeonAttemptsLeft}).", color = Aaa.TextLow, maxLines = 3)
     ui.disciples.filter { it.currentHp > it.maxHp / 3 }.sortedByDescending { it.combatPower }.take(3).forEach { d ->
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("${d.name.substringBefore(" (")} · ${d.combatPower}", style = AaaType.Label.copy(fontSize = 11.sp, color = Aaa.TextHi), modifier = Modifier.weight(1f), maxLines = 1)
@@ -190,7 +190,7 @@ private fun CreaturesTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     if (eggs > 0) GhostButton("Złóż jajo do wysiadywania", onClick = { viewModel.incubateEgg() }, modifier = Modifier.fillMaxWidth(), height = 36.dp)
 
     Section("Wierzchowce")
-    SheetBody("Bestia z więzią ≥ 50% nosi jeźdźca: +5% obrażeń za każdy etap ewolucji (najwyżej 3).", color = Aaa.TextLow, maxLines = 2)
+    RuleHint("Bestia z więzią ≥ 50% nosi jeźdźca: +5% obrażeń za każdy etap ewolucji (najwyżej 3).", color = Aaa.TextLow, maxLines = 2)
     val champ = ui.disciples.maxByOrNull { it.combatPower }
     ui.sectBeasts.forEach { b ->
         val rider = ui.disciples.find { it.id == life.mounts[b.id] }
@@ -205,7 +205,7 @@ private fun CreaturesTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     }
 
     Section("Fuzja i pożeranie płomieni")
-    SheetBody("Fuzja: 30% szansy, że oba płomienie wybuchną; sukces daje +500° i +2 oczyszczenia. Pożeranie: silniejszy zjada słabszy bez ryzyka.", color = Aaa.TextLow, maxLines = 3)
+    RuleHint("Fuzja: 30% szansy, że oba płomienie wybuchną; sukces daje +500° i +2 oczyszczenia. Pożeranie: silniejszy zjada słabszy bez ryzyka.", color = Aaa.TextLow, maxLines = 3)
     var a by remember { mutableStateOf<String?>(null) }
     var b by remember { mutableStateOf<String?>(null) }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {

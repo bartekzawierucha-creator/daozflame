@@ -45,6 +45,8 @@ class ScreenshotTest {
     private val index = StringBuilder()
 
     private var screen by mutableStateOf<(@Composable () -> Unit)?>(null)
+    /** Klucz ekranu: nowy ekran = świeży stan (zakładki, rozwinięcia), bez przecieków z poprzedniego. */
+    private var screenKey by mutableStateOf("")
 
     private val errors = StringBuilder()
 
@@ -54,6 +56,7 @@ class ScreenshotTest {
 
     private fun shot(name: String, title: String, content: @Composable () -> Unit) {
         try {
+            screenKey = name
             screen = content
             androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications()
             compose.mainClock.advanceTimeBy(1_500)
@@ -97,7 +100,7 @@ class ScreenshotTest {
         compose.mainClock.autoAdvance = false
         compose.setContent {
             WuxiaSectTheme {
-                Box(Modifier.fillMaxSize().background(Aaa.Ink0)) { screen?.invoke() }
+                Box(Modifier.fillMaxSize().background(Aaa.Ink0)) { androidx.compose.runtime.key(screenKey) { screen?.invoke() } }
             }
         }
 

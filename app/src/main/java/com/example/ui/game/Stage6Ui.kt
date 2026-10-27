@@ -65,7 +65,7 @@ fun JournalPanel(ui: WuxiaUiState, initialTab: Int = 0, onClose: () -> Unit) {
     ) {
         val cat = cats.getOrNull(tab - 1)
         if (sec.journal.isEmpty()) {
-            SheetBody("Świat ma swoje prawa, inne w każdej grze. Sny, badania, wyprawy, walki i eksperymenty zapełnią tę księgę.", maxLines = 3)
+            RuleHint("Świat ma swoje prawa, inne w każdej grze. Sny, badania, wyprawy, walki i eksperymenty zapełnią tę księgę.", maxLines = 3)
         }
         sec.journal.filter { cat == null || it.category == cat }.forEach { e ->
             InfoCard(accent = levelColor(e.level).takeIf { e.level != KnowledgeLevel.GUESS }) {
@@ -109,7 +109,7 @@ fun SecretsPanel(d: Disciple, ui: WuxiaUiState, viewModel: WuxiaGameViewModel, i
     ) {
         when (tab) {
             DaoTab.MERIDIANS -> {
-                SheetBody("Qi płynie od centrum do sąsiednich punktów. Niektóre układy rozbłyskują gwiazdozbiorami. Czerwone obramowanie: znany zator (×3 kosztu).", color = Aaa.TextLow, maxLines = 3)
+                RuleHint("Qi płynie od centrum do sąsiednich punktów. Niektóre układy rozbłyskują gwiazdozbiorami. Czerwone obramowanie: znany zator (×3 kosztu).", color = Aaa.TextLow, maxLines = 3)
                 val lit = sec.knownConstellations.filterValues { pts -> d.openedMeridians.containsAll(pts) }.values.flatten().toSet()
                 val full = d.openedMeridians.size >= cap
                 Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -155,7 +155,7 @@ fun SecretsPanel(d: Disciple, ui: WuxiaUiState, viewModel: WuxiaGameViewModel, i
                 }
             }
             DaoTab.BREATH -> {
-                SheetBody("Każda metoda ma swój oddech, miejsce i porę dnia. Gdy trafisz, Qi popłynie wyraźnie lepiej – Księga odnotuje to po kilku dniach.", color = Aaa.TextLow, maxLines = 3)
+                RuleHint("Każda metoda ma swój oddech, miejsce i porę dnia. Gdy trafisz, Qi popłynie wyraźnie lepiej – Księga odnotuje to po kilku dniach.", color = Aaa.TextLow, maxLines = 3)
                 KvRow("Metoda", com.example.game.engine.Realms.method(d.methodId).name)
                 KvRow("Pora teraz", ui.timeOfDay.polishName, valueColor = Aaa.TextMid)
                 Section("Oddech")
@@ -176,7 +176,7 @@ fun SecretsPanel(d: Disciple, ui: WuxiaUiState, viewModel: WuxiaGameViewModel, i
                 }
             }
             DaoTab.CONTEMPLATION -> {
-                SheetBody("Rzeczy i zjawiska rezonują z Prawami. Ten sam obiekt uczy coraz mniej. Dwa Prawa powyżej 50% mogą się spleść.", color = Aaa.TextLow, maxLines = 3)
+                RuleHint("Rzeczy i zjawiska rezonują z Prawami. Ten sam obiekt uczy coraz mniej. Dwa Prawa powyżej 50% mogą się spleść.", color = Aaa.TextLow, maxLines = 3)
                 if (d.laws.isNotEmpty()) {
                     Section("Prawa ucznia")
                     d.laws.forEach { (law, pct) ->

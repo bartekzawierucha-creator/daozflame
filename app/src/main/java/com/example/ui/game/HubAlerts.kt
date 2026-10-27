@@ -91,7 +91,9 @@ fun hubAlerts(ui: WuxiaUiState): List<HubAlert> = buildList {
 /** Kolumna alertów na hubie (najwyżej 4). */
 @Composable
 fun HubAlertRail(ui: WuxiaUiState, onOpen: OpenModule, modifier: Modifier = Modifier) {
-    val alerts = hubAlerts(ui).take(4)
+    // Sprawy z miejscem na mapie (pola, kontrakty, królestwa) pokazują pływające znaki – tu zostaje reszta.
+    val onMap = setOf(Shortcut.FIELDS, Shortcut.CONTRACTS, Shortcut.SECRET_REALMS, Shortcut.RAID)
+    val alerts = hubAlerts(ui).filter { it.shortcut !in onMap }.take(3)
     if (alerts.isEmpty()) return
     Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp), horizontalAlignment = Alignment.End) {
         alerts.forEach { a ->

@@ -62,7 +62,7 @@ fun MetaPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, initial: MetaTab 
             MetaTab.ACHIEVEMENTS -> AchievementsTab(ui, viewModel)
             MetaTab.DAILY -> DailyTab(ui, viewModel)
             MetaTab.CODEX -> {
-                SheetBody("Kodeks liczy, ile tajemnic poznałeś w najlepszej erze. Nie mówi, czego brakuje.", maxLines = 2)
+                RuleHint("Kodeks liczy, ile tajemnic poznałeś w najlepszej erze. Nie mówi, czego brakuje.", maxLines = 2)
                 KvRow("Ta era", "${ui.secrets.discovered} / ${ui.secrets.total}")
                 ui.meta.codex.forEach { (cat, n) -> KvRow(cat, "$n") }
                 if (ui.meta.legacy.isNotEmpty()) SheetBody("Księga Dziedzictwa: ${ui.meta.legacy.size} praw świata przechodzi do każdej ery.", color = Aaa.Gold, maxLines = 2)
@@ -77,7 +77,7 @@ private fun RebirthTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     val m = ui.meta
     KvRow("Esencja Niebios", "${m.essence}")
     KvRow("Po odrodzeniu", "+${ui.essenceOnRebirth}", valueColor = Aaa.Jade)
-    SheetBody(
+    RuleHint(
         "Odrodzenie zeruje sektę i świat (nowe ziarno – nowe tajemnice). Zostają: Drzewo Niebios, Esencja, Księga Dziedzictwa, osiągnięcia, tytuły, Kodeks, liczniki, poziom trudności.",
         maxLines = 5
     )
@@ -98,7 +98,7 @@ private fun RebirthTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     Section("Sukcesja")
     if (m.heirName != null) SheetBody("Następca: ${m.heirName}. W nowej erze poprowadzi sektę (+10% Qi).", color = Aaa.Gold, maxLines = 2)
     else {
-        SheetBody("Po pierwszym roku ery wybierz następcę. Pominięci ambitni (lojalność < 70, silniejsi od następcy) mogą odejść.", color = Aaa.TextLow, maxLines = 3)
+        RuleHint("Po pierwszym roku ery wybierz następcę. Pominięci ambitni (lojalność < 70, silniejsi od następcy) mogą odejść.", color = Aaa.TextLow, maxLines = 3)
         var pick by remember { mutableStateOf<String?>(null) }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             ui.disciples.sortedByDescending { it.combatPower }.take(8).forEach { d ->
@@ -133,7 +133,7 @@ private fun RebirthTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
 @Composable
 private fun TreeTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     KvRow("Esencja Niebios", "${ui.meta.essence}")
-    SheetBody("Węzły gałęzi otwiera się po kolei; poziom N kosztuje N Esencji. Węzeł kupiony pierwszego dnia ery daje też premię startową.", color = Aaa.TextLow, maxLines = 3)
+    RuleHint("Węzły gałęzi otwiera się po kolei; poziom N kosztuje N Esencji. Węzeł kupiony pierwszego dnia ery daje też premię startową.", color = Aaa.TextLow, maxLines = 3)
     HeavenTree.BRANCHES.forEach { (branch, sp) ->
         Section("$branch · +${sp.second.toInt()}% ${sp.first.label} za poziom")
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -174,7 +174,7 @@ private fun AchievementsTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
 @Composable
 private fun DailyTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     val m = ui.meta
-    SheetBody("Trzy cele na każdy prawdziwy dzień. Cykl 7 dni nie zeruje się, gdy pominiesz dzień – tylko czeka.", maxLines = 2)
+    RuleHint("Trzy cele na każdy prawdziwy dzień. Cykl 7 dni nie zeruje się, gdy pominiesz dzień – tylko czeka.", maxLines = 2)
     KvRow("Cykl", "dzień ${m.streak % DailyGoals.CYCLE + 1} z ${DailyGoals.CYCLE} (łącznie ${m.streak})")
     if (m.goals.isEmpty()) SheetBody("Cele pojawią się za chwilę.", color = Aaa.TextLow)
     m.goals.forEach { g ->

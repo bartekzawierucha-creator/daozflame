@@ -183,3 +183,29 @@ fun StateTag(text: String, color: Color) {
 /** Mała ikona-kropka statusu w wierszu. */
 @Composable
 fun Dot(color: Color) = Box(Modifier.size(7.dp).background(color))
+
+/**
+ * Objaśnienie reguły schowane pod „ⓘ”: na ekranie zostaje jedna linia zapowiedzi, dotknięcie rozwija całość.
+ * Parametry jak w [SheetBody], by podmiana była prosta; [maxLines] ignorowane (rozwinięcie pokazuje wszystko).
+ */
+@Composable
+fun RuleHint(text: String, modifier: Modifier = Modifier, color: Color = Aaa.TextLow, maxLines: Int = 0) {
+    var open by remember(text) { androidx.compose.runtime.mutableStateOf(false) }
+    Row(
+        modifier
+            .fillMaxWidth()
+            .clickable(role = Role.Button) { open = !open }
+            .padding(vertical = 2.dp),
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Text("ⓘ", style = AaaType.Label.copy(fontSize = 11.sp, color = Aaa.GoldMid))
+        Text(
+            text,
+            style = AaaType.Label.copy(fontSize = 10.5.sp, color = if (open) Aaa.TextMid else color),
+            maxLines = if (open) 12 else 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}

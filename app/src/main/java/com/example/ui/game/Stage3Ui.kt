@@ -90,7 +90,7 @@ fun CultivationPanel(d: Disciple, ui: WuxiaUiState, viewModel: WuxiaGameViewMode
                         GhostButton(p.polishName, onClick = { viewModel.choosePath(d.id, p) }, height = 34.dp)
                     }
                 }
-                if (d.path != null) SheetBody("Zmiana ścieżki kosztuje Pigułkę Ciszy Umysłu i postęp bieżącego etapu.", color = Aaa.TextLow)
+                if (d.path != null) RuleHint("Zmiana ścieżki kosztuje Pigułkę Ciszy Umysłu i postęp bieżącego etapu.", color = Aaa.TextLow)
             }
 
             // Zwoje

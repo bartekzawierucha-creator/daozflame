@@ -74,7 +74,7 @@ fun ExpeditionPanel(region: WorldRegion?, ui: WuxiaUiState, viewModel: WuxiaGame
 private fun PlanView(region: WorldRegion, ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     val healthy = ui.disciples.filter { it.currentHp >= it.maxHp / 3 }.sortedByDescending { it.combatPower }
     var pick by remember { mutableStateOf(healthy.firstOrNull()?.id) }
-    SheetBody(
+    RuleHint(
         "Wyprawa to 3–5 rozwidleń, a na końcu legowisko strażnika. Z każdej warstwy wybierasz jedną ścieżkę. " +
             "Odwrót przed bossem zachowuje połowę łupów. Tryb Auto wybiera bezpieczniej, ale przynosi 20% mniej.",
         maxLines = 5
@@ -153,7 +153,7 @@ fun TowerPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: () -> U
     SimplePanel(title = "Wieża Prób", onClose = onClose) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Piętro ${ui.towerFloor}", fontFamily = BrushFont, color = Aaa.GoldHi, fontSize = 28.sp)
-            SheetBody("Każde piętro to strażnik silniejszy o 8%. Co dziesiąte piętro daje Pigułkę Przełomu. Próby odnawiają się co dzień gry.", maxLines = 3)
+            RuleHint("Każde piętro to strażnik silniejszy o 8%. Co dziesiąte piętro daje Pigułkę Przełomu. Próby odnawiają się co dzień gry.", maxLines = 3)
             KvRow("Próby dziś", "${ui.towerAttemptsLeft} / 3", valueColor = if (ui.towerAttemptsLeft == 0) Aaa.Cinnabar else Aaa.Jade)
             val (hp, atk, def) = ui.towerNext
             KvRow("Strażnik piętra ${ui.towerFloor + 1}", "HP $hp · atak $atk · obrona $def", valueColor = Aaa.TextMid)
@@ -244,7 +244,7 @@ private fun DefenseTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     Section("Wielka Formacja ${ui.formationNodes.size}/7")
     KvRow("Mnożnik obrony bram", "×%.2f".format(ui.formationFactor))
     if (ui.formationNodes.isNotEmpty()) SheetBody(ui.formationNodes.joinToString(" ") { it.glyph }, color = Aaa.Gold)
-    SheetBody("Każdy węzeł +8% obrony. Pięć podstawowych żywiołów: +20% obrony i +5% Qi sekty. Komplet 7 węzłów: kolejne +10%.", color = Aaa.TextLow, maxLines = 3)
+    RuleHint("Każdy węzeł +8% obrony. Pięć podstawowych żywiołów: +20% obrony i +5% Qi sekty. Komplet 7 węzłów: kolejne +10%.", color = Aaa.TextLow, maxLines = 3)
     ui.formationNextCost?.let { cost ->
         SheetBody("Następny węzeł: $cost", color = Aaa.TextHi)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -357,7 +357,7 @@ fun androidx.compose.foundation.layout.ColumnScope.FogSheet(
 fun SecretRealmsPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: () -> Unit) {
     SimplePanel(title = "Tajne królestwa", onClose = onClose) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            SheetBody("Każde królestwo otwiera się co 40 dni na 5 dni. Bariera wpuszcza tylko młodszych kultywatorów – jedno wejście na otwarcie.", maxLines = 3)
+            RuleHint("Każde królestwo otwiera się co 40 dni na 5 dni. Bariera wpuszcza tylko młodszych kultywatorów – jedno wejście na otwarcie.", maxLines = 3)
             ui.secretRealms.forEach { r ->
                 Column(
                     Modifier

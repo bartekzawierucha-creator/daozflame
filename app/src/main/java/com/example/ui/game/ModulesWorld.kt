@@ -3,6 +3,7 @@ package com.example.ui.game
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -890,6 +891,21 @@ private fun itemColor(name: String, kind: ItemKind): Color {
         ItemKind.ARTIFACT -> listOf(Aaa.Gold, Aaa.Azure, Aaa.Violet, Color(0xFFE8F4FF))
     }
     return base[(hue * base.size).toInt().coerceIn(0, base.size - 1)]
+}
+
+/** Ikona przedmiotu (pigułka, ruda, zioło, artefakt) – ta sama co w Magazynie; do list w panelach. */
+@Composable
+fun ItemIcon(name: String, size: androidx.compose.ui.unit.Dp = 26.dp) {
+    val kind = kindOf(name)
+    val c = itemColor(name, kind)
+    Box(
+        Modifier
+            .size(size)
+            .background(Brush.radialGradient(listOf(c.copy(alpha = 0.28f), Aaa.Ink0.copy(alpha = 0.6f))))
+            .border(1.dp, c.copy(alpha = 0.45f))
+    ) {
+        Canvas(Modifier.matchParentSize().padding(3.dp)) { drawItem(kind, c) }
+    }
 }
 
 private fun DrawScope.drawItem(kind: ItemKind, c: Color) {

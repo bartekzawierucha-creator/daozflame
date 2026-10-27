@@ -73,13 +73,13 @@ fun MindPanel(d: Disciple, ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onCl
         InfoCard {
             Overline("Co postanowił${if (she) "a" else ""}")
             SheetBody(d.plan ?: "Jeszcze nie postanowił${if (she) "a" else ""}.", color = Aaa.TextHi, maxLines = 3)
-            SheetBody("Uczeń sam wybiera zajęcie, przełomy i wyzwania. Twoje polecenia są radami – może je odrzucić.", color = Aaa.TextLow, maxLines = 3)
+            RuleHint("Uczeń sam wybiera zajęcie, przełomy i wyzwania. Twoje polecenia są radami – może je odrzucić.", color = Aaa.TextLow, maxLines = 3)
         }
 
         Section("Więź z mistrzem", "zaufanie ${d.trust}/100")
         ThinBar(d.trust / 100f, Aaa.Gold)
         KvRow("Ogólna szansa, że posłucha", "$p%", valueColor = obedienceColor(p))
-        SheetBody("Zaufanie rośnie, gdy rady okazują się trafne, przy awansie, łasce i leczeniu. Spada po chybionej radzie, karze i naciskaniu kilka razy dziennie.", color = Aaa.TextLow, maxLines = 4)
+        RuleHint("Zaufanie rośnie, gdy rady okazują się trafne, przy awansie, łasce i leczeniu. Spada po chybionej radzie, karze i naciskaniu kilka razy dziennie.", color = Aaa.TextLow, maxLines = 4)
 
         Section("Doradź zajęcie")
         DiscipleRole.entries.forEach { role ->

@@ -83,7 +83,7 @@ fun EconomyPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, initial: Econo
 @Composable
 private fun MarketTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     val e = ui.economy
-    SheetBody(
+    RuleHint(
         "Każda sprzedaż obniża cenę o 2% – ceny wracają z czasem. Jesienią kupcy płacą więcej. Kupić można tylko proste surowce.",
         maxLines = 3
     )
@@ -91,18 +91,20 @@ private fun MarketTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     if (e.sellable.isEmpty()) SheetBody("Magazyn nie ma nic na sprzedaż.", color = Aaa.TextLow)
     e.sellable.forEach { row ->
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            ItemIcon(row.item)
             Column(Modifier.weight(1f)) {
                 Text(row.item, style = AaaType.Label.copy(fontSize = 11.sp, color = Aaa.TextHi), maxLines = 1)
                 Text("${row.have} szt. · ${row.sellPrice} kam./szt.", style = AaaType.Label.copy(fontSize = 9.5.sp, color = Aaa.TextLow))
             }
             GhostButton("1", onClick = { viewModel.sell(row.item, 1) }, height = 32.dp)
             if (row.have >= 10) GhostButton("10", onClick = { viewModel.sell(row.item, 10) }, height = 32.dp)
-            GhostButton("Karawana", onClick = { viewModel.sendCaravan(row.item, row.have, null) }, height = 32.dp)
+            GhostButton("🐫 ${row.have}", onClick = { viewModel.sendCaravan(row.item, row.have, null) }, height = 32.dp)
         }
     }
     Section("Zakup")
     e.buyable.forEach { row ->
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            ItemIcon(row.item)
             Column(Modifier.weight(1f)) {
                 Text(row.item, style = AaaType.Label.copy(fontSize = 11.sp, color = Aaa.TextHi), maxLines = 1)
                 Text("masz ${row.have} · ${row.buyPrice} kam./szt.", style = AaaType.Label.copy(fontSize = 9.5.sp, color = Aaa.TextLow))
@@ -134,11 +136,14 @@ private fun MarketTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
 @Composable
 private fun ContractsTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     val e = ui.economy
-    SheetBody("Tablica odświeża się co tydzień. Łowy kończą się same po pokonaniu bestii w danej krainie.", maxLines = 3)
+    RuleHint("Tablica odświeża się co tydzień. Łowy kończą się same po pokonaniu bestii w danej krainie.", maxLines = 3)
     if (e.contracts.isEmpty()) SheetBody("Brak otwartych zleceń.", color = Aaa.TextLow)
     e.contracts.forEach { c ->
         InfoCard {
-            Text("${c.type.polishName} · ${c.client}", style = AaaType.Label.copy(fontSize = 12.sp, color = Aaa.GoldHi))
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (c.type == ContractType.DELIVER) ItemIcon(c.item, 30.dp) else Text("⚔", fontSize = 20.sp, color = Aaa.Cinnabar)
+                Text("${c.type.polishName} · ${c.client}", style = AaaType.Label.copy(fontSize = 12.sp, color = Aaa.GoldHi))
+            }
             val what = if (c.type == ContractType.HUNT) {
                 "Pokonaj bestię: ${ui.regions.find { it.id == c.regionId }?.name ?: "nieznana kraina"}"
             } else {
@@ -165,7 +170,7 @@ private fun FieldsTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     val e = ui.economy
     var seed by remember { mutableStateOf<String?>(null) }
     val chosen = seed?.takeIf { it in e.seedHerbs } ?: e.seedHerbs.firstOrNull()
-    SheetBody(
+    RuleHint(
         "Wiosną plony są podwójne, zimą ziemia zamarza. Sąsiednie poletka z tym samym ziołem dają +10% każde. " +
             "Żyła pozwala uprawiać zioła do ${e.fieldTier}. stopnia.",
         maxLines = 4
@@ -244,7 +249,7 @@ private fun WorkshopTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     val e = ui.economy
     // Eksperyment
     Section("Eksperyment alchemiczny")
-    SheetBody("Połącz zioła w kotle (30 kamieni). Trafna mieszanka może odsłonić nową recepturę – reszta zostaje popiołem.", maxLines = 3)
+    RuleHint("Połącz zioła w kotle (30 kamieni). Trafna mieszanka może odsłonić nową recepturę – reszta zostaje popiołem.", maxLines = 3)
     val herbs = ui.inventory.filter { it.value > 0 && it.key in com.example.game.content.ResourceCatalog.herbs.map { h -> h.name } }.keys.sorted()
     var main by remember { mutableStateOf<String?>(null) }
     var second by remember { mutableStateOf<String?>(null) }
@@ -271,7 +276,7 @@ private fun WorkshopTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
             if (up != null) GhostButton("${up.second}% · ${up.third}", onClick = { viewModel.upgradeArtifact(i) }, height = 32.dp, danger = a.plus >= 6)
         }
     }
-    SheetBody("Od +6 nieudane ulepszenie może skruszyć artefakt. Talizman Ochrony go ratuje.", color = Aaa.TextLow, maxLines = 2)
+    RuleHint("Od +6 nieudane ulepszenie może skruszyć artefakt. Talizman Ochrony go ratuje.", color = Aaa.TextLow, maxLines = 2)
 
     // Talizmany
     Section("Talizmany (masz ${ui.inventory[com.example.game.engine.Market.SPIRIT_PAPER] ?: 0} papieru)")
@@ -305,7 +310,7 @@ private fun HerbPicker(label: String, herbs: List<String>, selected: String?, on
 @Composable
 private fun FlamesTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     val e = ui.economy
-    SheetBody(
+    RuleHint(
         "Płomień grzeje kocioł, palenisko kuźni albo ciało ucznia – nigdy dwa naraz. Wyższe pigułki i artefakty wymagają wyższej temperatury. " +
             "Wyjęcie płomienia z ciała kosztuje 3 poziomy oczyszczenia.",
         maxLines = 4
