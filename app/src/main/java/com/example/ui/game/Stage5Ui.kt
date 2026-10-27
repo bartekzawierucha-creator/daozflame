@@ -215,6 +215,7 @@ fun SectsPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, sect: com.exampl
                     SectsTab.SPIES -> SpiesTab(ui, viewModel, sect)
                     SectsTab.WAR -> WarTab(ui, viewModel, sect)
                     SectsTab.CHRONICLE -> {
+                        WorldStatus(ui)
                         if (ui.chronicle.isEmpty()) SheetBody("Świat jeszcze milczy.", color = Aaa.TextLow)
                         ui.chronicle.reversed().forEach { SheetBody(it, color = Aaa.TextMid, maxLines = 3) }
                     }
@@ -347,5 +348,109 @@ private fun WarTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, sect: com.ex
                 }, modifier = Modifier.weight(1f))
             }
         }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Etap 5c – mgła, tajne królestwa, Imperium i katastrofy
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+fun androidx.compose.foundation.layout.ColumnScope.FogSheet(
+    r: WorldRegion,
+    ui: WuxiaUiState,
+    champ: com.example.model.Disciple?,
+    viewModel: WuxiaGameViewModel,
+    onRealms: () -> Unit
+) {
+    val index = ui.regions.indexOfFirst { it.id == r.id }
+    val reachable = index <= 0 || ui.regions[index - 1].id in ui.discoveredRegionIds
+    val cost = com.example.game.engine.Fog.scoutCost(index)
+    SheetTitle("Kraina we mgle", size = 21)
+    SheetBody(
+        if (reachable) "Zwiadowca odkryje krainę i jej strażnika. Bezpiecznie przy mocy ≥ ${r.dangerLevel * 60}; słabszy może wrócić ranny."
+        else "Za daleko. Najpierw odkryj krainę bliżej sekty.",
+        maxLines = 3
+    )
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        GhostButton("Tajne", onClick = onRealms, modifier = Modifier.weight(1f))
+        GoldCta(
+            "Zwiad",
+            trailing = "$cost",
+            enabled = reachable && champ != null && ui.spiritStones >= cost,
+            onClick = { champ?.let { viewModel.scoutRegion(r.id, it.id) } },
+            modifier = Modifier.weight(1.7f)
+        )
+    }
+}
+
+@Composable
+fun SecretRealmsPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: () -> Unit) {
+    LegacyPanel(title = "Tajne królestwa", onClose = onClose) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            SheetBody("Każde królestwo otwiera się co 40 dni na 5 dni. Bariera wpuszcza tylko młodszych kultywatorów – jedno wejście na otwarcie.", maxLines = 3)
+            ui.secretRealms.forEach { r ->
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .background(Aaa.Ink3.copy(alpha = 0.8f))
+                        .border(1.dp, if (r.open) Aaa.Violet else Aaa.Hairline)
+                        .padding(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(r.name, style = AaaType.Label.copy(fontSize = 12.sp, color = if (r.open) Aaa.Violet else Aaa.TextHi))
+                    SheetBody(r.description, color = Aaa.TextMid, maxLines = 2)
+                    KvRow("Bariera", "do: ${r.maxRealm}", valueColor = Aaa.TextMid)
+                    KvRow("Łupy", r.loot, valueColor = Aaa.Gold)
+                    when {
+                        r.visited -> SheetBody("Sekta już tu była w tym otwarciu.", color = Aaa.TextLow)
+                        !r.open -> SheetBody("Otwarcie za ${r.inDays} dni.", color = Aaa.TextLow)
+                        else -> {
+                            val allowed = ui.disciples.filter { d ->
+                                val realm = d.majorRealm?.polishName
+                                realm != null && com.example.model.MajorRealm.entries.indexOfFirst { it.polishName == realm } <=
+                                    com.example.model.MajorRealm.entries.indexOfFirst { it.polishName == r.maxRealm }
+                            }.sortedByDescending { it.combatPower }.take(4)
+                            if (allowed.isEmpty()) SheetBody("Żaden uczeń nie przejdzie przez barierę.", color = Aaa.Cinnabar)
+                            allowed.forEach { d ->
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("${d.name.substringBefore(" (")} · ${d.combatPower}", style = AaaType.Label.copy(fontSize = 11.sp, color = Aaa.TextHi), modifier = Modifier.weight(1f), maxLines = 1)
+                                    GhostButton("Wejdź", onClick = { viewModel.enterSecretRealm(r.id, d.id) }, height = 32.dp)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Nagłówek kroniki: Imperium i katastrofa. */
+@Composable
+fun WorldStatus(ui: WuxiaUiState) {
+    KvRow(
+        "Imperium",
+        if (ui.empireFallen) "upadło – brak danin" else "łaska dworu ${ui.imperialFavor}",
+        valueColor = when {
+            ui.empireFallen -> Aaa.TextMid
+            ui.imperialFavor < -30 -> Aaa.Cinnabar
+            else -> Aaa.Gold
+        }
+    )
+    ui.catastrophe?.let { c ->
+        val now = ui.currentDay in c.startDay..c.endDay
+        SheetBody(
+            if (now) "🌩 ${c.type.polishName} do dnia ${c.endDay}: ${c.type.description}"
+            else "🔭 Za ${c.startDay - ui.currentDay} dni: ${c.type.polishName}. ${c.type.description}",
+            color = if (now) Aaa.Cinnabar else Aaa.Ember,
+            maxLines = 3
+        )
     }
 }

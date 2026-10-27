@@ -94,9 +94,19 @@ object ScriptCatalog {
             description = "Kupiec wraca z odbudowaną karawaną. Skrzynia ze srebrem i nowe znajomości – ale czy zwróci wszystko?",
             choices = listOf(
                 choice("Przyjmij dług z odsetkami", "Kupiec oddaje 750 kamieni i obiecuje polecać sektę.", stones(750), rep(10)),
-                choice("Daruj dług w zamian za stały rabat", "Gildia Kupców zapamięta hojność sekty.", rival("sect_guild", 25), karma(5), flag("guild_discount")),
+                choice("Daruj dług w zamian za stały rabat", "Gildia Kupców zapamięta hojność sekty.", rival("sect_guild", 25), karma(5), flag("guild_discount"), next("chain_loan_3", 20)),
                 choice("Zażądaj podwójnej kwoty", "Kupiec płaci, ale po krainie krąży plotka o chciwości sekty.",
                     stones(1000), rep(-25), karma(-10), needs = listOf(cond(CondType.MIN_REPUTATION, value = 300)))
+            )
+        ),
+
+        ScriptEvent(
+            id = "chain_loan_3", chain = "merchant_loan", random = false,
+            title = "Karawana wdzięczności",
+            description = "Kupiec wraca na czele karawany Gildii. Przywozi towary „po cenie dla przyjaciół”.",
+            choices = listOf(
+                choice("Przyjmij dar Gildii", "Gildia zostawia skrzynie z surowcami i obietnicę dalszej współpracy.",
+                    item("Duchowy Nefryt", 10), item("Gwiezdne Żelazo", 5), rep(10))
             )
         ),
 

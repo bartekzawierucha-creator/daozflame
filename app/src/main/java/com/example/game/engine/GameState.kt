@@ -60,6 +60,11 @@ data class GameState(
     val intel: Map<String, Int> = emptyMap(),
     /** Ostatnie wydarzenia świata (kronika, najnowsze na końcu). */
     val chronicle: List<String> = emptyList(),
+    /** Etap 5c: mgła wojny, tajne królestwa, katastrofy. */
+    val discoveredRegionIds: Set<String> = emptySet(),
+    /** Tajne królestwo → dzień otwarcia, w którym sekta już w nim była. */
+    val realmVisits: Map<String, Int> = emptyMap(),
+    val catastrophe: com.example.model.Catastrophe? = null,
 
     val worldBoss: WorldBossRaid = com.example.game.WuxiaGenerator.getInitialWorldBoss(),
     val sectLeader: SectLeaderData = com.example.game.WuxiaGenerator.getInitialSectLeader(),

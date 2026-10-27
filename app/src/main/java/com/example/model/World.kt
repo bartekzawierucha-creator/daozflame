@@ -58,3 +58,19 @@ data class SpyMission(
     val type: SpyType = SpyType.SCOUT,
     val returnDay: Int = 0
 )
+
+/** Etap 5c: katastrofy – rzadkie i zawsze zapowiadane. */
+enum class CatastropheType(val polishName: String, val description: String) {
+    FLOOD("Wielka Powódź", "Zioła drożeją o 30%, pola rodzą o połowę mniej."),
+    DROUGHT("Susza", "Pola rodzą o połowę mniej, zioła drożeją o 30%."),
+    QI_STORM("Burza Qi", "Qi całej sekty −20%."),
+    BEAST_TIDE("Fala Bestii", "Strażnicy krain biją o 30% mocniej."),
+    EARTHQUAKE("Trzęsienie Ziemi", "Naprawy kosztują 5% skarbca (najwyżej 2000 kamieni).")
+}
+
+data class Catastrophe(
+    val type: CatastropheType = CatastropheType.FLOOD,
+    val announcedDay: Int = 0,
+    val startDay: Int = 0,
+    val endDay: Int = 0
+)

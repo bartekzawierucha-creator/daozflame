@@ -90,6 +90,7 @@ fun WorldModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
     var legacy by remember { mutableStateOf(false) }
     var expoOpen by remember { mutableStateOf(ui.expedition != null) }
     var towerOpen by remember { mutableStateOf(false) }
+    var realmsOpen by remember { mutableStateOf(false) }
     val celebration = rememberCelebration()
     val champ = champion(ui)
 
@@ -122,9 +123,9 @@ fun WorldModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
                         val p = spotFor(i)
                         MapNode(
                             x = w * p.x, y = h * p.y,
-                            label = if (r.explorationProgress == 0) "???" else shortName(r.name, 2),
+                            label = if (ui.discoveredRegionIds.isNotEmpty() && r.id !in ui.discoveredRegionIds) "???" else shortName(r.name, 2),
                             color = dangerColor(r.dangerLevel),
-                            fog = r.explorationProgress == 0,
+                            fog = ui.discoveredRegionIds.isNotEmpty() && r.id !in ui.discoveredRegionIds,
                             selected = i == regionSel,
                             flag = null,
                             onClick = { regionSel = i },
@@ -152,10 +153,12 @@ fun WorldModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
             ModuleSheet {
                 if (tab == 0) {
                     val r = ui.regions.getOrNull(regionSel)
-                    if (r != null) RegionSheet(r, champ, onExpedition = {
+                    val hidden = r != null && ui.discoveredRegionIds.isNotEmpty() && r.id !in ui.discoveredRegionIds
+                    if (r != null && hidden) FogSheet(r, ui, champ, viewModel, onRealms = { realmsOpen = true })
+                    else if (r != null) RegionSheet(r, champ, onExpedition = {
                         WuxiaAudioEngine.playSwordClash()
                         expoOpen = true
-                    }, onBook = { legacy = true }, onTower = { towerOpen = true })
+                    }, onBook = { legacy = true }, onTower = { towerOpen = true }, onRealms = { realmsOpen = true })
                 } else {
                     val t = ui.territories.getOrNull(terrSel)
                     if (t != null) TerritorySheet(t, ui, champ, viewModel, onBook = { legacy = true })
@@ -170,11 +173,12 @@ fun WorldModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
         }
         if (expoOpen) ExpeditionPanel(ui.regions.getOrNull(regionSel), ui, viewModel, onClose = { expoOpen = false })
         if (towerOpen) TowerPanel(ui, viewModel, onClose = { towerOpen = false })
+        if (realmsOpen) SecretRealmsPanel(ui, viewModel, onClose = { realmsOpen = false })
     }
 }
 
 @Composable
-private fun ColumnScope.RegionSheet(r: WorldRegion, champ: Disciple?, onExpedition: () -> Unit, onBook: () -> Unit, onTower: () -> Unit) {
+private fun ColumnScope.RegionSheet(r: WorldRegion, champ: Disciple?, onExpedition: () -> Unit, onBook: () -> Unit, onTower: () -> Unit, onRealms: () -> Unit) {
     val unknown = r.explorationProgress == 0
     Row(verticalAlignment = Alignment.CenterVertically) {
         DangerPips(r.dangerLevel)
@@ -197,6 +201,7 @@ private fun ColumnScope.RegionSheet(r: WorldRegion, champ: Disciple?, onExpediti
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         GhostButton("Księga", onClick = onBook, modifier = Modifier.weight(1f))
         GhostButton("Wieża", onClick = onTower, modifier = Modifier.weight(1f))
+        GhostButton("Tajne", onClick = onRealms, modifier = Modifier.weight(1f))
         val can = champ != null && r.bossBeast != null && !r.isConquered
         GoldCta(
             text = when {

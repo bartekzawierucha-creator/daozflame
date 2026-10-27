@@ -19,7 +19,11 @@ enum class EffectType {
     /** Zaplanuj zdarzenie [key] za [value] dni. */
     SCHEDULE,
     /** Zmień relacje z sektą rywala [key] o [value]. */
-    RIVAL_RELATION
+    RIVAL_RELATION,
+    /** Zmiana skarbca o [value] procent (np. −5 = podatek 5%), z limitem 5000 kamieni. */
+    STONES_PERCENT,
+    /** Rany ucznia o najwyższej mocy: [value] procent HP. */
+    INJURE_CHAMPION
 }
 
 data class Effect(val type: EffectType = EffectType.STONES, val key: String = "", val value: Int = 0)

@@ -63,6 +63,9 @@ sealed interface GameCommand {
 
     // Etap 5b
     data class GuardGate(val gate: String, val discipleId: String?) : GameCommand
+    // Etap 5c
+    data class ScoutRegion(val regionId: String, val discipleId: String) : GameCommand
+    data class EnterSecretRealm(val realmId: String, val discipleId: String) : GameCommand
     data class PlaceFormationNode(val element: com.example.model.SpiritElement) : GameCommand
     data class SendSpy(val discipleId: String, val sectId: String, val type: com.example.model.SpyType) : GameCommand
     data class SectBattle(val sectId: String, val discipleIds: List<String>) : GameCommand

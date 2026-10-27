@@ -164,6 +164,7 @@ object Expeditions {
         if (s.expedition != null || s.combat != null) return fail(s, "Inna wyprawa jest w toku.")
         val region = s.regions.find { it.id == regionId } ?: return ok(s)
         val d = s.disciple(discipleId) ?: return ok(s)
+        if (s.discoveredRegionIds.isNotEmpty() && regionId !in s.discoveredRegionIds) return fail(s, "Kraina kryje się we mgle – najpierw wyślij zwiad.")
         if (d.currentHp < d.maxHp / 3) return fail(s, "${d.name} jest zbyt ranny na wyprawę.")
         val run = ExpeditionRun(regionId, discipleId, generate(s, region), hp = d.currentHp, auto = auto,
             log = listOf("${d.name} wyrusza do krainy ${region.name}."))

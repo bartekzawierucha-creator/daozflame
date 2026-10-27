@@ -99,7 +99,8 @@ class GameEngineTest {
         val seen = mutableListOf<String>()
         repeat(2000) {
             val r = GameEngine.apply(s, GameCommand.Tick).state
-            if (r.activeEventId != null && s.activeEventId == null) {
+            // Zaplanowane ogniwa (Etap 5: Imperium, łańcuchy) wypadają w swoim dniu – rytm 16 ticków dotyczy losowania.
+            if (r.activeEventId != null && s.activeEventId == null && GameContent.script(r.activeEventId)?.random == true) {
                 assertEquals(0L, r.tick % RandomEventPhase.EVERY_TICKS)
                 seen += r.activeEventId!!
             }

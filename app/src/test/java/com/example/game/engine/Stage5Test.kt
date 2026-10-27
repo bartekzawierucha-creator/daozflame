@@ -371,4 +371,94 @@ class Stage5Test {
         val r = apply(war, GameCommand.SectBattle("sect_dragon", ids)).state
         assertTrue(r.territories.count { it.controllingSectId == "player" } > s.territories.count { it.controllingSectId == "player" })
     }
+
+    // --- 5c: świat ---
+
+    @Test
+    fun twelveWanderingNpcsWithThreeToFiveLinks() {
+        val chains = GameContent.scripts.filter { it.chain?.startsWith("npc_") == true || it.chain in setOf("merchant_loan") }
+            .groupBy { it.chain }
+        assertEquals(12, chains.size)
+        chains.forEach { (name, links) -> assertTrue("$name: ${links.size}", links.size in 3..5) }
+    }
+
+    @Test
+    fun empireDemandsTaxEveryThirtyDays() {
+        var s = fresh(40L).copy(currentDay = 29, spiritStones = 10_000)
+        s = nextDay(s)
+        assertEquals(30, s.currentDay)
+        val tax = apply(s, GameCommand.Tick).state
+        assertEquals("emp_tax", tax.activeEventId)
+        val paid = apply(tax, GameCommand.EventChoice(0)).state
+        assertEquals(tax.spiritStones - tax.spiritStones * 5 / 100, paid.spiritStones)
+        assertEquals(5, paid.flags[Empire.FAVOR])
+    }
+
+    @Test
+    fun civilWarEndsEmpireWhenRebelsWin() {
+        var s = EventScripts.activate(fresh(41L), GameContent.script("emp_civil_1")!!)
+        s = apply(s, GameCommand.EventChoice(1)).state
+        s = EventScripts.activate(s, GameContent.script("emp_civil_3")!!)
+        val view = GameContent.event(s.activeEventId, s)!!
+        assertTrue(view.choices[0].text.contains("niedostępne"))
+        s = apply(s, GameCommand.EventChoice(1)).state
+        assertEquals(1, s.flags[Empire.FALLEN])
+        val later = Empire.daily(s.copy(currentDay = 60), EngineContext(1, 1)).first
+        assertTrue(later.scheduledEvents.none { it.eventId == "emp_tax" })
+    }
+
+    @Test
+    fun fogHidesFarRegionsUntilScouted() {
+        val s = fresh(42L).copy(spiritStones = 10_000)
+        assertTrue(s.discoveredRegionIds.size >= Fog.START_DISCOVERED)
+        val k = s.regions.indexOfFirst { it.id !in s.discoveredRegionIds }
+        val far = s.regions[k + 1]
+        assertTrue(apply(s, GameCommand.StartExpedition(far.id, s.disciples.first().id)).notice!!.contains("mgle"))
+        assertTrue(apply(s, GameCommand.ScoutRegion(far.id, s.disciples.first().id)).notice!!.contains("bliżej"))
+        val strong = s.copy(disciples = s.disciples.map { it.copy(attack = 9_999) })
+        val r = apply(strong, GameCommand.ScoutRegion(s.regions[k].id, strong.disciples.first().id)).state
+        assertTrue(s.regions[k].id in r.discoveredRegionIds)
+        val visited = s.copy(discoveredRegionIds = emptySet(), regions = s.regions.mapIndexed { i, x -> if (i == 7) x.copy(explorationProgress = 25) else x })
+        assertTrue(s.regions[7].id in Fog.normalize(visited).discoveredRegionIds)
+    }
+
+    @Test
+    fun secretRealmsOpenEveryFortyDaysWithRankLimit() {
+        val r = SecretRealms.REALMS.first { it.id == "sr_bamboo" }
+        assertEquals(5, SecretRealms.openingDay(r, 9))
+        assertNull(SecretRealms.openingDay(r, 10))
+        assertEquals(45, SecretRealms.openingDay(r, 45))
+        val s = fresh(43L).copy(currentDay = 6)
+        val high = s.disciples.first { (it.majorRealm?.ordinal ?: 0) > r.maxRealm.ordinal }
+        assertTrue(apply(s, GameCommand.EnterSecretRealm(r.id, high.id)).notice!!.contains("odrzuca"))
+        val low = s.disciples.first { it.majorRealm == r.maxRealm }.let { it.copy(attack = 9_999, defense = 9_999) }
+        val ss = s.copy(disciples = s.disciples.map { if (it.id == low.id) low else it })
+        val inside = apply(ss, GameCommand.EnterSecretRealm(r.id, low.id)).state
+        assertEquals((ss.inventory["Trawa Wiecznej Wiosny"] ?: 0) + 10, inside.inventory["Trawa Wiecznej Wiosny"])
+        assertTrue(apply(inside, GameCommand.EnterSecretRealm(r.id, low.id)).notice!!.contains("już"))
+        assertTrue(apply(s.copy(currentDay = 20), GameCommand.EnterSecretRealm(r.id, low.id)).notice!!.contains("zamknięte"))
+    }
+
+    @Test
+    fun catastrophesAreAnnouncedAndBounded() {
+        var s = fresh(44L).copy(spiritStones = 1_000_000)
+        var announced: com.example.model.Catastrophe? = null
+        var day = 50
+        while (announced == null && day < 3_000) {
+            day += 30
+            s = Catastrophes.daily(s.copy(currentDay = day, step = day.toLong()), EngineContext(s.worldSeed, day.toLong())).first
+            announced = s.catastrophe
+        }
+        val c = announced!!
+        assertTrue(c.startDay - c.announcedDay >= 3)
+        val quake = s.copy(catastrophe = c.copy(type = com.example.model.CatastropheType.EARTHQUAKE), currentDay = c.startDay)
+        val after = Catastrophes.daily(quake, EngineContext(1, 1)).first
+        assertTrue(quake.spiritStones - after.spiritStones <= Catastrophes.EARTHQUAKE_CAP)
+        val storm = s.copy(catastrophe = c.copy(type = com.example.model.CatastropheType.QI_STORM), currentDay = c.startDay)
+        assertTrue(Modifiers.sect(storm).breakdown(Stat.QI_GAIN).any { it.contains("Burza") })
+        val flood = s.copy(catastrophe = c.copy(type = com.example.model.CatastropheType.FLOOD), currentDay = c.startDay + 1)
+        assertTrue(Market.sellPrice(flood, "Trawa Wiecznej Wiosny") > Market.sellPrice(flood.copy(catastrophe = null), "Trawa Wiecznej Wiosny"))
+        val ended = Catastrophes.daily(s.copy(currentDay = c.endDay + 1), EngineContext(1, 1)).first
+        assertNull(ended.catastrophe)
+    }
 }

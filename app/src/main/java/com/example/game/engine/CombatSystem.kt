@@ -27,6 +27,7 @@ object CombatSystem {
         val region = s.regions.find { it.id == regionId } ?: return ok(s)
         val d = s.disciple(discipleId) ?: return ok(s)
         val beast = region.bossBeast ?: return ok(s)
+        if (s.discoveredRegionIds.isNotEmpty() && regionId !in s.discoveredRegionIds) return fail(s, "Kraina kryje się we mgle – najpierw wyślij zwiad.")
         val penalty = hazardPenalty(region.hazard, d.constitution)
         // Etap 4: premię z płomienia ma tylko jego nosiciel; wcześniej działał płomień z kotła.
         val flameBonus = if (s.e4Initialized) s.flames.find { it.id == d.flameId }?.combatDamageBonus ?: 0 else s.activeFlame?.combatDamageBonus ?: 0
@@ -47,7 +48,7 @@ object CombatSystem {
             discipleMaxHp = d.maxHp,
             enemyHp = beast.hp,
             enemyMaxHp = beast.maxHp,
-            enemyAttackFactor = elemDef,
+            enemyAttackFactor = elemDef * Catastrophes.beastFactor(s),
             logs = listOfNotNull(
                 CombatLogEntry(1, "Wkroczono do regionu: ${region.name} (${region.biome.emoji})"),
                 if (penalty > 0) CombatLogEntry(1, "⚠️ Środowisko (${region.hazard.polishName}) osłabia adepta o $penalty pkt!")

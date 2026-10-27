@@ -166,6 +166,15 @@ object BalanceSimulator {
                 .forEach { (g, d) -> s = apply(s, GameCommand.GuardGate(g, d.id)) }
         }
 
+        // Etap 5c: zwiad następnej krainy we mgle.
+        if (s.discoveredRegionIds.isNotEmpty()) {
+            val k = s.regions.indexOfFirst { it.id !in s.discoveredRegionIds }
+            val scout = s.disciples.maxByOrNull { it.combatPower }
+            if (k >= 0 && scout != null && canSpend(com.example.game.engine.Fog.scoutCost(k)) && scout.currentHp > scout.maxHp / 2) {
+                s = apply(s, GameCommand.ScoutRegion(s.regions[k].id, scout.id))
+            }
+        }
+
         // Etap 5a: Wieża Prób najsilniejszym uczniem.
         s.disciples.maxByOrNull { it.combatPower }?.let { champ ->
             while (com.example.game.engine.Tower.attemptsLeft(s) > 0) {
@@ -178,10 +187,11 @@ object BalanceSimulator {
         // Wyprawa: najsłabsza niezbadana kraina, najsilniejszy zdrowy uczeń, jeśli ma szansę.
         if (s.combat == null) {
             val champ = s.disciples.filter { it.currentHp > it.maxHp / 2 }.maxByOrNull { it.attack }
-            val region = s.regions.filter { it.explorationProgress < 100 && it.bossBeast != null }
+            val region = s.regions.filter { it.explorationProgress < 100 && it.bossBeast != null && (s.discoveredRegionIds.isEmpty() || it.id in s.discoveredRegionIds) }
                 .minByOrNull { it.bossBeast!!.hp }
             if (champ != null && region != null && champ.attack * 6 > region.bossBeast!!.defense * 2 + region.bossBeast!!.hp / 20) {
                 s = apply(s, GameCommand.StartExpedition(region.id, champ.id))
+                if (s.combat == null) return Triple(s, wins, losses)
                 var guard = 0
                 while (s.combat?.finished == false && guard++ < 100) s = apply(s, GameCommand.CombatStep)
                 if (s.combat?.outcome == true) wins++ else losses++

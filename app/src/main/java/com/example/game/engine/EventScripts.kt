@@ -19,6 +19,7 @@ import com.example.model.TimeOfDay
 object EventScripts {
 
     const val SEEN_PREFIX = "seen:"
+    const val SYSTEM_CHAIN = "system"
 
     /** Przeniesienie starego zdarzenia do nowego formatu (50 bazowych + katalog). */
     fun fromLegacy(e: RandomEvent): ScriptEvent = ScriptEvent(
@@ -101,6 +102,15 @@ object EventScripts {
             EffectType.RIVAL_RELATION -> st.copy(rivalSects = st.rivalSects.map {
                 if (it.id == e.key) it.copy(relations = (it.relations + e.value).coerceIn(-100, 100)) else it
             })
+            EffectType.STONES_PERCENT -> {
+                val delta = (st.spiritStones * e.value / 100).coerceIn(-5_000, 5_000)
+                st.copy(spiritStones = (st.spiritStones + delta).coerceAtLeast(0))
+            }
+            EffectType.INJURE_CHAMPION -> st.disciples.maxByOrNull { it.combatPower }?.let { champ ->
+                st.copy(disciples = st.disciples.map {
+                    if (it.id == champ.id) it.copy(currentHp = (it.currentHp - it.maxHp * e.value / 100).coerceAtLeast(10)) else it
+                })
+            } ?: st
         }
         return st
     }
@@ -143,7 +153,8 @@ object EventScripts {
         }
         edges.forEach { (from, tos) -> tos.filter { it !in byId }.forEach { add("$from planuje nieistniejące zdarzenie $it") } }
         val targets = edges.values.flatten().toSet()
-        events.filter { !it.random && it.id !in targets }.forEach { add("${it.id} nie wypada losowo i nikt go nie planuje") }
+        // Zdarzenia łańcucha „system” planuje kod (Imperium, katastrofy) – nie potrzebują poprzednika.
+        events.filter { !it.random && it.id !in targets && it.chain != SYSTEM_CHAIN }.forEach { add("${it.id} nie wypada losowo i nikt go nie planuje") }
         events.forEach { e -> if (e.choices.isEmpty()) add("${e.id} nie ma żadnego wyboru") }
         // Pętla bez wyjścia: z węzła nie da się dojść do żadnego wyboru, który nie planuje dalej.
         val canEnd = mutableSetOf<String>()

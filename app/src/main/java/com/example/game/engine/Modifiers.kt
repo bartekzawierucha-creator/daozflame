@@ -87,6 +87,9 @@ object Modifiers {
         val alliances = s.rivalSects.filter { it.status == DiplomaticStatus.ALLIANCE }.sumOf { it.cultivationBuffBonusPercent }
         if (alliances != 0) list += Modifier("Sojusze sekt", Stat.QI_GAIN, ModOp.PERCENT, alliances.toDouble())
         list += DiscipleRules.sectModifiers(s)
+        if (s.e5Initialized && Catastrophes.qiPenaltyPercent(s) != 0.0) {
+            list += Modifier("Burza Qi", Stat.QI_GAIN, ModOp.PERCENT, Catastrophes.qiPenaltyPercent(s))
+        }
         if (s.e5Initialized && Formation.fiveElements(s)) {
             list += Modifier("Formacja Pięciu Żywiołów", Stat.QI_GAIN, ModOp.PERCENT, Formation.qiBonusPercent(s))
         }

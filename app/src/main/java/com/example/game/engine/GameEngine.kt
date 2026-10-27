@@ -77,7 +77,7 @@ object GameEngine {
     }
 
     /** Wywoływane po wczytaniu zapisu: jednorazowe migracje logiczne (korzenie w Etapie 2, etapy w Etapie 3). */
-    fun normalize(state: GameState): GameState = WorldAI.normalize(economy(Realms.normalize(DiscipleRules.normalize(state))))
+    fun normalize(state: GameState): GameState = Fog.normalize(WorldAI.normalize(economy(Realms.normalize(DiscipleRules.normalize(state)))))
 
     /** Migracja do Etapu 4: stare zapisy zachowują wszystkie płomienie i znają wszystkie receptury. */
     private fun economy(s: GameState): GameState {
@@ -136,6 +136,8 @@ object GameEngine {
             GameCommand.CraftRing -> Expeditions.craftRing(state)
             is GameCommand.ClimbTower -> Tower.climb(state, command.discipleId, ctx)
             is GameCommand.GuardGate -> Raids.assign(state, command.gate, command.discipleId)
+            is GameCommand.ScoutRegion -> Fog.scout(state, ctx, command.regionId, command.discipleId)
+            is GameCommand.EnterSecretRealm -> SecretRealms.enter(state, ctx, command.realmId, command.discipleId)
             is GameCommand.PlaceFormationNode -> Formation.place(state, command.element)
             is GameCommand.SendSpy -> Spies.send(state, ctx, command.discipleId, command.sectId, command.type)
             is GameCommand.SectBattle -> Wars.battle(state, ctx, command.sectId, command.discipleIds)
@@ -212,7 +214,7 @@ object GameEngine {
         val result = frame.toResult()
         if (result.state.currentDay == state.currentDay) return result
         // Systemy dobowe na pełnym stanie (Etap 5b: AI sekt, najazdy, szpiedzy) – po fazach cyklu, raz na dzień.
-        val (world, notes) = WorldAI.daily(result.state, ctx)
+        val (world, notes) = WorldDaily.run(result.state, ctx)
         return StepResult(world, result.events + notes.map { GameEvent.Notice(it) })
     }
 

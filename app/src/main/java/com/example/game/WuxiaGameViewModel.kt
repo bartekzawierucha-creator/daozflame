@@ -107,7 +107,25 @@ data class WuxiaUiState(
     val formationNextCost: String? = null,
     val spies: List<SpyMission> = emptyList(),
     val intel: Map<String, Int> = emptyMap(),
-    val chronicle: List<String> = emptyList()
+    val chronicle: List<String> = emptyList(),
+    // Etap 5c
+    val discoveredRegionIds: Set<String> = emptySet(),
+    val secretRealms: List<SecretRealmUi> = emptyList(),
+    val catastrophe: Catastrophe? = null,
+    val imperialFavor: Int = 0,
+    val empireFallen: Boolean = false
+)
+
+data class SecretRealmUi(
+    val id: String,
+    val name: String,
+    val description: String,
+    val maxRealm: String,
+    val open: Boolean,
+    /** Dni do otwarcia (0 = otwarte). */
+    val inDays: Int,
+    val visited: Boolean,
+    val loot: String
 )
 
 data class MarketRow(val item: String, val have: Int, val sellPrice: Int, val buyPrice: Int?)
@@ -397,6 +415,10 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     fun honorDuel(sectId: String, discipleId: String, toDeath: Boolean, confirmed: Boolean) =
         dispatch(GameCommand.HonorDuel(sectId, discipleId, toDeath, confirmed))
 
+    // --- Etap 5c: świat ---
+    fun scoutRegion(regionId: String, discipleId: String) = dispatch(GameCommand.ScoutRegion(regionId, discipleId))
+    fun enterSecretRealm(realmId: String, discipleId: String) = dispatch(GameCommand.EnterSecretRealm(realmId, discipleId))
+
     // --- Etap 4: gospodarka ---
     fun upgradeVein() = dispatch(GameCommand.UpgradeVein)
     fun plantHerb(index: Int, herb: String) = dispatch(GameCommand.PlantHerb(index, herb))
@@ -613,7 +635,19 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
             ?.let { com.example.game.engine.Formation.cost(it) }?.let { (st, m) -> "$st kamieni · ${m}× ${com.example.game.engine.Formation.MINERAL}" },
         spies = game.spies,
         intel = game.intel,
-        chronicle = game.chronicle
+        chronicle = game.chronicle,
+        discoveredRegionIds = game.discoveredRegionIds,
+        secretRealms = com.example.game.engine.SecretRealms.REALMS.map { r ->
+            val opening = com.example.game.engine.SecretRealms.openingDay(r, game.currentDay)
+            val next = generateSequence(game.currentDay) { it + 1 }.take(41)
+                .firstOrNull { com.example.game.engine.SecretRealms.openingDay(r, it) == it } ?: game.currentDay
+            SecretRealmUi(r.id, r.name, r.description, r.maxRealm.polishName, opening != null,
+                if (opening != null) 0 else next - game.currentDay, opening != null && game.realmVisits[r.id] == opening,
+                r.loot.joinToString { "${it.second}× ${it.first}" })
+        },
+        catastrophe = game.catastrophe,
+        imperialFavor = com.example.game.engine.Empire.favor(game),
+        empireFallen = (game.flags[com.example.game.engine.Empire.FALLEN] ?: 0) > 0
     )
 
     private fun economyUi(g: GameState): EconomyUi {

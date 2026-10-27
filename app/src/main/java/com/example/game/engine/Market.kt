@@ -59,7 +59,8 @@ object Market {
     fun sellPrice(s: GameState, item: String): Int {
         val base = basePrice(item) ?: return 0
         val q = Quality.parse(item).second
-        return (base * multiplier(s, item) * Seasons.sellFactor(Seasons.of(s.currentDay)) * q.effect).roundToInt().coerceAtLeast(1)
+        val disaster = if (herbTiers.containsKey(Quality.parse(item).first)) Catastrophes.herbPriceFactor(s) else 1.0
+        return (base * multiplier(s, item) * Seasons.sellFactor(Seasons.of(s.currentDay)) * q.effect * disaster).roundToInt().coerceAtLeast(1)
     }
 
     /** Na targu kupuje się tylko proste surowce (stopnie 1–3), ryż i papier duchowy. */
@@ -191,7 +192,8 @@ object Contracts {
     fun generate(s: GameState, rng: GameRng, day: Int): List<Contract> {
         val herbs = ResourceCatalog.herbs.filter { it.tier <= 3 }.map { it.name }
         val pills = GameContent.alchemyRecipes.filter { it.tier <= 2 }.map { it.pillName }
-        val regions = s.regions.filter { it.bossBeast != null }
+        // Etap 5c: łowy tylko w odkrytych krainach.
+        val regions = s.regions.filter { it.bossBeast != null && (s.discoveredRegionIds.isEmpty() || it.id in s.discoveredRegionIds) }
         return List(BOARD_SIZE) { i ->
             val client = CLIENTS.random(rng)
             if (i == BOARD_SIZE - 1 && regions.isNotEmpty()) {
