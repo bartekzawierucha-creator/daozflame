@@ -69,6 +69,31 @@ data class GameState(
     val rules: com.example.model.WorldRules? = null,
     val journal: Map<String, com.example.model.Knowledge> = emptyMap(),
     val researcherId: String? = null,
+    /** Etap 7: fabuła, cykl życia, tożsamość sekty. */
+    val e7Initialized: Boolean = false,
+    val chosenId: String? = null,
+    val ancestors: List<com.example.model.AncestorRecord> = emptyList(),
+    val companions: List<com.example.model.Companionship> = emptyList(),
+    val patronId: String? = null,
+    val templeLevel: Int = 0,
+    val patronChangedDay: Int = -999,
+    val treasury: List<com.example.model.Artifact> = emptyList(),
+    /** Kronika skompresowana do rozdziałów (starsze wpisy). */
+    val chronicleChapters: List<String> = emptyList(),
+    /** Etap 7b: miejsca i istoty. */
+    val buildingSlots: Map<String, Int> = emptyMap(),
+    val buildingsSwappedDay: Int = -999,
+    val dungeonDepth: Int = 0,
+    val dungeonDay: Int = 0,
+    val dungeonAttempts: Int = 0,
+    val caveLevel: Int = 0,
+    val eggs: List<com.example.model.BeastEgg> = emptyList(),
+    /** Bestia → uczeń, który na niej jeździ. */
+    val mounts: Map<String, String> = emptyMap(),
+    val flameSpirits: Set<String> = emptySet(),
+    /** Dodatkowa temperatura płomieni z fuzji. */
+    val flameHeat: Map<String, Int> = emptyMap(),
+    val starsReadDay: Int = 0,
 
     val worldBoss: WorldBossRaid = com.example.game.WuxiaGenerator.getInitialWorldBoss(),
     val sectLeader: SectLeaderData = com.example.game.WuxiaGenerator.getInitialSectLeader(),

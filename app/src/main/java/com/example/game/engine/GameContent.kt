@@ -17,7 +17,7 @@ object GameContent {
     val forgingRecipes: List<ForgingRecipe> by lazy { WuxiaGenerator.getForgingRecipes() }
     /** Wszystkie zdarzenia jako skrypty: dawne (przeniesione) + łańcuchy Etapu 5. */
     val scripts: List<com.example.model.ScriptEvent> by lazy {
-        WuxiaGenerator.getRandomEvents().map { EventScripts.fromLegacy(it) } + com.example.game.content.ScriptCatalog.events + com.example.game.content.NpcCatalog.events
+        WuxiaGenerator.getRandomEvents().map { EventScripts.fromLegacy(it) } + com.example.game.content.ScriptCatalog.events + com.example.game.content.NpcCatalog.events + com.example.game.content.StoryCatalog.events
     }
     val rankings: List<MultiplayerSectRanking> by lazy { WuxiaGenerator.getMultiplayerRankings() }
 

@@ -74,6 +74,26 @@ sealed interface GameCommand {
     data class SetResearcher(val discipleId: String?) : GameCommand
     data class UseMirror(val discipleId: String) : GameCommand
     data object DebugRevealSecrets : GameCommand
+    // Etap 7
+    data class AssignMentor(val studentId: String, val mentorId: String?) : GameCommand
+    data class BindCompanions(val a: String, val b: String) : GameCommand
+    data class ChoosePatron(val patronId: String) : GameCommand
+    data object UpgradeTemple : GameCommand
+    data class PlaceTreasure(val vaultIndex: Int) : GameCommand
+    data class RemoveTreasure(val index: Int) : GameCommand
+    // Etap 7b
+    data class SwapBuildings(val a: FacilityType, val b: FacilityType) : GameCommand
+    data class DelveDungeon(val discipleId: String) : GameCommand
+    data class CopyScroll(val scroll: String) : GameCommand
+    data object UpgradeCave : GameCommand
+    data object IncubateEgg : GameCommand
+    data class MountBeast(val beastId: String, val discipleId: String?) : GameCommand
+    data class FuseFlames(val a: String, val b: String, val confirmed: Boolean, val confirmedTwice: Boolean) : GameCommand
+    data class DevourFlame(val eater: String, val food: String) : GameCommand
+    data class AssignArt(val discipleId: String, val art: com.example.model.DaoArt?) : GameCommand
+    data class Cure(val discipleId: String) : GameCommand
+    data class Cleanse(val discipleId: String) : GameCommand
+    data object ReadStars : GameCommand
     data class PlaceFormationNode(val element: com.example.model.SpiritElement) : GameCommand
     data class SendSpy(val discipleId: String, val sectId: String, val type: com.example.model.SpyType) : GameCommand
     data class SectBattle(val sectId: String, val discipleIds: List<String>) : GameCommand

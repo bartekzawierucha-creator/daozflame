@@ -36,7 +36,16 @@ object WorldAI {
 
     fun hostile(r: RivalSect): Boolean = r.relations <= -30 || r.status == DiplomaticStatus.TOTAL_WAR || r.nemesisLevel > 0
 
-    fun note(s: GameState, text: String): GameState = s.copy(chronicle = (s.chronicle + "Dzień ${s.currentDay}: $text").takeLast(CHRONICLE))
+    /** Kronika ma limit wpisów; starsze wpisy kompresuje się do rozdziałów (Etap 7). */
+    fun note(s: GameState, text: String): GameState {
+        val all = s.chronicle + "Dzień ${s.currentDay}: $text"
+        if (all.size <= CHRONICLE) return s.copy(chronicle = all)
+        val old = all.take(10)
+        val first = old.first().substringAfter("Dzień ").substringBefore(":")
+        val last = old.last().substringAfter("Dzień ").substringBefore(":")
+        val chapter = "Rozdział ${s.chronicleChapters.size + 1} (dni $first–$last): " + old.joinToString(" ") { it.substringAfter(": ") }.take(400)
+        return s.copy(chronicle = all.drop(10), chronicleChapters = (s.chronicleChapters + chapter).takeLast(40))
+    }
 
     /** Raz na dzień gry: przybycie najazdu, powrót szpiegów, decyzje sekt. */
     fun daily(start: GameState, ctx: EngineContext): Pair<GameState, List<String>> {
@@ -184,7 +193,8 @@ object Raids {
                     ) else it
                 }
             )
-            msg = "🔥 ${raid.sectName} przełamuje bramy ($wins/3 utrzymane). Zrabowano $lost kamieni."
+            msg = "🔥 ${raid.sectName} przełamuje bramy ($wins/3 utrzymane). Zrabowano $lost kamieni." +
+                Identity.raidLoss(st, ctx).let { (after, loss) -> st = after; loss?.let { " $it" } ?: "" }
         }
         return WorldAI.note(st, msg) to msg
     }
@@ -317,7 +327,7 @@ object Wars {
             return ok(WorldAI.note(st, msg), msg)
         }
         if (toDeath) {
-            val st = s.copy(
+            val st = (if (s.e7Initialized) Lifecycle.die(s, d, "pojedynek z ${sect.name}") else s).copy(
                 disciples = s.disciples.filter { it.id != d.id },
                 gates = s.gates.filterValues { it != d.id },
                 morale = (s.morale - 15).coerceAtLeast(0),

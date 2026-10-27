@@ -43,7 +43,7 @@ class Stage6Test {
         val tampered = s.copy(rules = s.rules!!.copy(blockages = setOf(0)))
         assertEquals(setOf(0), GameEngine.normalize(tampered).rules!!.blockages)
         val old = s.copy(rules = null)
-        assertEquals(RulesGen.generate(3L), GameEngine.normalize(old).rules)
+        assertEquals(FengShui.extend(RulesGen.generate(3L), 3L), GameEngine.normalize(old).rules)
     }
 
     @Test

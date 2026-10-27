@@ -115,7 +115,35 @@ data class WuxiaUiState(
     val imperialFavor: Int = 0,
     val empireFallen: Boolean = false,
     // Etap 6
-    val secrets: SecretsUi = SecretsUi()
+    val secrets: SecretsUi = SecretsUi(),
+    // Etap 7
+    val sectLife: SectLifeUi = SectLifeUi()
+)
+
+data class SectLifeUi(
+    val karmaPath: String = "",
+    val storyAct: Int = 0,
+    val storyEnding: Int = 0,
+    val chosenId: String? = null,
+    val patronId: String? = null,
+    val templeLevel: Int = 0,
+    val templeNextCost: Int = 0,
+    val treasury: List<Artifact> = emptyList(),
+    val ancestors: List<AncestorRecord> = emptyList(),
+    val chapters: List<String> = emptyList(),
+    val fengShuiTotal: Double = 0.0,
+    /** Budynek → numer miejsca (0..5). */
+    val buildingSlots: Map<FacilityType, Int> = emptyMap(),
+    val dungeonDepth: Int = 0,
+    val dungeonAttemptsLeft: Int = 0,
+    val caveLevel: Int = 0,
+    val eggs: List<BeastEgg> = emptyList(),
+    val mounts: Map<String, String> = emptyMap(),
+    val flameSpirits: Set<String> = emptySet(),
+    val companions: List<Companionship> = emptyList(),
+    /** Uczeń → długość życia w latach. */
+    val lifespans: Map<String, Int> = emptyMap(),
+    val starsReadToday: Boolean = false
 )
 
 data class SecretsUi(
@@ -446,6 +474,26 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     fun setResearcher(discipleId: String?) = dispatch(GameCommand.SetResearcher(discipleId))
     fun useMirror(discipleId: String) = dispatch(GameCommand.UseMirror(discipleId))
 
+    // --- Etap 7: fabuła i życie sekty ---
+    fun assignMentor(studentId: String, mentorId: String?) = dispatch(GameCommand.AssignMentor(studentId, mentorId))
+    fun bindCompanions(a: String, b: String) = dispatch(GameCommand.BindCompanions(a, b))
+    fun choosePatron(id: String) = dispatch(GameCommand.ChoosePatron(id))
+    fun upgradeTemple() = dispatch(GameCommand.UpgradeTemple)
+    fun placeTreasure(vaultIndex: Int) = dispatch(GameCommand.PlaceTreasure(vaultIndex))
+    fun removeTreasure(index: Int) = dispatch(GameCommand.RemoveTreasure(index))
+    fun swapBuildings(a: FacilityType, b: FacilityType) = dispatch(GameCommand.SwapBuildings(a, b))
+    fun delveDungeon(discipleId: String) = dispatch(GameCommand.DelveDungeon(discipleId))
+    fun copyScroll(scroll: String) = dispatch(GameCommand.CopyScroll(scroll))
+    fun upgradeCave() = dispatch(GameCommand.UpgradeCave)
+    fun incubateEgg() = dispatch(GameCommand.IncubateEgg)
+    fun mountBeast(beastId: String, discipleId: String?) = dispatch(GameCommand.MountBeast(beastId, discipleId))
+    fun fuseFlames(a: String, b: String) = dispatch(GameCommand.FuseFlames(a, b, confirmed = true, confirmedTwice = true))
+    fun devourFlame(eater: String, food: String) = dispatch(GameCommand.DevourFlame(eater, food))
+    fun assignArt(discipleId: String, art: DaoArt?) = dispatch(GameCommand.AssignArt(discipleId, art))
+    fun cure(discipleId: String) = dispatch(GameCommand.Cure(discipleId))
+    fun cleanse(discipleId: String) = dispatch(GameCommand.Cleanse(discipleId))
+    fun readStars() = dispatch(GameCommand.ReadStars)
+
     // --- Etap 4: gospodarka ---
     fun upgradeVein() = dispatch(GameCommand.UpgradeVein)
     fun plantHerb(index: Int, herb: String) = dispatch(GameCommand.PlantHerb(index, herb))
@@ -675,7 +723,30 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
         catastrophe = game.catastrophe,
         imperialFavor = com.example.game.engine.Empire.favor(game),
         empireFallen = (game.flags[com.example.game.engine.Empire.FALLEN] ?: 0) > 0,
-        secrets = secretsUi(game)
+        secrets = secretsUi(game),
+        sectLife = SectLifeUi(
+            karmaPath = com.example.game.engine.Identity.karmaPath(game),
+            storyAct = com.example.game.engine.Story.act(game),
+            storyEnding = com.example.game.engine.Story.ending(game),
+            chosenId = game.chosenId,
+            patronId = game.patronId,
+            templeLevel = game.templeLevel,
+            templeNextCost = com.example.game.engine.Identity.templeCost(game.templeLevel),
+            treasury = game.treasury,
+            ancestors = game.ancestors,
+            chapters = game.chronicleChapters,
+            fengShuiTotal = com.example.game.engine.FengShui.total(game),
+            buildingSlots = FacilityType.entries.associateWith { com.example.game.engine.FengShui.slotOf(game, it) },
+            dungeonDepth = game.dungeonDepth,
+            dungeonAttemptsLeft = com.example.game.engine.Dungeon.attemptsLeft(game),
+            caveLevel = game.caveLevel,
+            eggs = game.eggs,
+            mounts = game.mounts,
+            flameSpirits = game.flameSpirits,
+            companions = game.companions,
+            lifespans = game.disciples.associate { it.id to com.example.game.engine.Lifecycle.lifespan(it) },
+            starsReadToday = game.starsReadDay == game.currentDay
+        )
     )
 
     private fun secretsUi(g: GameState): SecretsUi {
@@ -728,7 +799,7 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
             knownRecipeIds = g.knownRecipeIds,
             flames = g.flames.map { f ->
                 val info = com.example.game.engine.Flames.info(f.id)
-                FlameRow(f.id, f.name, info.rank.polishName, info.position, com.example.game.engine.Flames.temperature(f),
+                FlameRow(f.id, f.name, info.rank.polishName, info.position, com.example.game.engine.Creatures.flameTemperature(g, f),
                     f.refinementLevel, com.example.game.engine.Flames.where(g, f.id), info.rank.bearerRealm.polishName)
             }.sortedBy { it.position },
             talismans = com.example.game.engine.Talismans.recipes.map {

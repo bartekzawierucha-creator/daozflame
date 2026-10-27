@@ -57,7 +57,7 @@ class Stage5Test {
 
     @Test
     fun chainSchedulesNextLinkAndItArrivesOnTime() {
-        val s = fresh(2L).copy(currentDay = 5, spiritStones = 1000)
+        val s = fresh(2L).copy(currentDay = 5, spiritStones = 1000, e7Initialized = false)
         val started = EventScripts.activate(s, GameContent.script("chain_hermit_1")!!)
         val helped = apply(started, GameCommand.EventChoice(0)).state
         assertEquals(1, helped.flags["hermit_helped"])

@@ -150,7 +150,7 @@ object CraftV2 {
         val recipe = GameContent.recipe(recipeId) ?: return ok(s)
         if (!knows(s, recipeId)) return fail(s, "Receptura ${recipe.pillName} jest nieznana. Odkryj ją eksperymentem.")
         val flame = s.activeFlame
-        val temp = flame?.let { Flames.temperature(it) } ?: 0
+        val temp = flame?.let { Creatures.flameTemperature(s, it) } ?: 0
         val need = Flames.alchemyTemperature(recipe.tier)
         if (temp < need) return fail(s, "${recipe.pillName} wymaga płomienia o temperaturze $need°C (kocioł: $temp°C).")
         val base = CraftCommands.brewPill(s, recipeId)
@@ -167,7 +167,7 @@ object CraftV2 {
     fun forge(s: GameState, ctx: EngineContext, recipeId: String): StepResult {
         val recipe = GameContent.forging(recipeId) ?: return ok(s)
         val flame = s.flames.find { it.id == s.forgeFlameId } ?: s.activeFlame
-        val temp = flame?.let { Flames.temperature(it) } ?: 0
+        val temp = flame?.let { Creatures.flameTemperature(s, it) } ?: 0
         val need = Flames.forgeTemperature(recipe.artifactResult.rarity)
         if (temp < need) return fail(s, "${recipe.artifactName} wymaga paleniska $need°C (kuźnia: $temp°C).")
         val base = CraftCommands.forgeArtifact(s, recipeId)
@@ -236,7 +236,11 @@ object CraftV2 {
         val paid = s.copy(spiritStones = s.spiritStones - stones)
         if (success) {
             val f = 1.08
-            val up = a.copy(plus = a.plus + 1, attackBonus = (a.attackBonus * f).toInt() + 1, defenseBonus = (a.defenseBonus * f).toInt() + 1)
+            var up = a.copy(plus = a.plus + 1, attackBonus = (a.attackBonus * f).toInt() + 1, defenseBonus = (a.defenseBonus * f).toInt() + 1)
+            // Etap 7: duch artefaktu budzi się przy +7.
+            if (s.e7Initialized && up.plus >= Creatures.SPIRIT_PLUS && up.spirit == null) {
+                up = up.copy(spirit = "Duch: ${a.name}", attackBonus = (up.attackBonus * 1.05).toInt(), defenseBonus = (up.defenseBonus * 1.05).toInt())
+            }
             return ok(paid.copy(inventory = inv.toMap(), vaultArtifacts = s.vaultArtifacts.mapIndexed { i, x -> if (i == vaultIndex) up else x }),
                 "${a.name} +${up.plus}! Statystyki rosną.")
         }

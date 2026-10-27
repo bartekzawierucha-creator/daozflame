@@ -74,3 +74,26 @@ data class Catastrophe(
     val startDay: Int = 0,
     val endDay: Int = 0
 )
+
+/** Etap 7: wpis w Sali Przodków. */
+data class AncestorRecord(
+    val name: String = "",
+    val realm: String = "",
+    val majorOrdinal: Int = 0,
+    val diedDay: Int = 0,
+    val cause: String = ""
+)
+
+/** Para towarzyszy Dao – po roku rodzi się dziecko-kandydat. */
+data class Companionship(val a: String = "", val b: String = "", val sinceDay: Int = 0, val children: Int = 0)
+
+/** Jajo bestii wysiadywane w sekcie. */
+data class BeastEgg(val id: String = "", val hatchDay: Int = 0, val template: String = "")
+
+/** Sztuki Dao – codzienne zajęcia uczniów. */
+enum class DaoArt(val polishName: String, val description: String) {
+    GUQIN("Guqin", "Muzyka koi sektę: +1 morale dziennie (do 3 grających)."),
+    CALLIGRAPHY("Kaligrafia", "Pędzel ćwiczy umysł: +1 zrozumienia co 30 dni."),
+    PAINTING("Malarstwo", "Obraz świata: +20% szansy olśnienia."),
+    GO("Go", "Plansza uczy przewidywania: +3 pkt szansy przełomu.")
+}

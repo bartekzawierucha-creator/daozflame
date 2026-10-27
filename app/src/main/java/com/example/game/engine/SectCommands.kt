@@ -164,13 +164,14 @@ object SectCommands {
             val inv = s.inventory.toMutableMap()
             val r = CultivationSystem.advance(s, d, usePill, inv, ctx.rng("breakthrough"), player = true)
             if (!r.attempted && r.disciple == d) return fail(s, r.message ?: "Przełom niemożliwy.")
-            val disciples = if (r.died) s.disciples.filter { it.id != id } else s.disciples.map { if (it.id == id) r.disciple ?: it else it }
+            val base = if (r.died && s.e7Initialized) Lifecycle.die(s, d, "tribulacja") else s
+            val disciples = if (r.died) base.disciples.filter { it.id != id } else s.disciples.map { if (it.id == id) r.disciple ?: it else it }
             val extra = listOfNotNull(
                 GameEvent.Breakthrough(id, r.majorSuccess || (!r.attempted && r.disciple != d)),
                 r.tribulation?.let { GameEvent.Tribulation(id, it) }
             )
             return ok(
-                s.copy(disciples = disciples, inventory = inv.toMap(), sectReputation = s.sectReputation + r.reputation),
+                base.copy(disciples = disciples, inventory = inv.toMap(), sectReputation = s.sectReputation + r.reputation),
                 r.message ?: "${d.name}: ${Realms.label(r.disciple ?: d)}",
                 *extra.toTypedArray()
             )

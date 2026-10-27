@@ -216,7 +216,9 @@ data class Artifact(
     // --- Etap 4 ---
     val quality: ItemQuality = ItemQuality.NORMAL,
     /** Poziom ulepszenia +0 … +10. */
-    val plus: Int = 0
+    val plus: Int = 0,
+    /** Etap 7: duch artefaktu budzi się przy +7. */
+    val spirit: String? = null
 )
 
 data class Disciple(
@@ -292,7 +294,12 @@ data class Disciple(
     val secretState: SecretState? = null,
     val secretStateUntil: Int = 0,
     /** Nieudane wielkie przełomy z rzędu (Półkrok po 3). */
-    val majorFailures: Int = 0
+    val majorFailures: Int = 0,
+    // --- Etap 7 ---
+    val mentorId: String? = null,
+    val art: DaoArt? = null,
+    val illUntilDay: Int = 0,
+    val cursed: Boolean = false
 )
 
 enum class ResourceCategory { MINERAL, HERB, PILL, ESSENCE }

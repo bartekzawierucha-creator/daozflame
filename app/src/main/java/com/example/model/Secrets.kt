@@ -23,7 +23,9 @@ data class WorldRules(
     /** Formy walki: sekwencje 3 ruchów gracza. */
     val forms: List<CombatForm> = emptyList(),
     /** Wskazówki do każdej tajemnicy (co najmniej 2 z różnych źródeł). */
-    val hints: List<Hint> = emptyList()
+    val hints: List<Hint> = emptyList(),
+    /** v2 (Etap 7): żywioł feng shui każdego z 6 stałych miejsc budynków. */
+    val fengShui: List<SpiritElement> = emptyList()
 )
 
 data class Constellation(val id: String = "", val name: String = "", val points: List<Int> = emptyList(), val stat: String = "QI_GAIN", val percent: Int = 5)

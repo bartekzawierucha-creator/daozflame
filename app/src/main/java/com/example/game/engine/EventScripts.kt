@@ -118,7 +118,8 @@ object EventScripts {
     /** Aktywacja zdarzenia: oznacza „widziane” dla jednorazowych i zapamiętuje w ostatnich. */
     fun activate(s: GameState, e: ScriptEvent): GameState = s.copy(
         activeEventId = e.id,
-        recentEventIds = (s.recentEventIds + e.id).takeLast(RandomEventPhase.MEMORY),
+        // Pamięć powtórek dotyczy losowania – zdarzenia planowane jej nie zajmują.
+        recentEventIds = if (e.random) (s.recentEventIds + e.id).takeLast(RandomEventPhase.MEMORY) else s.recentEventIds,
         flags = if (e.once) s.flags + (SEEN_PREFIX + e.id to 1) else s.flags
     )
 
