@@ -95,7 +95,7 @@ class Stage1Test {
 
     @Test
     fun upkeepIsPaidAtDawnOrEdictsAreSuspended() {
-        val s = fresh(4L).copy(timeOfDay = TimeOfDay.FULL_MOON) // następny cykl = świt
+        val s = fresh(4L).copy(timeOfDay = TimeOfDay.FULL_MOON, phaseTick = TimePhase.TICKS_PER_PHASE - 1) // następny cykl = świt
         val upkeep = EdictCatalog.dailyUpkeep(s)
         assertTrue(upkeep > 0)
         val paid = apply(s, GameCommand.Tick).state

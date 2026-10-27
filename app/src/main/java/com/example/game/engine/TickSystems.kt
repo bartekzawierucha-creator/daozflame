@@ -12,6 +12,7 @@ class TickFrame(val before: GameState, val ctx: EngineContext) {
     val sectMods: ModifierStack = Modifiers.sect(before)
     var tick: Long = before.tick + 1
     var timeOfDay: TimeOfDay = before.timeOfDay
+    var phaseTick: Int = before.phaseTick
     var day: Int = before.currentDay
     var stonesGained: Int = 0
     var reputationGained: Int = 0
@@ -38,6 +39,7 @@ class TickFrame(val before: GameState, val ctx: EngineContext) {
         val rep = if (reputationGained > 0) (reputationGained * sectMods.factor(Stat.REPUTATION_GAIN)).toInt() else reputationGained
         val state = before.copy(
             tick = tick,
+            phaseTick = phaseTick,
             currentDay = day,
             timeOfDay = timeOfDay,
             spiritStones = (before.spiritStones + income - upkeepPaid).coerceAtLeast(0),
@@ -58,9 +60,21 @@ fun interface TickPhase {
     fun run(frame: TickFrame)
 }
 
-/** 1. Pora dnia i dzień. */
+/**
+ * 1. Pora dnia i dzień. Każda pora trwa [TICKS_PER_PHASE] cykli (6 × 1,6 s ≈ 10 s),
+ * więc doba to ok. 40 s, a rok gry (120 dni) ok. 80 minut gry.
+ */
 object TimePhase : TickPhase {
+    const val TICKS_PER_PHASE = 6
+    /** Średnia długość doby w cyklach (pełnia dokłada noc w 30% dni). */
+    const val TICKS_PER_DAY = TICKS_PER_PHASE * 4.3
+
     override fun run(frame: TickFrame) {
+        if (frame.before.phaseTick + 1 < TICKS_PER_PHASE) {
+            frame.phaseTick = frame.before.phaseTick + 1
+            return
+        }
+        frame.phaseTick = 0
         val rng = frame.ctx.rng("time")
         frame.timeOfDay = when (frame.before.timeOfDay) {
             TimeOfDay.DAWN -> TimeOfDay.DAY

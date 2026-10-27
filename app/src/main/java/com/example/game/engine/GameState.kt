@@ -23,6 +23,8 @@ data class GameState(
     val sectContribution: Int = 450,
     val currentDay: Int = 1,
     val timeOfDay: TimeOfDay = TimeOfDay.DAY,
+    /** Cykle, które minęły w bieżącej porze dnia (0 … TimePhase.TICKS_PER_PHASE − 1). */
+    val phaseTick: Int = 0,
 
     val disciples: List<Disciple> = emptyList(),
     val availableRecruits: List<Disciple> = emptyList(),

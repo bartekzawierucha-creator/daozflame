@@ -19,8 +19,7 @@ object OfflineProgress {
     const val EFFICIENCY = 0.6
     const val SECONDS_PER_TICK = 1.6
     const val MIN_ELAPSED_MS = 60_000L
-    /** Średnio ok. 4,3 cyklu na dzień (pełnia wydłuża noc w 30% przypadków). */
-    const val TICKS_PER_DAY = 4.3
+    val TICKS_PER_DAY = TimePhase.TICKS_PER_DAY
 
     data class Report(
         val elapsedMs: Long,

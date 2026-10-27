@@ -73,9 +73,9 @@ class GameEngineTest {
 
     @Test
     fun timeAdvancesAndDaysPass() {
-        val s = ticks(GameEngine.newGame(2L), 40)
-        assertTrue(s.currentDay >= 9)
-        assertEquals(40L, s.tick)
+        val s = ticks(GameEngine.newGame(2L), 240)
+        assertTrue("Dzień ${s.currentDay}", s.currentDay in 9..11)
+        assertEquals(240L, s.tick)
     }
 
     @Test
