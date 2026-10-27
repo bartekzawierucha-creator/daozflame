@@ -32,7 +32,9 @@ jobs:
             -dname "CN=Android Debug,O=Android,C=US"
 
       - name: Testy jednostkowe i symulator balansu
-        run: ./gradlew --no-daemon testDebugUnitTest
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon testDebugUnitTest 2>&1 | tee gradle-test.log
         env:
           DAOZ_SIM_HOURS: "48"
 
@@ -47,7 +49,7 @@ jobs:
                       msg = (bad.get("message") or bad.text or "")[:300].replace("\n", " ")
                       print(f"::error title={case.get('classname')}.{case.get('name')}::{msg}")
           PY
-          grep -h "^e: " app/build/**/*.log 2>/dev/null | head -20 || true
+          grep -E "^e: " gradle-test.log | head -20 | sed 's/^/::error::/' || true
 
       - name: Raport balansu w podsumowaniu
         if: always()
