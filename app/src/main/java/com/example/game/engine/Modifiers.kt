@@ -92,6 +92,7 @@ object Modifiers {
         val alliances = s.rivalSects.filter { it.status == DiplomaticStatus.ALLIANCE }.sumOf { it.cultivationBuffBonusPercent }
         if (alliances != 0) list += Modifier("Sojusze sekt", Stat.QI_GAIN, ModOp.PERCENT, alliances.toDouble())
         list += DiscipleRules.sectModifiers(s)
+        if (com.example.game.FeatureFlags.META) list += Rebirth.modifiers(s)
         if (s.e7Initialized) {
             list += Identity.modifiers(s)
             FengShui.total(s).takeIf { it != 0.0 }?.let { list += Modifier("Feng shui", Stat.QI_GAIN, ModOp.PERCENT, it) }

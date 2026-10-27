@@ -94,6 +94,8 @@ data class GameState(
     /** Dodatkowa temperatura płomieni z fuzji. */
     val flameHeat: Map<String, Int> = emptyMap(),
     val starsReadDay: Int = 0,
+    /** Etap 8: postęp meta – jedyna część stanu przeżywająca odrodzenie sekty. */
+    val meta: com.example.model.MetaProgress = com.example.model.MetaProgress(),
 
     val worldBoss: WorldBossRaid = com.example.game.WuxiaGenerator.getInitialWorldBoss(),
     val sectLeader: SectLeaderData = com.example.game.WuxiaGenerator.getInitialSectLeader(),

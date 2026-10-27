@@ -331,6 +331,7 @@ private fun RosterTile(disciple: Disciple, selected: Boolean, onClick: () -> Uni
 fun PalaceModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> Unit) {
     var eco by remember { mutableStateOf<EconomyTab?>(null) }
     var sect by remember { mutableStateOf(false) }
+    var metaOpen by remember { mutableStateOf(false) }
     ModuleScaffold(
         module = GameModule.PALACE,
         subtitle = "${ui.sectLeader.name} · prestiż ${ui.sectLeader.prestigeLevel}",
@@ -356,6 +357,7 @@ fun PalaceModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                         GhostButton("Kontrakty", onClick = { eco = EconomyTab.CONTRACTS }, modifier = Modifier.weight(1f), height = 36.dp)
                         GhostButton("Targ", onClick = { eco = EconomyTab.MARKET }, modifier = Modifier.weight(1f), height = 36.dp)
                         GhostButton("Sekta", onClick = { sect = true }, modifier = Modifier.weight(1f), height = 36.dp)
+                        GhostButton("Niebiosa", onClick = { metaOpen = true }, modifier = Modifier.weight(1.1f), height = 36.dp)
                     }
                 }
                 Box(Modifier.weight(1f)) {
@@ -366,6 +368,7 @@ fun PalaceModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
     }
     eco?.let { EconomyPanel(ui, viewModel, it, onClose = { eco = null }) }
     if (sect) SectPanel(ui, viewModel, onClose = { sect = false })
+    if (metaOpen) MetaPanel(ui, viewModel, onClose = { metaOpen = false })
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -94,6 +94,15 @@ sealed interface GameCommand {
     data class Cure(val discipleId: String) : GameCommand
     data class Cleanse(val discipleId: String) : GameCommand
     data object ReadStars : GameCommand
+    // Etap 8
+    data class Rebirth(val confirmed: Boolean, val difficulty: com.example.model.Difficulty? = null, val ironWill: Boolean? = null) : GameCommand
+    data class BuyHeavenNode(val nodeId: String) : GameCommand
+    data class ChooseEra(val eraId: String) : GameCommand
+    data class Succession(val discipleId: String, val confirmed: Boolean) : GameCommand
+    data class SetTitle(val achievementId: String?) : GameCommand
+    /** Czas realny (ms) – tylko dla celów dziennych i ofiary przodkom. */
+    data class RealTime(val nowMs: Long) : GameCommand
+    data object OfferToAncestors : GameCommand
     data class PlaceFormationNode(val element: com.example.model.SpiritElement) : GameCommand
     data class SendSpy(val discipleId: String, val sectId: String, val type: com.example.model.SpyType) : GameCommand
     data class SectBattle(val sectId: String, val discipleIds: List<String>) : GameCommand

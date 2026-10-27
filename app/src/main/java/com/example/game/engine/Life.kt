@@ -15,6 +15,19 @@ object Story {
     const val START_DAY = 10
 
     fun act(s: GameState): Int = s.flags[StoryCatalog.ACT] ?: 0
+
+    const val ACT2_DAY = 120
+    const val ACT3_DAY = 360
+    const val ACT4_DAY = 720
+
+    private fun hasCore(s: GameState) = s.disciples.any { (it.majorRealm?.ordinal ?: 0) >= MajorRealm.CORE_FORMATION.ordinal }
+
+    fun gate(s: GameState, act: Int): Boolean = when (act) {
+        2 -> s.currentDay >= ACT2_DAY
+        3 -> s.currentDay >= ACT3_DAY && hasCore(s)
+        4 -> s.currentDay >= ACT4_DAY && hasCore(s)
+        else -> true
+    }
     fun ending(s: GameState): Int = s.flags[StoryCatalog.ENDING] ?: 0
 
     private fun schedule(s: GameState, id: String): GameState =
@@ -37,6 +50,11 @@ object Story {
         }
         if (act(s) == 0 && s.currentDay >= START_DAY) {
             s = schedule(s.copy(flags = s.flags + (StoryCatalog.ACT to 1)), "story_1_1")
+        }
+        // Bramki aktów: opowieść rozciąga się na całą erę zamiast kończyć się w godzinę.
+        val ready = s.flags[StoryCatalog.READY] ?: 0
+        if (ready > act(s) && gate(s, ready)) {
+            s = schedule(s.copy(flags = s.flags - StoryCatalog.READY), "story_${ready}_1")
         }
         // Akt ustawiają zdarzenia otwierające akty (flaga story_act); kronika odnotowuje zmianę.
         val noted = s.flags["story_act_noted"] ?: 0
@@ -72,7 +90,7 @@ object Lifecycle {
 
     /** Migracja: obecni uczniowie dostają młody wiek, żeby stary zapis nikogo nie zabił przy pierwszym wczytaniu. */
     fun normalize(s: GameState): GameState {
-        if (s.e7Initialized) return s
+        if (s.e7Initialized || !com.example.game.FeatureFlags.SECT_LIFE) return s
         return s.copy(
             e7Initialized = true,
             disciples = s.disciples.mapIndexed { i, d ->

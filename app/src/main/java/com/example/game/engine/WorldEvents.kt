@@ -70,7 +70,7 @@ object Fog {
 
     /** Migracja: kraina, w której gracz już był (zbadana > 0%), jest odkryta. */
     fun normalize(s: GameState): GameState {
-        if (s.discoveredRegionIds.isNotEmpty()) return s
+        if (s.discoveredRegionIds.isNotEmpty() || !com.example.game.FeatureFlags.LIVING_WORLD) return s
         val base = s.regions.take(START_DISCOVERED).map { it.id } + s.regions.filter { it.explorationProgress > 0 }.map { it.id }
         return s.copy(discoveredRegionIds = base.toSet())
     }

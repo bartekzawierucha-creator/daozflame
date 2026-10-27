@@ -18,3 +18,13 @@ class BalanceSimulationTest {
         assertTrue("Kamienie nie mogą być ujemne", runs.all { r -> r.snapshots.all { it.stones >= 0 } })
     }
 }
+
+/** Etap 8: druga era szybsza o 30–60% niż ten sam świat bez postępu meta. */
+class EraPaceTest {
+    @Test
+    fun secondEraIsFasterWithinTarget() {
+        val eras = BalanceSimulator.simulateEras(20261027L, eras = 2)
+        val speedup = BalanceSimulator.eraSpeedup(eras)
+        assertTrue("przyspieszenie $speedup", speedup != null && speedup in 0.3..0.6)
+    }
+}

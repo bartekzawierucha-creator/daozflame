@@ -18,6 +18,8 @@ object StoryCatalog {
     const val ACT = "story_act"
     const val ENDING = "story_ending"
     const val SEAL = "story_seal"
+    /** Akt gotowy do rozpoczęcia – reżyser [com.example.game.engine.Story] czeka jeszcze na bramkę aktu. */
+    const val READY = "story_ready"
 
     private fun cond(type: CondType, key: String = "", value: Int = 0) = Condition(type, key, value)
     private fun stones(v: Int) = Effect(EffectType.STONES, value = v)
@@ -49,8 +51,8 @@ object StoryCatalog {
             c("Każ mu medytować i zapomnieć", "Wybraniec milczy, ale sny wracają.", karma(-2), next("story_1_3", 6))),
         ev("story_1_3", "Akt I · Posłaniec Krwawego Księżyca",
             "Do bramy przychodzi kapłan w czerwonej masce. Kult Krwawego Księżyca proponuje „pomoc” w podtrzymaniu pieczęci – za opłatą.",
-            c("Odpraw go z niczym", "Kapłan uśmiecha się pod maską. „Wrócimy, gdy księżyc będzie pełny.”", karma(5), flag("story_cult_enemy"), next("story_2_1", 1)),
-            c("Przyjmij pomoc Kultu", "Kultyści rysują krwawe znaki wokół groty. Drżenie ustaje.", stones(800), karma(-15), flag("story_cult_ally"), next("story_2_1", 1))),
+            c("Odpraw go z niczym", "Kapłan uśmiecha się pod maską. „Wrócimy, gdy księżyc będzie pełny.”", karma(5), flag("story_cult_enemy"), flag(READY, 2)),
+            c("Przyjmij pomoc Kultu", "Kultyści rysują krwawe znaki wokół groty. Drżenie ustaje.", stones(800), karma(-15), flag("story_cult_ally"), flag(READY, 2))),
 
         // ── Akt II: Trzy klucze ──────────────────────────────────────────────
         ev("story_2_1", "Akt II · Pierwszy klucz",
@@ -64,9 +66,9 @@ object StoryCatalog {
             c("Wykradnij klucz", "Klucz jest twój. Wudang już nigdy nie spojrzy na sektę tak samo.", rival("sect_wudang", -40), karma(-15), add(SEAL, 1), next("story_2_3", 8))),
         ev("story_2_3", "Akt II · Trzeci klucz",
             "Trzeci klucz ma Kult Krwawego Księżyca. Kapłan proponuje wymianę: klucz za jednego ucznia „do służby”.",
-            c("Zaatakuj świątynię Kultu", "Bitwa jest krwawa, ale klucz wraca do sekty.", hurt(40), karma(10), rep(40), add(SEAL, 1), next("story_3_1", 10)),
-            c("Oddaj ucznia Kultowi", "Uczeń odchodzi bez słowa. W sekcie panuje cisza.", morale(-20), karma(-25), add(SEAL, 1), next("story_3_1", 10)),
-            c("Przechytrz kapłana fałszywym uczniem", "Iluzja wystarcza na tyle długo, by zabrać klucz.", karma(-3), add(SEAL, 1), next("story_3_1", 10),
+            c("Zaatakuj świątynię Kultu", "Bitwa jest krwawa, ale klucz wraca do sekty.", hurt(40), karma(10), rep(40), add(SEAL, 1), flag(READY, 3)),
+            c("Oddaj ucznia Kultowi", "Uczeń odchodzi bez słowa. W sekcie panuje cisza.", morale(-20), karma(-25), add(SEAL, 1), flag(READY, 3)),
+            c("Przechytrz kapłana fałszywym uczniem", "Iluzja wystarcza na tyle długo, by zabrać klucz.", karma(-3), add(SEAL, 1), flag(READY, 3),
                 needs = listOf(cond(CondType.MIN_REPUTATION, value = 500)))),
 
         // ── Akt III: Krwawy księżyc ──────────────────────────────────────────
@@ -80,8 +82,8 @@ object StoryCatalog {
             c("Złóż ofiarę z krwi, by wzmocnić uczniów", "Uczniowie walczą jak demony. Zwycięstwo smakuje żelazem.", karma(-20), rep(40), next("story_3_3", 7))),
         ev("story_3_3", "Akt III · Prawda o założycielu",
             "W ruinach świątyni Kultu leży dziennik założyciela. Demon pod górą był jego bratem – zapieczętowanym za to, że chciał przekroczyć Niebo.",
-            c("Ukryj prawdę przed uczniami", "Sekret zostaje z tobą. Ciężar rośnie.", karma(-5), next("story_4_1", 15)),
-            c("Wyznaj prawdę całej sekcie", "Uczniowie są wstrząśnięci, ale lojalni.", morale(-5), karma(8), next("story_4_1", 15))),
+            c("Ukryj prawdę przed uczniami", "Sekret zostaje z tobą. Ciężar rośnie.", karma(-5), flag(READY, 4)),
+            c("Wyznaj prawdę całej sekcie", "Uczniowie są wstrząśnięci, ale lojalni.", morale(-5), karma(8), flag(READY, 4))),
 
         // ── Akt IV: Pod górą ─────────────────────────────────────────────────
         ev("story_4_1", "Akt IV · Zejście",

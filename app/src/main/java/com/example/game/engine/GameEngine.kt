@@ -161,6 +161,13 @@ object GameEngine {
             is GameCommand.Cure -> DailyLife.cure(state, command.discipleId)
             is GameCommand.Cleanse -> DailyLife.cleanse(state, command.discipleId)
             GameCommand.ReadStars -> DailyLife.readStars(state, ctx)
+            is GameCommand.Rebirth -> Rebirth.rebirth(state, command.confirmed, command.difficulty, command.ironWill)
+            is GameCommand.BuyHeavenNode -> HeavenTree.buy(state, command.nodeId)
+            is GameCommand.ChooseEra -> EraModifiers.choose(state, command.eraId)
+            is GameCommand.Succession -> Rebirth.succession(state, ctx, command.discipleId, command.confirmed)
+            is GameCommand.SetTitle -> Achievements.setTitle(state, command.achievementId)
+            is GameCommand.RealTime -> DailyGoals.realTime(state, command.nowMs)
+            GameCommand.OfferToAncestors -> DailyGoals.offering(state)
             GameCommand.DebugRevealSecrets -> state.rules?.let { r ->
                 ok(Secrets.allIds(r).fold(state) { st, id -> Journal.reveal(st, id, "[debug]") }, "[debug] Odsłonięto wszystkie tajemnice")
             } ?: ok(state)
@@ -238,7 +245,9 @@ object GameEngine {
             GameCommand.DebugFillQi -> ok(state.copy(disciples = state.disciples.map { it.copy(realmProgress = 100) }), "[debug] Qi wszystkich uczniów = 100%")
         }
         val advanced = Tutorial.afterCommand(state, command, result.state)
-        return result.copy(state = advanced.copy(step = state.step + 1))
+        // Etap 8: liczniki, cele dzienne i osiągnięcia – liczone ze zdarzeń tego kroku.
+        val withMeta = Achievements.after(command, state, result.copy(state = advanced))
+        return withMeta.copy(state = withMeta.state.copy(step = state.step + 1))
     }
 
     private fun tick(state: GameState, ctx: EngineContext): StepResult {
