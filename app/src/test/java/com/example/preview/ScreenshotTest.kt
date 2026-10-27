@@ -54,6 +54,14 @@ class ScreenshotTest {
         errors.append("== ").append(where).append('\n').append(t.stackTraceToString().lines().take(40).joinToString("\n")).append("\n\n")
     }
 
+    /** Zrzut z powiększoną czcionką systemową (jak na telefonach z większym tekstem). */
+    private fun largeShot(name: String, title: String, content: @Composable () -> Unit) = shot(name, "$title · czcionka ×1,3") {
+        val d = androidx.compose.ui.platform.LocalDensity.current
+        androidx.compose.runtime.CompositionLocalProvider(
+            androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(d.density, 1.3f)
+        ) { content() }
+    }
+
     private fun shot(name: String, title: String, content: @Composable () -> Unit) {
         try {
             screenKey = name
@@ -174,5 +182,14 @@ class ScreenshotTest {
 
         // ── Etap 9: Sieć Dao ────────────────────────────────────────────────
         shot("70_arena", "Arena cieni") { ShadowArenaPanel(u, vm, noop) }
+
+        // ── Duża czcionka systemowa ─────────────────────────────────────────
+        largeShot("80_large_hub", "Hub") { SectHub(u, vm, onOpen = { _, _ -> }) }
+        largeShot("81_large_disciples", "Sala Adeptów (Księga)") {
+            LegacyPanel("Sala Adeptów", onClose = noop) { com.example.ui.screens.DisciplesScreen(viewModel = vm, uiState = u) }
+        }
+        largeShot("82_large_adepts", "Adepci") { AdeptsModule(u, vm, noop) }
+        largeShot("83_large_mind", "Umysł ucznia") { MindPanel(chosen, u, vm, noop) }
+        largeShot("84_large_market", "Gospodarka – Targ") { EconomyPanel(u, vm, EconomyTab.MARKET, noop) }
     }
 }

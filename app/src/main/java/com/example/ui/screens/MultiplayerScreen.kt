@@ -139,7 +139,7 @@ fun ArenaTabContent(
                 if (strongestDisciple != null) {
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Twój wyznaczony Czempion: ${strongestDisciple.name} (Atak: ${strongestDisciple.attack}, ${strongestDisciple.realm.polishName})",
+                        text = "Twój wyznaczony Czempion: ${strongestDisciple.name} (Atak: ${strongestDisciple.attack}, ${com.example.game.engine.Realms.label(strongestDisciple)})",
                         color = JadeSpiritLight,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold

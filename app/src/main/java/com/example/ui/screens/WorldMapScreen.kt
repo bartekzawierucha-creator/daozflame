@@ -220,7 +220,7 @@ fun WorldMapScreen(
                                         Spacer(modifier = Modifier.width(10.dp))
                                         Column {
                                             Text(text = disciple.name, color = TextGold, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                            Text(text = "${disciple.realm.polishName} • Atak: ${disciple.attack}", color = TextSecondary, fontSize = 10.sp)
+                                            Text(text = "${com.example.game.engine.Realms.label(disciple)} • Atak: ${disciple.attack}", color = TextSecondary, fontSize = 10.sp)
                                         }
                                     }
                                     Text("Wybierz", color = JadeSpiritLight, fontSize = 11.sp, fontWeight = FontWeight.Bold)
@@ -290,7 +290,7 @@ fun WorldMapScreen(
                                 ) {
                                     Column {
                                         Text(text = disciple.name, color = TextGold, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                        Text(text = "${disciple.realm.polishName} • Siła: $combatPower CP", color = AstralCyanLight, fontSize = 10.sp)
+                                        Text(text = "${com.example.game.engine.Realms.label(disciple)} • Siła: $combatPower CP", color = AstralCyanLight, fontSize = 10.sp)
                                     }
                                     Text(
                                         text = if (isPlayer) "Obsadź" else "Atakuj",
@@ -392,7 +392,7 @@ fun TerritoryNodeCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Posterunek: ${assignedDisciple?.let { "${it.name} (${it.realm.polishName})" } ?: "Brak garnizonu"}",
+                    text = "Posterunek: ${assignedDisciple?.let { "${it.name} (${com.example.game.engine.Realms.label(it)})" } ?: "Brak garnizonu"}",
                     color = TextSecondary,
                     fontSize = 10.sp
                 )

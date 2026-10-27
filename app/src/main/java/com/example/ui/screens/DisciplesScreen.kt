@@ -71,8 +71,8 @@ fun DisciplesScreen(
         item {
             ManhwaHeroBanner(
                 assetName = "bg_sect_sanctuary",
-                title = "Komnata Mistrzów i Adeptów Sekty",
-                subtitle = "Przeglądaj talenty, rozwijaj meridiany Dantian i przeprowadzaj próby Niebiańskiej Kary",
+                title = "Sala Adeptów",
+                subtitle = "Talenty, meridiany i próby Niebiańskiej Kary",
                 height = 140.dp
             )
         }
@@ -85,15 +85,11 @@ fun DisciplesScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Adeptowie Sekty (${uiState.disciples.size})",
+                    text = "Adeptowie (${uiState.disciples.size})",
                     color = Color(0xFFF6E6BE),
                     fontSize = 15.sp,
-                    fontWeight = FontWeight.Black
-                )
-                Text(
-                    text = "Filtruj według Szkoły",
-                    color = Color(0xFFB0A592),
-                    fontSize = 11.sp
+                    fontWeight = FontWeight.Black,
+                    maxLines = 1
                 )
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -167,7 +163,8 @@ fun DisciplesScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = "⚡ AUTOMATYCZNY PRZEŁOM DAO",
+                                text = if (uiState.autonomy) "⚡ PRZEŁOMY" else "⚡ AUTOMATYCZNY PRZEŁOM DAO",
+                            maxLines = 1,
                                 color = Color(0xFFF6E6BE),
                                 fontWeight = FontWeight.Black,
                                 fontSize = 13.sp
@@ -180,7 +177,7 @@ fun DisciplesScreen(
                         )
                     }
 
-                    Switch(
+                    if (!uiState.autonomy) Switch(
                         checked = uiState.autoBreakthroughEnabled,
                         onCheckedChange = { viewModel.toggleAutoBreakthrough(it) },
                         colors = SwitchDefaults.colors(
@@ -199,9 +196,10 @@ fun DisciplesScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "💊 Automatycznie zużywaj Pigułki Qi (+35% sukcesu):",
+                        text = "💊 Pigułki Qi przy przełomie (+35%)",
                         color = Color(0xFFEDE4CF),
-                        fontSize = 11.sp
+                        fontSize = 11.sp,
+                        modifier = Modifier.weight(1f)
                     )
                     Switch(
                         checked = uiState.autoUsePillsForBreakthrough,
@@ -228,7 +226,8 @@ fun DisciplesScreen(
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
-                            text = "⚡ PRZEŁAM WSZYSTKICH GOTOWYCH ($readyDisciplesCount ADEPTÓW)",
+                            text = if (uiState.autonomy) "⚡ DORADŹ PRZEŁOM GOTOWYM ($readyDisciplesCount)" else "⚡ PRZEŁAM GOTOWYCH ($readyDisciplesCount)",
+                            maxLines = 1,
                             color = Color.White,
                             fontWeight = FontWeight.Black,
                             fontSize = 12.sp
@@ -298,12 +297,15 @@ fun DiscipleCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                         Text(
-                            text = disciple.name,
+                            text = disciple.name.substringBefore(" ("),
                             color = Color(0xFFF6E6BE),
                             fontSize = 15.sp,
-                            fontWeight = FontWeight.Black
+                            fontWeight = FontWeight.Black,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
                         )
                         Spacer(Modifier.width(6.dp))
                         val (gradeColor, gradeBg) = when (disciple.talentGrade) {
@@ -336,8 +338,10 @@ fun DiscipleCard(
                         )
                     ) {
                         Text(
-                            text = disciple.realm.polishName,
+                            text = com.example.game.engine.Realms.label(disciple).substringBefore(" ("),
                             color = if (isReadyForBreakthrough) Color(0xFFE8C37E) else Color(0xFFE9D5FF),
+                            maxLines = 1,
+                            softWrap = false,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Black,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -346,10 +350,11 @@ fun DiscipleCard(
                 }
 
                 Text(
-                    text = "🏰 ${disciple.ancientClan.name} • ${disciple.ancientClan.reputationTitle}",
+                    text = "🏰 ${disciple.ancientClan.name}",
                     color = Color(0xFFEBCB7A),
                     fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
                 )
 
                 Row(
@@ -358,10 +363,13 @@ fun DiscipleCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "${disciple.martialSchool.polishName} • Zadanie: ${disciple.role.polishName}",
+                        text = disciple.role.polishName,
                         color = Color(0xFF00E5FF),
                         fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
                     )
                     Text(
                         text = "⚔️ ${disciple.combatPower} CP",
@@ -508,7 +516,7 @@ fun DiscipleDetailModal(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(text = disciple.name, color = TextGold, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                        Text(text = "${disciple.realm.polishName} • ${disciple.martialSchool.polishName}", color = JadeSpiritLight, fontSize = 11.sp)
+                        Text(text = "${com.example.game.engine.Realms.label(disciple)} • ${disciple.martialSchool.polishName}", color = JadeSpiritLight, fontSize = 11.sp)
                     }
                 }
                 IconButton(onClick = onDismiss) {

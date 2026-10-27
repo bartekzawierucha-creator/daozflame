@@ -205,7 +205,7 @@ fun ManhwaHeroBanner(
     PixelCard(
         modifier = modifier
             .fillMaxWidth()
-            .height(height)
+            .heightIn(min = height)
             .shadow(8.dp, RoundedCornerShape(14.dp)),
         backgroundColor = Color(0xFF0F0B18),
         borderColor = Color(0xFFE8C37E)
@@ -250,6 +250,8 @@ fun ManhwaHeroBanner(
                     Spacer(Modifier.width(8.dp))
                     Text(
                         text = title,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Black,
                             fontSize = 20.sp,
@@ -261,6 +263,8 @@ fun ManhwaHeroBanner(
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = subtitle,
+                    maxLines = 2,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
