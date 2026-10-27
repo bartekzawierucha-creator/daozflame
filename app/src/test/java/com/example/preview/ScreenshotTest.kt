@@ -10,10 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asAndroidBitmap
-import androidx.compose.ui.test.captureToImage
-import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.core.app.ApplicationProvider
 import com.example.game.TribulationUi
 import com.example.game.TutorialUi
@@ -42,7 +39,7 @@ import java.io.File
 class ScreenshotTest {
 
     @get:Rule
-    val compose = createComposeRule()
+    val compose = createAndroidComposeRule<androidx.activity.ComponentActivity>()
 
     private val out = File("build/previews").apply { mkdirs() }
     private val index = StringBuilder()
@@ -60,8 +57,13 @@ class ScreenshotTest {
             screen = content
             androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications()
             compose.mainClock.advanceTimeBy(1_500)
-            val bmp = compose.onRoot().captureToImage().asAndroidBitmap()
-            File(out, "$name.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            // Rysujemy widok wprost do bitmapy: captureToImage czeka na klatkę, której zatrzymany zegar nie wyrysuje.
+            compose.runOnUiThread {
+                val v = compose.activity.findViewById<android.view.ViewGroup>(android.R.id.content)
+                val bmp = Bitmap.createBitmap(v.width, v.height, Bitmap.Config.ARGB_8888)
+                v.draw(android.graphics.Canvas(bmp))
+                File(out, "$name.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            }
             index.append(name).append('\t').append(title).append('\n')
         } catch (t: Throwable) {
             record(name, t)
