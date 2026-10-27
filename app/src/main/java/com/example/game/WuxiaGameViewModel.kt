@@ -275,6 +275,21 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     private var celebration: CelebrationUi? = null
     private var tribulation: TribulationUi? = null
 
+    // Sieć Dao: zadeklarowane przed _uiState, bo buildUi() czyta net.enabled już w konstruktorze.
+    private val prefs by lazy { getApplication<Application>().getSharedPreferences("daonet", android.content.Context.MODE_PRIVATE) }
+    private val net by lazy { com.example.game.net.DaoNetClient(
+        com.example.BuildConfig.DAONET_URL, com.example.BuildConfig.DAONET_ANON_KEY,
+        object : com.example.game.net.DaoNetClient.TokenStore {
+            override var accessToken: String?
+                get() = prefs.getString("token", null)
+                set(v) { prefs.edit().putString("token", v).apply() }
+            override var userId: String?
+                get() = prefs.getString("user", null)
+                set(v) { prefs.edit().putString("user", v).apply() }
+        }
+    ) }
+    private val cloudPayload by lazy { mutableMapOf<String, String>() }
+
     private val _uiState = MutableStateFlow(buildUi())
     val uiState: StateFlow<WuxiaUiState> = _uiState.asStateFlow()
 
@@ -529,20 +544,6 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     fun readStars() = dispatch(GameCommand.ReadStars)
 
     // --- Etap 9: Sieć Dao i chmura ---
-    // Leniwie: buildUi() działa już podczas konstrukcji ViewModelu, przed tymi polami.
-    private val prefs by lazy { getApplication<Application>().getSharedPreferences("daonet", android.content.Context.MODE_PRIVATE) }
-    private val net by lazy { com.example.game.net.DaoNetClient(
-        com.example.BuildConfig.DAONET_URL, com.example.BuildConfig.DAONET_ANON_KEY,
-        object : com.example.game.net.DaoNetClient.TokenStore {
-            override var accessToken: String?
-                get() = prefs.getString("token", null)
-                set(v) { prefs.edit().putString("token", v).apply() }
-            override var userId: String?
-                get() = prefs.getString("user", null)
-                set(v) { prefs.edit().putString("user", v).apply() }
-        }
-    ) }
-    private val cloudPayload by lazy { mutableMapOf<String, String>() }
 
     private fun season() = com.example.game.engine.DaoNet.season(System.currentTimeMillis() / com.example.game.engine.DailyGoals.DAY_MS)
 
