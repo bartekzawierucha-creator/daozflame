@@ -39,32 +39,33 @@ enum class MetaTab(val label: String) { REBIRTH("Odrodzenie"), TREE("Drzewo Nieb
 
 /** Panel meta: odrodzenie sekty, Drzewo Niebios, osiągnięcia i tytuły, cele dzienne, Kodeks. */
 @Composable
-fun MetaPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: () -> Unit) {
-    var tab by remember { mutableStateOf(MetaTab.REBIRTH) }
-    LegacyPanel(title = "Niebiosa · Era ${ui.meta.era}" + (ui.meta.title?.let { " · $it" } ?: ""), onClose = onClose) {
-        Column(Modifier.fillMaxSize()) {
-            TextTabs(MetaTab.entries.map { it.label }, tab.ordinal, { tab = MetaTab.entries[it] },
-                Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 14.dp, vertical = 6.dp))
-            Column(
-                Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                when (tab) {
-                    MetaTab.REBIRTH -> RebirthTab(ui, viewModel)
-                    MetaTab.TREE -> TreeTab(ui, viewModel)
-                    MetaTab.ACHIEVEMENTS -> AchievementsTab(ui, viewModel)
-                    MetaTab.DAILY -> DailyTab(ui, viewModel)
-                    MetaTab.CODEX -> {
-                        SheetBody("Kodeks liczy, ile tajemnic poznałeś w najlepszej erze. Nie mówi, czego brakuje.", maxLines = 2)
-                        KvRow("Ta era", "${ui.secrets.discovered} / ${ui.secrets.total}")
-                        ui.meta.codex.forEach { (cat, n) -> KvRow(cat, "$n") }
-                        if (ui.meta.legacy.isNotEmpty()) SheetBody("Księga Dziedzictwa: ${ui.meta.legacy.size} praw świata przechodzi do każdej ery.", color = Aaa.Gold, maxLines = 2)
-                    }
-                }
+fun MetaPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, initial: MetaTab = MetaTab.REBIRTH, onClose: () -> Unit) {
+    var tab by remember { mutableStateOf(initial) }
+    TabbedPanel(
+        title = "Niebiosa · Era ${ui.meta.era}",
+        tabs = MetaTab.entries.map { it.label },
+        selected = tab.ordinal,
+        onSelect = { tab = MetaTab.entries[it] },
+        onClose = onClose,
+        header = {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                StateTag("Esencja ${ui.meta.essence}", Aaa.GoldHi)
+                StateTag("Osiągnięcia ${ui.achievements.count { it.unlocked }}/${ui.achievements.size}", Aaa.Gold)
+                ui.meta.title?.let { StateTag(it, Aaa.Violet) }
+                if (ui.meta.ironWill) StateTag("Żelazna Wola", Aaa.Cinnabar)
+            }
+        }
+    ) {
+        when (tab) {
+            MetaTab.REBIRTH -> RebirthTab(ui, viewModel)
+            MetaTab.TREE -> TreeTab(ui, viewModel)
+            MetaTab.ACHIEVEMENTS -> AchievementsTab(ui, viewModel)
+            MetaTab.DAILY -> DailyTab(ui, viewModel)
+            MetaTab.CODEX -> {
+                SheetBody("Kodeks liczy, ile tajemnic poznałeś w najlepszej erze. Nie mówi, czego brakuje.", maxLines = 2)
+                KvRow("Ta era", "${ui.secrets.discovered} / ${ui.secrets.total}")
+                ui.meta.codex.forEach { (cat, n) -> KvRow(cat, "$n") }
+                if (ui.meta.legacy.isNotEmpty()) SheetBody("Księga Dziedzictwa: ${ui.meta.legacy.size} praw świata przechodzi do każdej ery.", color = Aaa.Gold, maxLines = 2)
             }
         }
     }
@@ -81,7 +82,7 @@ private fun RebirthTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
         maxLines = 5
     )
 
-    Overline("Znak ery")
+    Section("Znak ery")
     val era = EraModifiers.of(m)
     if (era != null) SheetBody("${era.name}: ${era.description}", color = Aaa.Gold, maxLines = 2)
     else EraModifiers.ALL.forEach { e ->
@@ -94,7 +95,7 @@ private fun RebirthTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
         }
     }
 
-    Overline("Sukcesja")
+    Section("Sukcesja")
     if (m.heirName != null) SheetBody("Następca: ${m.heirName}. W nowej erze poprowadzi sektę (+10% Qi).", color = Aaa.Gold, maxLines = 2)
     else {
         SheetBody("Po pierwszym roku ery wybierz następcę. Pominięci ambitni (lojalność < 70, silniejsi od następcy) mogą odejść.", color = Aaa.TextLow, maxLines = 3)
@@ -102,40 +103,31 @@ private fun RebirthTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             ui.disciples.sortedByDescending { it.combatPower }.take(8).forEach { d ->
                 val on = pick == d.id
-                Text(d.name.substringBefore(" (").substringBefore(" "), style = AaaType.Label.copy(fontSize = 10.sp, color = if (on) Aaa.Ink0 else Aaa.TextHi),
-                    modifier = Modifier.background(if (on) Aaa.Gold else Aaa.Ink3).clickable(role = Role.Button) { pick = d.id }.padding(horizontal = 8.dp, vertical = 5.dp))
+                SelectChip(d.name.substringBefore(" (").substringBefore(" "), on, Aaa.Gold) { pick = d.id }
             }
         }
         pick?.let { id -> GoldCta("Ogłoś następcę", onClick = { viewModel.succession(id) }, modifier = Modifier.fillMaxWidth()) }
     }
 
-    Overline("Nowa era")
+    Section("Nowa era")
     var difficulty by remember { mutableStateOf(m.difficulty) }
     var iron by remember { mutableStateOf(m.ironWill) }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Difficulty.entries.forEach { d ->
             val on = d == difficulty
-            Text(d.polishName, style = AaaType.Label.copy(fontSize = 10.sp, color = if (on) Aaa.Ink0 else Aaa.TextHi),
-                modifier = Modifier.background(if (on) Aaa.Azure else Aaa.Ink3).clickable(role = Role.Button) { difficulty = d }.padding(horizontal = 8.dp, vertical = 5.dp))
+            SelectChip(d.polishName, on, Aaa.Azure) { difficulty = d }
         }
         val on = iron
-        Text("Żelazna Wola", style = AaaType.Label.copy(fontSize = 10.sp, color = if (on) Aaa.Ink0 else Aaa.TextHi),
-            modifier = Modifier.background(if (on) Aaa.Cinnabar else Aaa.Ink3).clickable(role = Role.Button) { iron = !iron }.padding(horizontal = 8.dp, vertical = 5.dp))
+        SelectChip("Żelazna Wola", on, Aaa.Cinnabar) { iron = !iron }
     }
     if (iron) SheetBody("Żelazna Wola: jeden zapis, bez wczytywania kopii.", color = Aaa.Cinnabar)
-    var confirm by remember { mutableIntStateOf(0) }
-    GoldCta(
-        when {
-            !ui.rebirthAvailable -> "Odrodzenie po zakończeniu opowieści lub 1200 dniach"
-            confirm == 0 -> "Odródź sektę"
-            confirm == 1 -> "Na pewno? Sekta zniknie"
-            else -> "Tak – zacznij nową erę"
-        },
-        enabled = ui.rebirthAvailable,
-        danger = confirm > 0,
-        onClick = { if (confirm < 2) confirm++ else { viewModel.rebirth(difficulty, iron); confirm = 0 } },
-        modifier = Modifier.fillMaxWidth()
-    )
+    if (!ui.rebirthAvailable) {
+        GoldCta("Odrodzenie po zakończeniu opowieści lub 1200 dniach", enabled = false, onClick = {}, modifier = Modifier.fillMaxWidth())
+    } else {
+        ConfirmCta(listOf("Odródź sektę (+${ui.essenceOnRebirth} Esencji)", "Na pewno? Sekta zniknie", "Tak – zacznij nową erę"), Modifier.fillMaxWidth()) {
+            viewModel.rebirth(difficulty, iron)
+        }
+    }
 }
 
 @Composable
@@ -143,7 +135,7 @@ private fun TreeTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     KvRow("Esencja Niebios", "${ui.meta.essence}")
     SheetBody("Węzły gałęzi otwiera się po kolei; poziom N kosztuje N Esencji. Węzeł kupiony pierwszego dnia ery daje też premię startową.", color = Aaa.TextLow, maxLines = 3)
     HeavenTree.BRANCHES.forEach { (branch, sp) ->
-        Overline("$branch · +${sp.second.toInt()}% ${sp.first.label} za poziom")
+        Section("$branch · +${sp.second.toInt()}% ${sp.first.label} za poziom")
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             HeavenTree.NODES.filter { it.branch == branch }.forEach { n ->
                 val owned = HeavenTree.owned(ui.meta, n.id)

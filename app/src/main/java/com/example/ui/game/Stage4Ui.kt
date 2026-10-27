@@ -52,35 +52,30 @@ private fun short(name: String, words: Int = 2) = name.split(" ").take(words).jo
 fun EconomyPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, initial: EconomyTab, onClose: () -> Unit) {
     var tab by remember { mutableIntStateOf(initial.ordinal) }
     val e = ui.economy
-    LegacyPanel(title = "Gospodarka · ${e.season.glyph} ${e.season.polishName}, dzień ${e.seasonDay}/30", onClose = onClose) {
-        Column(Modifier.fillMaxSize()) {
-            TextTabs(
-                items = EconomyTab.entries.map { it.label },
-                selected = tab,
-                onSelect = { tab = it },
-                modifier = Modifier
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 14.dp, vertical = 6.dp)
-            )
-            Column(
-                Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                if (!e.enabled) {
-                    SheetBody("Gospodarka sekty jeszcze się nie obudziła.")
-                } else when (EconomyTab.entries[tab]) {
-                    EconomyTab.MARKET -> MarketTab(ui, viewModel)
-                    EconomyTab.CONTRACTS -> ContractsTab(ui, viewModel)
-                    EconomyTab.FIELDS -> FieldsTab(ui, viewModel)
-                    EconomyTab.VEIN -> VeinTab(ui, viewModel)
-                    EconomyTab.WORKSHOP -> WorkshopTab(ui, viewModel)
-                    EconomyTab.FLAMES -> FlamesTab(ui, viewModel)
-                }
+    TabbedPanel(
+        title = "Gospodarka sekty",
+        tabs = EconomyTab.entries.map { it.label },
+        selected = tab,
+        onSelect = { tab = it },
+        onClose = onClose,
+        header = {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                StateTag("${e.season.glyph} ${e.season.polishName} · dzień ${e.seasonDay}/30", Aaa.Jade)
+                StateTag("Żyła ${e.veinLevel}", Aaa.Azure)
+                if (e.blackOpen) StateTag("Czarny rynek", Aaa.Violet)
+                ui.catastrophe?.takeIf { ui.currentDay in it.startDay..it.endDay }?.let { StateTag(it.type.polishName, Aaa.Ember) }
             }
+        }
+    ) {
+        if (!e.enabled) {
+            SheetBody("Gospodarka sekty jeszcze się nie obudziła.")
+        } else when (EconomyTab.entries[tab]) {
+            EconomyTab.MARKET -> MarketTab(ui, viewModel)
+            EconomyTab.CONTRACTS -> ContractsTab(ui, viewModel)
+            EconomyTab.FIELDS -> FieldsTab(ui, viewModel)
+            EconomyTab.VEIN -> VeinTab(ui, viewModel)
+            EconomyTab.WORKSHOP -> WorkshopTab(ui, viewModel)
+            EconomyTab.FLAMES -> FlamesTab(ui, viewModel)
         }
     }
 }
@@ -92,7 +87,7 @@ private fun MarketTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
         "Każda sprzedaż obniża cenę o 2% – ceny wracają z czasem. Jesienią kupcy płacą więcej. Kupić można tylko proste surowce.",
         maxLines = 3
     )
-    Overline("Sprzedaż")
+    Section("Sprzedaż")
     if (e.sellable.isEmpty()) SheetBody("Magazyn nie ma nic na sprzedaż.", color = Aaa.TextLow)
     e.sellable.forEach { row ->
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -105,7 +100,7 @@ private fun MarketTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
             GhostButton("Karawana", onClick = { viewModel.sendCaravan(row.item, row.have, null) }, height = 32.dp)
         }
     }
-    Overline("Zakup")
+    Section("Zakup")
     e.buyable.forEach { row ->
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Column(Modifier.weight(1f)) {
@@ -117,12 +112,12 @@ private fun MarketTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
         }
     }
     if (e.caravans.isNotEmpty()) {
-        Overline("Karawany w drodze")
+        Section("Karawany w drodze")
         e.caravans.forEach { c ->
             KvRow("${c.quantity}× ${short(c.item, 3)}", "wraca dnia ${c.returnDay} · ${c.unitPrice}/szt.", valueColor = Aaa.TextMid)
         }
     }
-    Overline("Czarny rynek")
+    Section("Czarny rynek")
     if (!e.blackOpen) {
         SheetBody("Zaułki milczą. Handlarze cieni pojawiają się nocą.", color = Aaa.TextLow)
     } else {
@@ -142,7 +137,7 @@ private fun ContractsTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     SheetBody("Tablica odświeża się co tydzień. Łowy kończą się same po pokonaniu bestii w danej krainie.", maxLines = 3)
     if (e.contracts.isEmpty()) SheetBody("Brak otwartych zleceń.", color = Aaa.TextLow)
     e.contracts.forEach { c ->
-        ModuleCard {
+        InfoCard {
             Text("${c.type.polishName} · ${c.client}", style = AaaType.Label.copy(fontSize = 12.sp, color = Aaa.GoldHi))
             val what = if (c.type == ContractType.HUNT) {
                 "Pokonaj bestię: ${ui.regions.find { it.id == c.regionId }?.name ?: "nieznana kraina"}"
@@ -175,25 +170,15 @@ private fun FieldsTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
             "Żyła pozwala uprawiać zioła do ${e.fieldTier}. stopnia.",
         maxLines = 4
     )
-    Overline("Nasiona")
+    Section("Nasiona")
     if (e.seedHerbs.isEmpty()) {
         SheetBody("Brak nasion – jedna sztuka zioła w magazynie wystarczy na jedno poletko.", color = Aaa.TextLow)
     } else {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            e.seedHerbs.forEach { h ->
-                val on = h == chosen
-                Text(
-                    "${short(h)} ×${ui.inventory[h] ?: 0}",
-                    style = AaaType.Label.copy(fontSize = 10.5.sp, color = if (on) Aaa.Ink0 else Aaa.TextHi),
-                    modifier = Modifier
-                        .background(if (on) Aaa.Gold else Aaa.Ink3)
-                        .clickable(role = Role.Button) { seed = h }
-                        .padding(horizontal = 8.dp, vertical = 5.dp)
-                )
-            }
+            e.seedHerbs.forEach { h -> SelectChip("${short(h)} ×${ui.inventory[h] ?: 0}", h == chosen, Aaa.Jade) { seed = h } }
         }
     }
-    Overline("Poletka ${e.fieldSize}×${e.fieldSize}")
+    Section("Poletka ${e.fieldSize}×${e.fieldSize}")
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         e.fields.chunked(e.fieldSize).forEachIndexed { r, row ->
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -243,7 +228,7 @@ private fun VeinTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     KvRow("Zioła na polach", "do ${e.fieldTier}. stopnia")
     KvRow("Dodatkowy slot edyktu", if (e.veinLevel >= 5) "tak" else "od poziomu 5", valueColor = Aaa.TextMid)
     KvRow("Łagodzenie tribulacji", if (e.veinLevel >= 9) "−10%" else "Smocza Żyła (9)", valueColor = Aaa.TextMid)
-    Overline("Pogłębianie")
+    Section("Pogłębianie")
     when {
         e.veinUpgradeDoneDay > 0 -> SheetBody("Mistrzowie formacji pracują pod górą. Koniec dnia ${e.veinUpgradeDoneDay}.")
         e.veinNextCost == null -> SheetBody("Żyła osiągnęła pełnię – Smocza Żyła.")
@@ -258,7 +243,7 @@ private fun VeinTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
 private fun WorkshopTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     val e = ui.economy
     // Eksperyment
-    Overline("Eksperyment alchemiczny")
+    Section("Eksperyment alchemiczny")
     SheetBody("Połącz zioła w kotle (30 kamieni). Trafna mieszanka może odsłonić nową recepturę – reszta zostaje popiołem.", maxLines = 3)
     val herbs = ui.inventory.filter { it.value > 0 && it.key in com.example.game.content.ResourceCatalog.herbs.map { h -> h.name } }.keys.sorted()
     var main by remember { mutableStateOf<String?>(null) }
@@ -274,7 +259,7 @@ private fun WorkshopTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     KvRow("Znane receptury", "${e.knownRecipeIds.size}")
 
     // Ulepszanie
-    Overline("Ulepszanie artefaktów")
+    Section("Ulepszanie artefaktów")
     if (ui.vaultArtifacts.isEmpty()) SheetBody("Brak artefaktów w skarbcu.", color = Aaa.TextLow)
     ui.vaultArtifacts.forEachIndexed { i, a ->
         val up = e.upgrades.getOrNull(i)
@@ -289,7 +274,7 @@ private fun WorkshopTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     SheetBody("Od +6 nieudane ulepszenie może skruszyć artefakt. Talizman Ochrony go ratuje.", color = Aaa.TextLow, maxLines = 2)
 
     // Talizmany
-    Overline("Talizmany (masz ${ui.inventory[com.example.game.engine.Market.SPIRIT_PAPER] ?: 0} papieru)")
+    Section("Talizmany (masz ${ui.inventory[com.example.game.engine.Market.SPIRIT_PAPER] ?: 0} papieru)")
     e.talismans.forEach { t ->
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Column(Modifier.weight(1f)) {
@@ -312,17 +297,7 @@ private fun WorkshopTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
 private fun HerbPicker(label: String, herbs: List<String>, selected: String?, onPick: (String) -> Unit) {
     Text(label, style = AaaType.Label.copy(fontSize = 10.sp, color = Aaa.TextLow))
     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        herbs.forEach { h ->
-            val on = h == selected
-            Text(
-                short(h),
-                style = AaaType.Label.copy(fontSize = 10.5.sp, color = if (on) Aaa.Ink0 else Aaa.TextHi),
-                modifier = Modifier
-                    .background(if (on) Aaa.Ember else Aaa.Ink3)
-                    .clickable(role = Role.Button) { onPick(h) }
-                    .padding(horizontal = 8.dp, vertical = 5.dp)
-            )
-        }
+        herbs.forEach { h -> SelectChip(short(h), h == selected, Aaa.Ember) { onPick(h) } }
     }
 }
 
@@ -338,7 +313,7 @@ private fun FlamesTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     val bearer = ui.disciples.firstOrNull { it.id == ui.currentSelectedDiscipleId && it.flameId == null }
         ?: ui.disciples.filter { it.flameId == null }.maxByOrNull { it.combatPower }
     e.flames.forEach { f ->
-        ModuleCard {
+        InfoCard {
             Text("#${f.position} ${f.name}", style = AaaType.Label.copy(fontSize = 12.sp, color = Aaa.Ember), maxLines = 1)
             KvRow("Ranga", f.rank)
             KvRow("Temperatura", "${f.temperature}°")
@@ -353,18 +328,6 @@ private fun FlamesTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
             Text("Nosiciel: od ${f.bearerRealm}", style = AaaType.Label.copy(fontSize = 9.sp, color = Aaa.TextLow))
         }
     }
-}
-
-@Composable
-private fun ModuleCard(content: @Composable () -> Unit) {
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .background(Aaa.Ink3.copy(alpha = 0.8f))
-            .border(1.dp, Aaa.Hairline)
-            .padding(10.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) { content() }
 }
 
 /** Przyciski talizmanów w trakcie walki. */

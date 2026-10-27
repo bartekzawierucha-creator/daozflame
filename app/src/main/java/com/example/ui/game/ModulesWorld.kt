@@ -91,6 +91,14 @@ fun WorldModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
     var expoOpen by remember { mutableStateOf(ui.expedition != null) }
     var towerOpen by remember { mutableStateOf(false) }
     var realmsOpen by remember { mutableStateOf(false) }
+    ConsumeShortcut(GameModule.WORLD) { sc ->
+        when (sc) {
+            Shortcut.EXPEDITION -> expoOpen = true
+            Shortcut.SECRET_REALMS -> realmsOpen = true
+            Shortcut.TOWER -> towerOpen = true
+            else -> Unit
+        }
+    }
     val celebration = rememberCelebration()
     val champ = champion(ui)
 
@@ -441,6 +449,13 @@ fun ClansModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
     val s: RivalSect? = ui.rivalSects.firstOrNull { it.id == selId } ?: ui.rivalSects.firstOrNull()
     var legacy by remember { mutableStateOf(false) }
     var sects by remember { mutableStateOf<SectsTab?>(null) }
+    ConsumeShortcut(GameModule.CLANS) { sc ->
+        when (sc) {
+            Shortcut.RAID -> sects = SectsTab.DEFENSE
+            Shortcut.SPIES -> sects = SectsTab.SPIES
+            else -> Unit
+        }
+    }
     val celebration = rememberCelebration()
     if (s != null) {
         WatchIncrease(s.id, s.status.ordinal.let { if (s.status == DiplomaticStatus.ALLIANCE) 1 else 0 }) {
@@ -600,6 +615,7 @@ private data class DamagePop(val id: Long, val value: Long, val fx: Float, val f
 fun DaoNetModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> Unit) {
     var tab by remember { mutableIntStateOf(0) }
     var shadowOpen by remember { mutableStateOf(false) }
+    ConsumeShortcut(GameModule.DAO_NET) { if (it == Shortcut.ARENA) shadowOpen = true }
     var legacy by remember { mutableStateOf(false) }
     val champ = champion(ui)
     val boss = ui.worldBoss

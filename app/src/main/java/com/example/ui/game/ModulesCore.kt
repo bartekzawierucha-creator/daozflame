@@ -200,22 +200,27 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                     )
                     ThinBar(d.realmProgress / 100f, schoolColor(d.martialSchool))
                     DiscipleLifeInfo(d)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    DiscipleStateTags(d, ui)
+                    // Rozwój ucznia: trzy panele (kultywacja, Dao, życie) – stałe miejsce, zawsze widoczne.
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        GhostButton("Kultywacja", onClick = { legacy = "cultivation" }, modifier = Modifier.weight(1.2f), height = 36.dp)
+                        GhostButton("Dao" + if (d.openedMeridians.isNotEmpty()) " ${d.openedMeridians.size}" else "", onClick = { legacy = "secrets" }, modifier = Modifier.weight(1f), height = 36.dp)
+                        GhostButton("Życie", onClick = { legacy = "life" }, modifier = Modifier.weight(1f), height = 36.dp)
+                        GhostButton("Księga", onClick = { legacy = "disciples" }, modifier = Modifier.weight(1f), height = 36.dp)
+                    }
+                    // Dyscyplina: ranga, kara, łaska.
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         GhostButton(
-                            text = if (d.id in ui.promotableIds) "Awans" else d.rank.polishName.substringAfter(" "),
+                            text = if (d.id in ui.promotableIds) "Awans ↑" else d.rank.polishName.substringAfter(" "),
                             enabled = d.id in ui.promotableIds,
                             onClick = { viewModel.promote(d.id) },
-                            modifier = Modifier.weight(1f),
-                            height = 38.dp
+                            modifier = Modifier.weight(1.2f),
+                            height = 32.dp
                         )
-                        GhostButton("Kara", onClick = { viewModel.punish(d.id) }, danger = true, modifier = Modifier.weight(1f), height = 38.dp)
-                        GhostButton("Łaska", onClick = { viewModel.pardon(d.id) }, modifier = Modifier.weight(1f), height = 38.dp)
-                        GhostButton("Życie", onClick = { legacy = "life" }, modifier = Modifier.weight(1f), height = 38.dp)
-                        GhostButton("Księga", onClick = { legacy = "disciples" }, modifier = Modifier.weight(1f), height = 38.dp)
+                        GhostButton("Kara", onClick = { viewModel.punish(d.id) }, danger = true, modifier = Modifier.weight(1f), height = 32.dp)
+                        GhostButton("Łaska", onClick = { viewModel.pardon(d.id) }, modifier = Modifier.weight(1f), height = 32.dp)
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        GhostButton("Kultywacja", onClick = { legacy = "cultivation" }, modifier = Modifier.weight(1f))
-                        GhostButton("Dao", onClick = { legacy = "secrets" }, modifier = Modifier.weight(0.7f))
                         GhostButton(
                             text = "Rola",
                             onClick = {
@@ -330,8 +335,22 @@ private fun RosterTile(disciple: Disciple, selected: Boolean, onClick: () -> Uni
 @Composable
 fun PalaceModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> Unit) {
     var eco by remember { mutableStateOf<EconomyTab?>(null) }
-    var sect by remember { mutableStateOf(false) }
-    var metaOpen by remember { mutableStateOf(false) }
+    var sect by remember { mutableStateOf<SectTab?>(null) }
+    var metaOpen by remember { mutableStateOf<MetaTab?>(null) }
+    var journal by remember { mutableStateOf(false) }
+    ConsumeShortcut(GameModule.PALACE) { sc ->
+        when (sc) {
+            Shortcut.MARKET -> eco = EconomyTab.MARKET
+            Shortcut.CONTRACTS -> eco = EconomyTab.CONTRACTS
+            Shortcut.VEIN -> eco = EconomyTab.VEIN
+            Shortcut.SECT -> sect = SectTab.IDENTITY
+            Shortcut.SECT_CHRONICLE -> sect = SectTab.CHRONICLE
+            Shortcut.META -> metaOpen = MetaTab.REBIRTH
+            Shortcut.META_DAILY -> metaOpen = MetaTab.DAILY
+            Shortcut.JOURNAL -> journal = true
+            else -> Unit
+        }
+    }
     ModuleScaffold(
         module = GameModule.PALACE,
         subtitle = "${ui.sectLeader.name} · prestiż ${ui.sectLeader.prestigeLevel}",
@@ -351,15 +370,8 @@ fun PalaceModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                 .safeBottom()
         ) {
             Column(Modifier.fillMaxSize()) {
-                if (ui.economy.enabled) {
-                    Row(Modifier.padding(horizontal = 12.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        GhostButton("Żyła ${ui.economy.veinLevel}", onClick = { eco = EconomyTab.VEIN }, modifier = Modifier.weight(1f), height = 36.dp)
-                        GhostButton("Kontrakty", onClick = { eco = EconomyTab.CONTRACTS }, modifier = Modifier.weight(1f), height = 36.dp)
-                        GhostButton("Targ", onClick = { eco = EconomyTab.MARKET }, modifier = Modifier.weight(1f), height = 36.dp)
-                        GhostButton("Sekta", onClick = { sect = true }, modifier = Modifier.weight(1f), height = 36.dp)
-                        GhostButton("Niebiosa", onClick = { metaOpen = true }, modifier = Modifier.weight(1.1f), height = 36.dp)
-                    }
-                }
+                if (ui.economy.enabled) PalaceTiles(ui,
+                    onEco = { eco = it }, onSect = { sect = it }, onMeta = { metaOpen = it }, onJournal = { journal = true })
                 Box(Modifier.weight(1f)) {
                     SectSanctuaryScreen(viewModel = viewModel, uiState = ui, onNavigateToDisciples = onBack)
                 }
@@ -367,8 +379,45 @@ fun PalaceModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
         }
     }
     eco?.let { EconomyPanel(ui, viewModel, it, onClose = { eco = null }) }
-    if (sect) SectPanel(ui, viewModel, onClose = { sect = false })
-    if (metaOpen) MetaPanel(ui, viewModel, onClose = { metaOpen = false })
+    sect?.let { SectPanel(ui, viewModel, it, onClose = { sect = null }) }
+    metaOpen?.let { MetaPanel(ui, viewModel, it, onClose = { metaOpen = null }) }
+    if (journal) JournalPanel(ui, onClose = { journal = false })
+}
+
+/** Zarząd sekty: 2 rzędy kafli z najważniejszą liczbą każdego systemu i odznaką, gdy coś czeka. */
+@Composable
+private fun PalaceTiles(
+    ui: WuxiaUiState,
+    onEco: (EconomyTab) -> Unit,
+    onSect: (SectTab) -> Unit,
+    onMeta: (MetaTab) -> Unit,
+    onJournal: () -> Unit
+) {
+    val e = ui.economy
+    val deliverable = e.contracts.count { it.type == com.example.model.ContractType.DELIVER && (ui.inventory[it.item] ?: 0) >= it.quantity }
+    val goals = ui.meta.goals
+    val goalsLeft = goals.count { !it.done }
+    Column(Modifier.padding(horizontal = 12.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            ActionTile("脉", "Żyła", "${e.veinName} · ${e.veinLevel}/9", Modifier.weight(1f), accent = Aaa.Azure,
+                badge = if (e.veinUpgradeDoneDay > 0) "…" else null) { onEco(EconomyTab.VEIN) }
+            ActionTile("约", "Kontrakty", "${e.contracts.size} na tablicy", Modifier.weight(1f),
+                badge = deliverable.takeIf { it > 0 }?.toString()) { onEco(EconomyTab.CONTRACTS) }
+            ActionTile("市", "Targ", if (e.blackOpen) "czarny rynek otwarty" else "${e.season.glyph} ${e.season.polishName}", Modifier.weight(1f),
+                accent = if (e.blackOpen) Aaa.Violet else Aaa.Gold) { onEco(EconomyTab.MARKET) }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            ActionTile("宗", "Sekta", ui.sectLife.karmaPath.ifEmpty { "Tożsamość" }, Modifier.weight(1f), accent = Aaa.Jade,
+                badge = ui.disciples.count { it.illUntilDay >= ui.currentDay || it.cursed }.takeIf { it > 0 }?.toString()) { onSect(SectTab.IDENTITY) }
+            ActionTile("天", "Niebiosa", "Era ${ui.meta.era} · ${ui.meta.essence} Esencji", Modifier.weight(1f), accent = Aaa.GoldHi,
+                badge = when {
+                    ui.rebirthAvailable -> "🌅"
+                    goalsLeft > 0 -> "$goalsLeft"
+                    else -> null
+                }) { onMeta(if (ui.rebirthAvailable || goals.isEmpty() || goalsLeft == 0) MetaTab.REBIRTH else MetaTab.DAILY) }
+            ActionTile("秘", "Tajemnice", "${ui.secrets.discovered}/${ui.secrets.total}", Modifier.weight(1f), accent = Aaa.Violet) { onJournal() }
+        }
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -523,5 +572,29 @@ private fun ChoiceRow(
                 }
             }
         }
+    }
+}
+
+/** Znaczniki stanu ucznia: Wybraniec, zdrowie, ukryty stan, płomień, mistrz, wiek, wierzchowiec. */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun DiscipleStateTags(d: Disciple, ui: WuxiaUiState) {
+    val life = ui.sectLife
+    val span = life.lifespans[d.id] ?: 0
+    val tags = buildList {
+        if (d.id == life.chosenId) add("✋ Wybraniec" to Aaa.GoldHi)
+        if (d.illUntilDay >= ui.currentDay) add("🤒 Gorączka" to Aaa.Ember)
+        if (d.cursed) add("☠ Klątwa" to Aaa.Violet)
+        d.secretState?.let { add(it.polishName to Aaa.Violet) }
+        d.flameId?.let { id -> ui.flames.find { it.id == id }?.let { f -> add("🜂 ${shortName(f.name, 2)}" to Aaa.Ember) } }
+        ui.disciples.find { it.id == d.mentorId }?.let { add("Mistrz: ${it.name.substringBefore(" (").substringBefore(" ")}" to Aaa.Jade) }
+        if (life.mounts.containsValue(d.id)) add("🐉 Jeździec" to Aaa.Jade)
+        if (ui.gates.containsValue(d.id)) add("🛡 Brama" to Aaa.Gold)
+        if (ui.spies.any { it.discipleId == d.id }) add("🕵 Na misji" to Aaa.Violet)
+        if (span > 0 && span - d.ageYears <= 5) add("⏳ ${d.ageYears}/$span lat" to Aaa.Cinnabar)
+    }
+    if (tags.isEmpty()) return
+    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        tags.forEach { (t, c) -> StateTag(t, c) }
     }
 }

@@ -109,6 +109,7 @@ fun SectHub(
                 CurrencyPill(AaaGlyph.REPUTATION, ui.sectReputation)
                 SpeedAndSound(ui.gameSpeedMultiplier, onSpeed = { viewModel.setGameSpeed(it) })
                 EdictTracker(ui, onOpen)
+                HubAlertRail(ui, onOpen)
             }
         }
 
@@ -123,10 +124,15 @@ fun SectHub(
             OmenButton(active = ui.activeRandomEvent != null, onOpen = onOpen)
             Spacer(Modifier.height(6.dp))
             val hostile = ui.rivalSects.count { it.status == DiplomaticStatus.TOTAL_WAR || it.status == DiplomaticStatus.COLD_WAR }
-            SideModuleButton(GameModule.WORLD, "Świat", SideIcon.WORLD, badge = null, onOpen = onOpen)
-            SideModuleButton(GameModule.CLANS, "Klany", SideIcon.CLAN, badge = if (hostile > 0) "$hostile" else null, onOpen = onOpen)
-            SideModuleButton(GameModule.DAO_NET, "Sieć Dao", SideIcon.NET, badge = null, onOpen = onOpen)
-            SideModuleButton(GameModule.VAULT, "Magazyn", SideIcon.CHEST, badge = null, onOpen = onOpen)
+            val worldBadge = when {
+                ui.expedition != null -> "⛰"
+                ui.secretRealms.any { it.open && !it.visited } -> "!"
+                else -> null
+            }
+            SideModuleButton(GameModule.WORLD, GameModule.WORLD.title, SideIcon.WORLD, badge = worldBadge, onOpen = onOpen)
+            SideModuleButton(GameModule.CLANS, GameModule.CLANS.title, SideIcon.CLAN, badge = if (ui.raid != null) "⚠" else if (hostile > 0) "$hostile" else null, onOpen = onOpen)
+            SideModuleButton(GameModule.DAO_NET, GameModule.DAO_NET.title, SideIcon.NET, badge = null, onOpen = onOpen)
+            SideModuleButton(GameModule.VAULT, GameModule.VAULT.title, SideIcon.CHEST, badge = null, onOpen = onOpen)
         }
 
         // 5. Kronika + główna akcja
@@ -245,22 +251,22 @@ private fun SceneLayer(ui: WuxiaUiState, ready: Int, onOpen: OpenModule) {
 
             Building(sceneW, sceneH, 0.58f, 0.44f, labelLeft = false,
                 title = "Pałac Sekty",
-                sub = "Nabór · ${ui.availableRecruits.size} kandydatów",
-                badge = null,
+                sub = "${ui.sectLife.karmaPath.ifEmpty { "Nabór" }} · ${ui.availableRecruits.size} kandydatów",
+                badge = hubAlerts(ui).count { it.shortcut.module == GameModule.PALACE }.takeIf { it > 0 }?.toString(),
                 tag = "hub_building_palace"
             ) { onOpen(GameModule.PALACE, it) }
 
             Building(sceneW, sceneH, 0.62f, 0.57f, labelLeft = true,
                 title = "Sala Alchemii",
                 sub = ui.activeFlame?.name?.let { shortName(it, 3) } ?: "Kocioł · poz. $alchemyLevel",
-                badge = null,
+                badge = ui.economy.fields.count { it.herb != null && it.readyDay <= ui.currentDay }.takeIf { it > 0 }?.let { "🌿" },
                 tag = "hub_building_alchemy"
             ) { onOpen(GameModule.ALCHEMY, it) }
 
             Building(sceneW, sceneH, 0.24f, 0.26f, labelLeft = false,
                 title = "Gniazdo Bestii",
                 sub = ui.activeBeast?.name?.let { shortName(it, 2) } ?: "${ui.sectBeasts.size} strażników",
-                badge = null,
+                badge = ui.sectLife.eggs.size.takeIf { it > 0 }?.let { "🥚$it" },
                 tag = "hub_building_beasts"
             ) { onOpen(GameModule.BEASTS, it) }
 

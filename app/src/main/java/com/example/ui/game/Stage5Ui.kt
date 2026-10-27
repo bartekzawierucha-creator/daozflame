@@ -58,14 +58,8 @@ private fun nodeHint(t: ExpNodeType) = when (t) {
 fun ExpeditionPanel(region: WorldRegion?, ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: () -> Unit) {
     val run = ui.expedition
     val runRegion = run?.let { r -> ui.regions.find { it.id == r.regionId } } ?: region
-    LegacyPanel(title = "Wyprawa · ${runRegion?.name ?: "—"}", onClose = onClose) {
-        Column(
-            Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
+    SimplePanel(title = "Wyprawa · ${runRegion?.name ?: "—"}", onClose = onClose) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             when {
                 run != null -> RunView(run, ui, viewModel)
                 runRegion != null -> PlanView(runRegion, ui, viewModel)
@@ -90,18 +84,11 @@ private fun PlanView(region: WorldRegion, ui: WuxiaUiState, viewModel: WuxiaGame
     if (!ui.hasRing) {
         GhostButton("Wykuj Pierścień Przestrzenny · 2000 + 5× Gwiezdne Żelazo", onClick = { viewModel.craftRing() }, modifier = Modifier.fillMaxWidth(), height = 36.dp)
     }
-    Overline("Uczeń")
+    Section("Uczeń")
     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         healthy.take(12).forEach { d ->
             val on = d.id == pick
-            Text(
-                "${d.name.substringBefore(" (").substringBefore(" ")} · ${d.combatPower}",
-                style = AaaType.Label.copy(fontSize = 10.5.sp, color = if (on) Aaa.Ink0 else Aaa.TextHi),
-                modifier = Modifier
-                    .background(if (on) Aaa.Gold else Aaa.Ink3)
-                    .clickable(role = Role.Button) { pick = d.id }
-                    .padding(horizontal = 8.dp, vertical = 5.dp)
-            )
+            SelectChip("${d.name.substringBefore(" (").substringBefore(" ")} · ${d.combatPower}", on, Aaa.Gold) { pick = d.id }
         }
     }
     if (healthy.isEmpty()) SheetBody("Wszyscy uczniowie są ranni.", color = Aaa.Cinnabar)
@@ -110,7 +97,7 @@ private fun PlanView(region: WorldRegion, ui: WuxiaUiState, viewModel: WuxiaGame
         GhostButton("Auto", enabled = id != null, onClick = { id?.let { viewModel.beginExpedition(region.id, it, auto = true) } }, modifier = Modifier.weight(1f))
         GoldCta("Wyrusz", enabled = id != null, onClick = { id?.let { viewModel.beginExpedition(region.id, it, auto = false) } }, modifier = Modifier.weight(1.6f))
     }
-    Overline("Szybkie starcie")
+    Section("Szybkie starcie")
     SheetBody("Bez mapy: od razu walka ze strażnikiem krainy.", color = Aaa.TextLow)
     GhostButton("Starcie ze strażnikiem", enabled = id != null && region.bossBeast != null, onClick = { id?.let { viewModel.startExpedition(region.id, it) } }, modifier = Modifier.fillMaxWidth())
 }
@@ -139,7 +126,7 @@ private fun RunView(run: com.example.model.ExpeditionRun, ui: WuxiaUiState, view
         GoldCta("Wejdź do legowiska", onClick = { viewModel.enterLair() }, modifier = Modifier.fillMaxWidth())
     }
     if (!run.atBoss) GhostButton("Odwrót (połowa łupów)", danger = true, onClick = { viewModel.retreatExpedition() }, modifier = Modifier.fillMaxWidth())
-    Overline("Dziennik")
+    Section("Dziennik")
     run.log.takeLast(8).reversed().forEach { SheetBody(it, color = Aaa.TextMid, maxLines = 2) }
 }
 
@@ -163,20 +150,14 @@ private fun NodeTile(node: ExpNode, enabled: Boolean, modifier: Modifier, onClic
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TowerPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: () -> Unit) {
-    LegacyPanel(title = "Wieża Prób", onClose = onClose) {
-        Column(
-            Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
+    SimplePanel(title = "Wieża Prób", onClose = onClose) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Piętro ${ui.towerFloor}", fontFamily = BrushFont, color = Aaa.GoldHi, fontSize = 28.sp)
             SheetBody("Każde piętro to strażnik silniejszy o 8%. Co dziesiąte piętro daje Pigułkę Przełomu. Próby odnawiają się co dzień gry.", maxLines = 3)
             KvRow("Próby dziś", "${ui.towerAttemptsLeft} / 3", valueColor = if (ui.towerAttemptsLeft == 0) Aaa.Cinnabar else Aaa.Jade)
             val (hp, atk, def) = ui.towerNext
             KvRow("Strażnik piętra ${ui.towerFloor + 1}", "HP $hp · atak $atk · obrona $def", valueColor = Aaa.TextMid)
-            Overline("Wyślij ucznia")
+            Section("Wyślij ucznia")
             ui.disciples.sortedByDescending { it.combatPower }.take(8).forEach { d ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
@@ -199,27 +180,29 @@ enum class SectsTab(val label: String) { DEFENSE("Obrona"), SPIES("Wywiad"), WAR
 @Composable
 fun SectsPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, sect: com.example.model.RivalSect?, initial: SectsTab, onClose: () -> Unit) {
     var tab by remember { mutableStateOf(initial) }
-    LegacyPanel(title = "Sekty świata" + (sect?.let { " · ${it.name}" } ?: ""), onClose = onClose) {
-        Column(Modifier.fillMaxSize()) {
-            TextTabs(SectsTab.entries.map { it.label }, tab.ordinal, { tab = SectsTab.entries[it] }, Modifier.padding(horizontal = 14.dp, vertical = 6.dp))
-            Column(
-                Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                when (tab) {
-                    SectsTab.DEFENSE -> DefenseTab(ui, viewModel)
-                    SectsTab.SPIES -> SpiesTab(ui, viewModel, sect)
-                    SectsTab.WAR -> WarTab(ui, viewModel, sect)
-                    SectsTab.CHRONICLE -> {
-                        WorldStatus(ui)
-                        if (ui.chronicle.isEmpty()) SheetBody("Świat jeszcze milczy.", color = Aaa.TextLow)
-                        ui.chronicle.reversed().forEach { SheetBody(it, color = Aaa.TextMid, maxLines = 3) }
-                    }
-                }
+    TabbedPanel(
+        title = sect?.name ?: "Sekty świata",
+        tabs = SectsTab.entries.map { it.label },
+        selected = tab.ordinal,
+        onSelect = { tab = SectsTab.entries[it] },
+        onClose = onClose,
+        header = {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                ui.raid?.let { StateTag("⚠ Najazd za ${(it.arriveDay - ui.currentDay).coerceAtLeast(0)} d.", Aaa.Cinnabar) }
+                StateTag("Formacja ${ui.formationNodes.size}/7", Aaa.Gold)
+                if (ui.spies.isNotEmpty()) StateTag("Szpiedzy ${ui.spies.size}", Aaa.Violet)
+                sect?.takeIf { it.nemesisLevel > 0 }?.let { StateTag("☠ Nemezis ${it.nemesisLevel}", Aaa.Cinnabar) }
+            }
+        }
+    ) {
+        when (tab) {
+            SectsTab.DEFENSE -> DefenseTab(ui, viewModel)
+            SectsTab.SPIES -> SpiesTab(ui, viewModel, sect)
+            SectsTab.WAR -> WarTab(ui, viewModel, sect)
+            SectsTab.CHRONICLE -> {
+                WorldStatus(ui)
+                if (ui.chronicle.isEmpty()) SheetBody("Świat jeszcze milczy.", color = Aaa.TextLow)
+                ui.chronicle.reversed().forEach { SheetBody(it, color = Aaa.TextMid, maxLines = 3) }
             }
         }
     }
@@ -253,19 +236,12 @@ private fun DefenseTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 ui.disciples.sortedByDescending { it.combatPower }.take(6).forEach { d ->
                     val on = d.id == guardId
-                    Text(
-                        d.name.substringBefore(" (").substringBefore(" "),
-                        style = AaaType.Label.copy(fontSize = 10.sp, color = if (on) Aaa.Ink0 else Aaa.TextHi),
-                        modifier = Modifier
-                            .background(if (on) Aaa.Gold else Aaa.Ink4)
-                            .clickable(role = Role.Button) { viewModel.guardGate(gate, if (on) null else d.id) }
-                            .padding(horizontal = 7.dp, vertical = 4.dp)
-                    )
+                    SelectChip(d.name.substringBefore(" (").substringBefore(" "), on, Aaa.Gold) { viewModel.guardGate(gate, if (on) null else d.id) }
                 }
             }
         }
     }
-    Overline("Wielka Formacja ${ui.formationNodes.size}/7")
+    Section("Wielka Formacja ${ui.formationNodes.size}/7")
     KvRow("Mnożnik obrony bram", "×%.2f".format(ui.formationFactor))
     if (ui.formationNodes.isNotEmpty()) SheetBody(ui.formationNodes.joinToString(" ") { it.glyph }, color = Aaa.Gold)
     SheetBody("Każdy węzeł +8% obrony. Pięć podstawowych żywiołów: +20% obrony i +5% Qi sekty. Komplet 7 węzłów: kolejne +10%.", color = Aaa.TextLow, maxLines = 3)
@@ -287,7 +263,7 @@ private fun SpiesTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, sect: com.
     KvRow("Siła sekty", if (scouted != null) "${sect.strength} (zwiad z dnia $scouted)" else "nieznana – wyślij zwiad", valueColor = Aaa.TextMid)
     if (sect.nemesisLevel > 0) KvRow("Nemezis", "poziom ${sect.nemesisLevel}", valueColor = Aaa.Cinnabar)
     if (ui.spies.isNotEmpty()) {
-        Overline("Na misjach")
+        Section("Na misjach")
         ui.spies.forEach { m ->
             val who = ui.disciples.find { it.id == m.discipleId }?.name?.substringBefore(" (") ?: "?"
             val where = ui.rivalSects.find { it.id == m.sectId }?.name ?: "?"
@@ -295,18 +271,11 @@ private fun SpiesTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, sect: com.
         }
     }
     var type by remember { mutableStateOf(com.example.model.SpyType.SCOUT) }
-    Overline("Nowa misja")
+    Section("Nowa misja")
     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         com.example.model.SpyType.entries.forEach { t ->
             val on = t == type
-            Text(
-                t.polishName,
-                style = AaaType.Label.copy(fontSize = 10.5.sp, color = if (on) Aaa.Ink0 else Aaa.TextHi),
-                modifier = Modifier
-                    .background(if (on) Aaa.Violet else Aaa.Ink3)
-                    .clickable(role = Role.Button) { type = t }
-                    .padding(horizontal = 8.dp, vertical = 5.dp)
-            )
+            SelectChip(t.polishName, on, Aaa.Violet) { type = t }
         }
     }
     SheetBody(type.description + " Misja trwa 3 dni. Wykrycie: relacje −20 i ranny szpieg.", color = Aaa.TextLow, maxLines = 3)
@@ -323,7 +292,7 @@ private fun SpiesTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, sect: com.
 private fun WarTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, sect: com.example.model.RivalSect?) {
     if (sect == null) { SheetBody("Wybierz sektę."); return }
     val atWar = sect.status == com.example.model.DiplomaticStatus.TOTAL_WAR
-    Overline("Bitwa")
+    Section("Bitwa")
     val army = ui.disciples.filter { it.currentHp > it.maxHp / 3 }.sortedByDescending { it.combatPower }.take(5)
     SheetBody(
         if (atWar) "Do bitwy ruszy 5 najsilniejszych zdrowych uczniów: ${army.joinToString { it.name.substringBefore(" (").substringBefore(" ") }}. Zwycięstwo daje kamienie i terytorium."
@@ -332,7 +301,7 @@ private fun WarTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, sect: com.ex
     )
     GoldCta("Bitwa z ${sect.name}", enabled = atWar && army.isNotEmpty(), onClick = { viewModel.sectBattle(sect.id, army.map { it.id }) }, modifier = Modifier.fillMaxWidth())
 
-    Overline("Honorowy pojedynek")
+    Section("Honorowy pojedynek")
     val champ = ui.disciples.maxByOrNull { it.combatPower }
     var confirmDeath by remember(sect.id) { mutableStateOf(false) }
     if (champ != null) {
@@ -386,14 +355,8 @@ fun androidx.compose.foundation.layout.ColumnScope.FogSheet(
 
 @Composable
 fun SecretRealmsPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: () -> Unit) {
-    LegacyPanel(title = "Tajne królestwa", onClose = onClose) {
-        Column(
-            Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
+    SimplePanel(title = "Tajne królestwa", onClose = onClose) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             SheetBody("Każde królestwo otwiera się co 40 dni na 5 dni. Bariera wpuszcza tylko młodszych kultywatorów – jedno wejście na otwarcie.", maxLines = 3)
             ui.secretRealms.forEach { r ->
                 Column(

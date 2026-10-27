@@ -28,14 +28,8 @@ import com.example.ui.aaa.AaaType
 fun ShadowArenaPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: () -> Unit) {
     val a = ui.arena
     LaunchedEffect(Unit) { viewModel.refreshArena() }
-    LegacyPanel(title = "Arena cieni · ranking ${a.rating}", onClose = onClose) {
-        Column(
-            Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
+    SimplePanel(title = "Arena cieni · ranking ${a.rating}", onClose = onClose) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             SheetBody(
                 if (a.online) "Twoi trzej najsilniejsi uczniowie walczą jako cień z cieniami innych sekt. Serwer odtwarza każdą walkę z ziarna."
                 else "Sieć Dao jest offline – walczysz z cieniami sekt-rywali. Ranking liczy się lokalnie.",
@@ -45,7 +39,7 @@ fun ShadowArenaPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: (
             a.error?.let { SheetBody(it, color = Aaa.Cinnabar, maxLines = 3) }
             GhostButton(if (a.busy) "Szukam rywali…" else "Odśwież rywali", enabled = !a.busy, onClick = { viewModel.refreshArena() }, modifier = Modifier.fillMaxWidth(), height = 36.dp)
 
-            Overline("Rywale")
+            Section("Rywale")
             a.opponents.forEach { t ->
                 Column(
                     Modifier
@@ -65,11 +59,11 @@ fun ShadowArenaPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: (
             }
 
             if (a.ranking.isNotEmpty()) {
-                Overline("Ranking sezonu")
+                Section("Ranking sezonu")
                 a.ranking.take(20).forEach { r -> KvRow("${r.place}. ${r.sect_name}", "${r.rating}", valueColor = if (r.id == a.myShadowId) Aaa.GoldHi else Aaa.TextMid) }
             }
 
-            Overline("Zapis w chmurze")
+            Section("Zapis w chmurze")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 GhostButton("Wyślij zapis", enabled = a.online, onClick = { viewModel.uploadCloud() }, modifier = Modifier.weight(1f), height = 36.dp)
                 GhostButton("Porównaj z chmurą", enabled = a.online, onClick = { viewModel.checkCloud() }, modifier = Modifier.weight(1f), height = 36.dp)

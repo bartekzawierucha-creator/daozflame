@@ -61,14 +61,8 @@ private fun qi(v: Double): String = when {
 @Composable
 fun CultivationPanel(d: Disciple, ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: () -> Unit) {
     var confirmTribulation by remember(d.id) { mutableStateOf(false) }
-    LegacyPanel(title = "Kultywacja · ${d.name.substringBefore(" (")}", onClose = onClose) {
-        Column(
-            Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
+    SimplePanel(title = "Kultywacja · ${d.name.substringBefore(" (")}", onClose = onClose) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             val major = d.majorRealm
             Text(Realms.label(d), fontFamily = BrushFont, color = Aaa.GoldHi, fontSize = 26.sp)
             if (major != null) {

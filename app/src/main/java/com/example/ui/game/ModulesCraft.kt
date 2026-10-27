@@ -106,6 +106,13 @@ fun AlchemyModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () ->
         if (!ui.economy.enabled) allRecipes else allRecipes.filter { it.id in ui.economy.knownRecipeIds }.ifEmpty { allRecipes.take(1) }
     }
     var eco by remember { mutableStateOf<EconomyTab?>(null) }
+    ConsumeShortcut(GameModule.ALCHEMY) { sc ->
+        when (sc) {
+            Shortcut.FIELDS -> eco = EconomyTab.FIELDS
+            Shortcut.FLAMES -> eco = EconomyTab.FLAMES
+            else -> Unit
+        }
+    }
     var sel by remember { mutableIntStateOf(0) }
     val recipe: AlchemyRecipe = recipes.getOrElse(sel) { recipes.first() }
     val chamber = ui.facilities.firstOrNull { it.type == FacilityType.ALCHEMY_CHAMBER }?.level ?: 1
@@ -535,6 +542,8 @@ fun BeastsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
     var selId by remember { mutableStateOf(ui.activeBeast?.id ?: ui.sectBeasts.firstOrNull()?.id) }
     val b = ui.sectBeasts.firstOrNull { it.id == selId } ?: ui.sectBeasts.firstOrNull()
     var legacy by remember { mutableStateOf(false) }
+    var creatures by remember { mutableStateOf(false) }
+    ConsumeShortcut(GameModule.BEASTS) { if (it == Shortcut.EGGS) creatures = true }
     val celebration = rememberCelebration()
 
     if (b != null) {
@@ -623,6 +632,13 @@ fun BeastsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                         }
                     }
                     SheetBody(b.passiveSectBuff, color = Aaa.Jade, maxLines = 2)
+                    if (ui.sectLife.eggs.isNotEmpty() || ui.sectLife.mounts.isNotEmpty() || (ui.inventory[com.example.game.engine.Creatures.EGG] ?: 0) > 0) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            if (b.tier >= 3) StateTag("Etap 3/3", Aaa.GoldHi) else StateTag("Etap ${b.tier}/3", Aaa.TextMid)
+                            ui.disciples.find { it.id == ui.sectLife.mounts[b.id] }?.let { StateTag("Jeździec: ${it.name.substringBefore(" (").substringBefore(" ")}", Aaa.Jade) }
+                            if (ui.sectLife.eggs.isNotEmpty()) StateTag("🥚 ${ui.sectLife.eggs.size}", Aaa.Ember)
+                        }
+                    }
                     KvRow("Technika", b.combatSkillName, valueColor = Aaa.GoldHi)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         GhostButton(
@@ -632,9 +648,15 @@ fun BeastsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                             modifier = Modifier.weight(1f)
                         )
                         GhostButton(
-                            text = "Ewolucja",
+                            text = if (b.tier >= 3) "Pełnia" else "Ewolucja",
+                            enabled = b.tier < 3,
                             onClick = { viewModel.evolveSectBeast(b.id) },
                             modifier = Modifier.weight(1f)
+                        )
+                        GhostButton(
+                            text = "Jaja i jeźdźcy",
+                            onClick = { creatures = true },
+                            modifier = Modifier.weight(1.1f)
                         )
                         GoldCta(
                             text = "Nakarm",
@@ -662,5 +684,6 @@ fun BeastsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                 CraftingScreen(viewModel = viewModel, uiState = ui)
             }
         }
+        if (creatures) SectPanel(ui, viewModel, SectTab.CREATURES, onClose = { creatures = false })
     }
 }

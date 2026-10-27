@@ -38,61 +38,37 @@ enum class SectTab(val label: String) { IDENTITY("Tożsamość"), ANCESTORS("Prz
 
 private fun firstName(d: Disciple?) = d?.name?.substringBefore(" (")?.substringBefore(" ") ?: "—"
 
-@Composable
-private fun Pick(text: String, on: Boolean, onClick: () -> Unit) {
-    Text(
-        text,
-        style = AaaType.Label.copy(fontSize = 10.sp, color = if (on) Aaa.Ink0 else Aaa.TextHi),
-        modifier = Modifier
-            .background(if (on) Aaa.Gold else Aaa.Ink3)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 5.dp)
-    )
-}
-
-@Composable
-private fun Card(content: @Composable () -> Unit) {
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .background(Aaa.Ink3.copy(alpha = 0.75f))
-            .border(1.dp, Aaa.Hairline)
-            .padding(10.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) { content() }
-}
-
 /** Panel sekty: tożsamość, Sala Przodków, miejsca, istoty i kronika. */
 @Composable
 fun SectPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, initial: SectTab = SectTab.IDENTITY, onClose: () -> Unit) {
     var tab by remember { mutableStateOf(initial) }
-    LegacyPanel(title = "Sekta · ${ui.sectLife.karmaPath}", onClose = onClose) {
-        Column(Modifier.fillMaxSize()) {
-            TextTabs(SectTab.entries.map { it.label }, tab.ordinal, { tab = SectTab.entries[it] },
-                Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 14.dp, vertical = 6.dp))
-            Column(
-                Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                when (tab) {
-                    SectTab.IDENTITY -> IdentityTab(ui, viewModel)
-                    SectTab.ANCESTORS -> AncestorsTab(ui)
-                    SectTab.PLACES -> PlacesTab(ui, viewModel)
-                    SectTab.CREATURES -> CreaturesTab(ui, viewModel)
-                    SectTab.CHRONICLE -> {
-                        WorldStatus(ui)
-                        GhostButton(if (ui.sectLife.starsReadToday) "Gwiazdy już przemówiły" else "Odczytaj gwiazdy · 100", enabled = !ui.sectLife.starsReadToday,
-                            onClick = { viewModel.readStars() }, modifier = Modifier.fillMaxWidth(), height = 36.dp)
-                        ui.chronicle.reversed().forEach { SheetBody(it, color = Aaa.TextMid, maxLines = 3) }
-                        if (ui.sectLife.chapters.isNotEmpty()) {
-                            Overline("Dawne rozdziały")
-                            ui.sectLife.chapters.reversed().forEach { SheetBody(it, color = Aaa.TextLow, maxLines = 5) }
-                        }
-                    }
+    TabbedPanel(
+        title = "Sekta · ${ui.sectLife.karmaPath}",
+        tabs = SectTab.entries.map { it.label },
+        selected = tab.ordinal,
+        onSelect = { tab = SectTab.entries[it] },
+        onClose = onClose,
+        header = {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                StateTag("Karma ${ui.karma}", if (ui.karma >= 0) Aaa.Jade else Aaa.Cinnabar)
+                StateTag("Akt ${ui.sectLife.storyAct.coerceIn(1, 4)}/4", Aaa.Gold)
+                StateTag("Przodkowie ${ui.sectLife.ancestors.size}", Aaa.TextMid)
+            }
+        }
+    ) {
+        when (tab) {
+            SectTab.IDENTITY -> IdentityTab(ui, viewModel)
+            SectTab.ANCESTORS -> AncestorsTab(ui)
+            SectTab.PLACES -> PlacesTab(ui, viewModel)
+            SectTab.CREATURES -> CreaturesTab(ui, viewModel)
+            SectTab.CHRONICLE -> {
+                WorldStatus(ui)
+                GhostButton(if (ui.sectLife.starsReadToday) "Gwiazdy już przemówiły" else "Odczytaj gwiazdy · 100", enabled = !ui.sectLife.starsReadToday,
+                    onClick = { viewModel.readStars() }, modifier = Modifier.fillMaxWidth(), height = 36.dp)
+                ui.chronicle.reversed().forEach { SheetBody(it, color = Aaa.TextMid, maxLines = 3) }
+                if (ui.sectLife.chapters.isNotEmpty()) {
+                    Section("Dawne rozdziały")
+                    ui.sectLife.chapters.reversed().forEach { SheetBody(it, color = Aaa.TextLow, maxLines = 5) }
                 }
             }
         }
@@ -115,7 +91,7 @@ private fun IdentityTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     })
     KvRow("Wybraniec Losu", firstName(ui.disciples.find { it.id == life.chosenId }))
 
-    Overline("Patron i świątynia")
+    Section("Patron i świątynia")
     com.example.game.engine.Identity.PATRONS.forEach { p ->
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
@@ -130,7 +106,7 @@ private fun IdentityTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
             enabled = life.templeLevel < 5, onClick = { viewModel.upgradeTemple() }, modifier = Modifier.fillMaxWidth(), height = 36.dp)
     }
 
-    Overline("Skarby sekty ${life.treasury.size}/5")
+    Section("Skarby sekty ${life.treasury.size}/5")
     SheetBody("Artefakty w skarbcu wzmacniają Qi całej sekty, ale rabusie mogą je wynieść przy przełamanych bramach.", color = Aaa.TextLow, maxLines = 2)
     life.treasury.forEachIndexed { i, a ->
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -152,7 +128,7 @@ private fun AncestorsTab(ui: WuxiaUiState) {
     SheetBody("Każdy przodek od Fundamentów wzwyż daje sekcie +1% Qi (najwyżej +15%).", maxLines = 2)
     if (list.isEmpty()) SheetBody("Sala Przodków jest jeszcze pusta.", color = Aaa.TextLow)
     list.reversed().forEach { a ->
-        Card {
+        InfoCard {
             Text("🕯 ${a.name}", style = AaaType.Label.copy(fontSize = 11.5.sp, color = Aaa.TextHi))
             Text("${a.realm} · zmarł dnia ${a.diedDay} · ${a.cause}", style = AaaType.Label.copy(fontSize = 9.5.sp, color = Aaa.TextLow))
         }
@@ -180,7 +156,7 @@ private fun PlacesTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
         }
     }
 
-    Overline("Lochy pod sektą · piętro ${life.dungeonDepth}")
+    Section("Lochy pod sektą · piętro ${life.dungeonDepth}")
     SheetBody("Każde piętro silniejsze o 12%. Łupy: rudy, kryształy, fragmenty zwojów, czasem jajo bestii. 2 zejścia dziennie (zostało ${life.dungeonAttemptsLeft}).", color = Aaa.TextLow, maxLines = 3)
     ui.disciples.filter { it.currentHp > it.maxHp / 3 }.sortedByDescending { it.combatPower }.take(3).forEach { d ->
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -189,11 +165,11 @@ private fun PlacesTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
         }
     }
 
-    Overline("Jaskinie odosobnienia · poziom ${life.caveLevel}/3")
+    Section("Jaskinie odosobnienia · poziom ${life.caveLevel}/3")
     SheetBody("Odosobnienie daje Qi ×${3 + 0.25 * life.caveLevel}.", color = Aaa.TextLow)
     if (life.caveLevel < 3) GhostButton("Wykuj głębiej · ${com.example.game.engine.Library.caveCost(life.caveLevel)}", onClick = { viewModel.upgradeCave() }, modifier = Modifier.fillMaxWidth(), height = 36.dp)
 
-    Overline("Biblioteka")
+    Section("Biblioteka")
     SheetBody("Skryba przepisze zwój do stopnia Mistycznego (3× papier duchowy).", color = Aaa.TextLow)
     ui.scrolls.forEach { sc ->
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -207,13 +183,13 @@ private fun PlacesTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
 @Composable
 private fun CreaturesTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     val life = ui.sectLife
-    Overline("Jaja bestii")
+    Section("Jaja bestii")
     val eggs = ui.inventory[com.example.game.engine.Creatures.EGG] ?: 0
     KvRow("W magazynie", "$eggs")
     life.eggs.forEach { KvRow("Wysiadywane", "wykluje się dnia ${it.hatchDay}", valueColor = Aaa.TextMid) }
     if (eggs > 0) GhostButton("Złóż jajo do wysiadywania", onClick = { viewModel.incubateEgg() }, modifier = Modifier.fillMaxWidth(), height = 36.dp)
 
-    Overline("Wierzchowce")
+    Section("Wierzchowce")
     SheetBody("Bestia z więzią ≥ 50% nosi jeźdźca: +5% obrażeń za każdy etap ewolucji (najwyżej 3).", color = Aaa.TextLow, maxLines = 2)
     val champ = ui.disciples.maxByOrNull { it.combatPower }
     ui.sectBeasts.forEach { b ->
@@ -228,16 +204,14 @@ private fun CreaturesTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
         }
     }
 
-    Overline("Fuzja i pożeranie płomieni")
+    Section("Fuzja i pożeranie płomieni")
     SheetBody("Fuzja: 30% szansy, że oba płomienie wybuchną; sukces daje +500° i +2 oczyszczenia. Pożeranie: silniejszy zjada słabszy bez ryzyka.", color = Aaa.TextLow, maxLines = 3)
     var a by remember { mutableStateOf<String?>(null) }
     var b by remember { mutableStateOf<String?>(null) }
-    var confirm by remember { mutableIntStateOf(0) }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         ui.flames.forEach { f ->
             val tag = when (f.id) { a -> "①"; b -> "②"; else -> "" }
-            Pick("$tag ${f.name.split(" ").take(2).joinToString(" ")}" + if (f.id in life.flameSpirits) " ✦" else "", f.id == a || f.id == b) {
-                confirm = 0
+            SelectChip("$tag ${f.name.split(" ").take(2).joinToString(" ")}" + if (f.id in life.flameSpirits) " ✦" else "", f.id == a || f.id == b) {
                 when {
                     a == null || (b != null) -> { a = f.id; b = null }
                     f.id != a -> b = f.id
@@ -250,14 +224,9 @@ private fun CreaturesTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     if (fa != null && fb != null) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             GhostButton("① pożera ②", onClick = { viewModel.devourFlame(fa, fb); a = null; b = null }, modifier = Modifier.weight(1f), height = 36.dp)
-            GoldCta(
-                when (confirm) { 0 -> "Fuzja…"; 1 -> "Na pewno?"; else -> "Ostatecznie!" },
-                danger = true,
-                onClick = {
-                    if (confirm < 2) confirm++ else { viewModel.fuseFlames(fa, fb); confirm = 0; a = null; b = null }
-                },
-                modifier = Modifier.weight(1f)
-            )
+            ConfirmCta(listOf("Fuzja…", "Na pewno? 30% wybuchu", "Ostatecznie!"), Modifier.weight(1f), resetKey = fa + fb) {
+                viewModel.fuseFlames(fa, fb); a = null; b = null
+            }
         }
     }
 }
@@ -267,30 +236,24 @@ private fun CreaturesTab(ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
 @Composable
 fun LifePanel(d: Disciple, ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: () -> Unit) {
     val life = ui.sectLife
-    LegacyPanel(title = "Życie · ${d.name.substringBefore(" (")}", onClose = onClose) {
-        Column(
-            Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
+    SimplePanel(title = "Życie · ${d.name.substringBefore(" (")}", onClose = onClose) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             val span = life.lifespans[d.id] ?: 0
             KvRow("Wiek", "${d.ageYears} / $span lat", valueColor = if (span - d.ageYears <= 5) Aaa.Cinnabar else Aaa.Gold)
             ThinBar(if (span > 0) d.ageYears.toFloat() / span else 0f, Aaa.Ember)
             SheetBody("Przełom do wyższego królestwa wydłuża życie.", color = Aaa.TextLow)
             if (d.id == life.chosenId) SheetBody("✋ Wybraniec Losu (+10% Qi)", color = Aaa.GoldHi)
 
-            Overline("Mistrz")
+            Section("Mistrz")
             val mentor = ui.disciples.find { it.id == d.mentorId }
             KvRow("Obecnie", mentor?.name?.substringBefore(" (") ?: "brak")
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 ui.disciples.filter { it.id != d.id && it.combatPower > d.combatPower }.sortedByDescending { it.combatPower }.take(5).forEach { m ->
-                    Pick(firstName(m), m.id == d.mentorId) { viewModel.assignMentor(d.id, if (m.id == d.mentorId) null else m.id) }
+                    SelectChip(firstName(m), m.id == d.mentorId) { viewModel.assignMentor(d.id, if (m.id == d.mentorId) null else m.id) }
                 }
             }
 
-            Overline("Towarzysz Dao")
+            Section("Towarzysz Dao")
             val pair = life.companions.find { it.a == d.id || it.b == d.id }
             if (pair != null) {
                 val other = ui.disciples.find { it.id == (if (pair.a == d.id) pair.b else pair.a) }
@@ -299,18 +262,18 @@ fun LifePanel(d: Disciple, ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onCl
                 SheetBody("Związek Dao wymaga lojalności ≥ 60 u obojga.", color = Aaa.TextLow)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     ui.disciples.filter { o -> o.id != d.id && life.companions.none { it.a == o.id || it.b == o.id } }.take(6).forEach { o ->
-                        Pick(firstName(o), false) { viewModel.bindCompanions(d.id, o.id) }
+                        SelectChip(firstName(o), false) { viewModel.bindCompanions(d.id, o.id) }
                     }
                 }
             }
 
-            Overline("Sztuka Dao")
+            Section("Sztuka Dao")
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                DaoArt.entries.forEach { art -> Pick(art.polishName, d.art == art) { viewModel.assignArt(d.id, if (d.art == art) null else art) } }
+                DaoArt.entries.forEach { art -> SelectChip(art.polishName, d.art == art) { viewModel.assignArt(d.id, if (d.art == art) null else art) } }
             }
             d.art?.let { SheetBody(it.description, color = Aaa.TextLow, maxLines = 2) }
 
-            Overline("Zdrowie")
+            Section("Zdrowie")
             val ill = d.illUntilDay >= ui.currentDay
             if (!ill && !d.cursed) SheetBody("Zdrowy.", color = Aaa.Jade)
             if (ill) {
