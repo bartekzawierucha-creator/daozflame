@@ -49,17 +49,40 @@ class ScreenshotTest {
 
     private var screen by mutableStateOf<(@Composable () -> Unit)?>(null)
 
-    private fun shot(name: String, title: String, content: @Composable () -> Unit) {
-        screen = content
-        androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications()
-        compose.mainClock.advanceTimeBy(1_500)
-        val bmp = compose.onRoot().captureToImage().asAndroidBitmap()
-        File(out, "$name.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        index.append(name).append('\t').append(title).append('\n')
+    private val errors = StringBuilder()
+
+    private fun record(where: String, t: Throwable) {
+        errors.append("== ").append(where).append('\n').append(t.stackTraceToString().lines().take(40).joinToString("\n")).append("\n\n")
     }
 
+    private fun shot(name: String, title: String, content: @Composable () -> Unit) {
+        try {
+            screen = content
+            androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications()
+            compose.mainClock.advanceTimeBy(1_500)
+            val bmp = compose.onRoot().captureToImage().asAndroidBitmap()
+            File(out, "$name.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            index.append(name).append('\t').append(title).append('\n')
+        } catch (t: Throwable) {
+            record(name, t)
+            screen = null
+        }
+    }
+
+    /** Błędy pojedynczych ekranów nie przerywają podglądu: trafiają do errors.txt obok zrzutów. */
     @Test
     fun allScreens() {
+        try {
+            renderAll()
+        } catch (t: Throwable) {
+            record("setup", t)
+        } finally {
+            File(out, "index.tsv").writeText(index.toString())
+            File(out, "errors.txt").writeText(errors.toString())
+        }
+    }
+
+    private fun renderAll() {
         val app = ApplicationProvider.getApplicationContext<Application>()
         val vm = WuxiaGameViewModel(app)
         val busy: GameState = PreviewWorld.build()
@@ -145,7 +168,5 @@ class ScreenshotTest {
 
         // ── Etap 9: Sieć Dao ────────────────────────────────────────────────
         shot("70_arena", "Arena cieni") { ShadowArenaPanel(u, vm, noop) }
-
-        File(out, "index.tsv").writeText(index.toString())
     }
 }
