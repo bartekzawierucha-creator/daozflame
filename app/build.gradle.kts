@@ -1,4 +1,5 @@
 import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
+import java.util.Properties
 
 plugins {
   alias(libs.plugins.android.application)
@@ -22,7 +23,7 @@ android {
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
     // Etap 9: Sieć Dao (Supabase). Puste = gra offline. Źródło: zmienne środowiska albo local.properties.
-    val localProps = java.util.Properties().apply {
+    val localProps = Properties().apply {
       rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
     }
     fun daonet(key: String): String = (System.getenv(key) ?: localProps.getProperty(key) ?: "").replace("\"", "")
