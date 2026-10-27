@@ -214,6 +214,7 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         GhostButton("Kultywacja", onClick = { legacy = "cultivation" }, modifier = Modifier.weight(1f))
+                        GhostButton("Dao", onClick = { legacy = "secrets" }, modifier = Modifier.weight(0.7f))
                         GhostButton(
                             text = "Rola",
                             onClick = {
@@ -273,6 +274,7 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
             }
             "exam" -> ExamPanel(ui, viewModel, onClose = { legacy = null })
             "cultivation" -> if (d != null) CultivationPanel(d, ui, viewModel, onClose = { legacy = null })
+            "secrets" -> if (d != null) SecretsPanel(d, ui, viewModel, onClose = { legacy = null })
         }
     }
 }

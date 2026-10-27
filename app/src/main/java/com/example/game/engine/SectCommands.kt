@@ -217,6 +217,12 @@ object SectCommands {
         val d = s.disciple(id) ?: return ok(s)
         val count = s.inventory[pillName] ?: 0
         if (count < 1) return fail(s, "Brak pigułki: $pillName w magazynie!")
+        // Etap 6: esencje emergentne z alchemii jako chemii.
+        if (pillName.startsWith(Chemistry.ESSENCE)) {
+            val used = Chemistry.use(s, d, pillName) ?: return fail(s, "Ta esencja nie działa.")
+            return ok(s.copy(inventory = s.inventory + (pillName to count - 1), disciples = s.disciples.map { if (it.id == d.id) used else it }),
+                "${d.name} przyjmuje $pillName.")
+        }
         val recipe = GameContent.recipeForPill(Quality.parse(pillName).first) ?: return fail(s, "$pillName nie jest pigułką do zażycia.")
         if (s.e3Initialized) return usePillV2(s, d, pillName, count, recipe)
         val progress = (d.realmProgress + recipe.breakthroughBonusPercent).coerceAtMost(100)

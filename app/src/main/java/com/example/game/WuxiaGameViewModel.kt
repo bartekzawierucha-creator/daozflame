@@ -113,7 +113,26 @@ data class WuxiaUiState(
     val secretRealms: List<SecretRealmUi> = emptyList(),
     val catastrophe: Catastrophe? = null,
     val imperialFavor: Int = 0,
-    val empireFallen: Boolean = false
+    val empireFallen: Boolean = false,
+    // Etap 6
+    val secrets: SecretsUi = SecretsUi()
+)
+
+data class SecretsUi(
+    val journal: List<com.example.game.engine.JournalView.Entry> = emptyList(),
+    val discovered: Int = 0,
+    val total: Int = 0,
+    /** Punkty-zatory, które sekta już zna. */
+    val knownBlockages: Set<Int> = emptySet(),
+    /** Gwiazdozbiory znane na pewno: nazwa → punkty. */
+    val knownConstellations: Map<String, List<Int>> = emptyMap(),
+    val contemplationObjects: List<String> = emptyList(),
+    /** Metoda → liczba fragmentów zwoju. */
+    val fragments: Map<String, Int> = emptyMap(),
+    val mirrors: Int = 0,
+    val researcherId: String? = null,
+    val breaths: List<String> = com.example.game.engine.RulesGen.BREATHS,
+    val places: List<String> = com.example.game.engine.RulesGen.PLACES
 )
 
 data class SecretRealmUi(
@@ -419,6 +438,14 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     fun scoutRegion(regionId: String, discipleId: String) = dispatch(GameCommand.ScoutRegion(regionId, discipleId))
     fun enterSecretRealm(realmId: String, discipleId: String) = dispatch(GameCommand.EnterSecretRealm(realmId, discipleId))
 
+    // --- Etap 6: tajemnice ---
+    fun openMeridian(discipleId: String, point: Int) = dispatch(GameCommand.OpenMeridian(discipleId, point))
+    fun setBreath(discipleId: String, breath: Int, place: Int) = dispatch(GameCommand.SetBreath(discipleId, breath, place))
+    fun decipherScroll(methodId: String) = dispatch(GameCommand.DecipherScroll(methodId))
+    fun contemplate(discipleId: String, obj: String) = dispatch(GameCommand.Contemplate(discipleId, obj))
+    fun setResearcher(discipleId: String?) = dispatch(GameCommand.SetResearcher(discipleId))
+    fun useMirror(discipleId: String) = dispatch(GameCommand.UseMirror(discipleId))
+
     // --- Etap 4: gospodarka ---
     fun upgradeVein() = dispatch(GameCommand.UpgradeVein)
     fun plantHerb(index: Int, herb: String) = dispatch(GameCommand.PlantHerb(index, herb))
@@ -647,8 +674,28 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
         },
         catastrophe = game.catastrophe,
         imperialFavor = com.example.game.engine.Empire.favor(game),
-        empireFallen = (game.flags[com.example.game.engine.Empire.FALLEN] ?: 0) > 0
+        empireFallen = (game.flags[com.example.game.engine.Empire.FALLEN] ?: 0) > 0,
+        secrets = secretsUi(game)
     )
+
+    private fun secretsUi(g: GameState): SecretsUi {
+        val r = g.rules ?: return SecretsUi()
+        val J = com.example.game.engine.Journal
+        val S = com.example.game.engine.Secrets
+        return SecretsUi(
+            journal = com.example.game.engine.JournalView.entries(g),
+            discovered = J.discovered(g),
+            total = S.allIds(r).size,
+            knownBlockages = r.blockages.filter { J.certain(g, S.blockage(it)) }.toSet(),
+            knownConstellations = r.constellations.filter { J.certain(g, S.constellation(it.id)) }.associate { it.name to it.points },
+            contemplationObjects = r.lawObjects.keys.filter { com.example.game.engine.Contemplation.available(g, it) }.sorted(),
+            fragments = com.example.game.engine.Realms.methods.mapNotNull { m ->
+                (g.inventory[com.example.game.engine.Breath.fragmentItem(m.id)] ?: 0).takeIf { it > 0 }?.let { m.id to it }
+            }.toMap(),
+            mirrors = g.inventory[com.example.game.engine.SecretTools.MIRROR] ?: 0,
+            researcherId = g.researcherId
+        )
+    }
 
     private fun economyUi(g: GameState): EconomyUi {
         if (!g.e4Initialized) return EconomyUi()

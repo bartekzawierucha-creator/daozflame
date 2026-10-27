@@ -65,6 +65,10 @@ data class GameState(
     /** Tajne królestwo → dzień otwarcia, w którym sekta już w nim była. */
     val realmVisits: Map<String, Int> = emptyMap(),
     val catastrophe: com.example.model.Catastrophe? = null,
+    /** Etap 6: reguły świata (losowane raz), Dziennik tajemnic, Badacz. */
+    val rules: com.example.model.WorldRules? = null,
+    val journal: Map<String, com.example.model.Knowledge> = emptyMap(),
+    val researcherId: String? = null,
 
     val worldBoss: WorldBossRaid = com.example.game.WuxiaGenerator.getInitialWorldBoss(),
     val sectLeader: SectLeaderData = com.example.game.WuxiaGenerator.getInitialSectLeader(),
@@ -149,6 +153,9 @@ data class ActiveCombat(
     val enemySealed: Boolean = false,
     /** Etap 5a: przewaga żywiołu bestii nad uczniem (mnożnik jej obrażeń). */
     val enemyAttackFactor: Double = 1.0,
+    /** Etap 6: historia ruchów gracza (M/U/P/T) i formy już użyte w tej walce. */
+    val moves: String = "",
+    val formsUsed: Set<String> = emptySet(),
     val logs: List<CombatLogEntry> = emptyList(),
     /** null = trwa, true = zwycięstwo, false = porażka. */
     val outcome: Boolean? = null,
