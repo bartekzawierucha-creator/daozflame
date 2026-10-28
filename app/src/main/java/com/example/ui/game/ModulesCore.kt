@@ -207,14 +207,8 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                         GhostButton("Kultywacja", onClick = { legacy = "cultivation" }, modifier = Modifier.weight(1.2f), height = 36.dp)
                         GhostButton("Dao" + if (d.openedMeridians.isNotEmpty()) " ${d.openedMeridians.size}" else "", onClick = { legacy = "secrets" }, modifier = Modifier.weight(1f), height = 36.dp)
                         GhostButton("Życie", onClick = { legacy = "life" }, modifier = Modifier.weight(1f), height = 36.dp)
+                        GhostButton("Ekwip. ${com.example.game.engine.Gear.items(d).size}", onClick = { legacy = "gear" }, modifier = Modifier.weight(1.1f), height = 36.dp)
                         GhostButton("Księga", onClick = { legacy = "disciples" }, modifier = Modifier.weight(1f), height = 36.dp)
-                    }
-                    // Etap 11: ekwipunek i więzi.
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        val worn = com.example.game.engine.Gear.items(d).size
-                        GhostButton("Ekwipunek $worn/3", onClick = { legacy = "gear" }, modifier = Modifier.weight(1f), height = 32.dp)
-                        val ties = ui.bonds.count { it.has(d.id) && it.kind != com.example.model.BondKind.NEUTRAL }
-                        GhostButton(if (ui.autonomy) "Mistrz i więzi" + if (ties > 0) " · $ties" else "" else "Więzi", onClick = { legacy = "mind" }, modifier = Modifier.weight(1f), height = 32.dp)
                     }
                     // Dyscyplina: ranga, kara, łaska.
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {

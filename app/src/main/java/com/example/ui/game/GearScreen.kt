@@ -259,8 +259,8 @@ private fun PaperDoll(d: Disciple, ui: WuxiaUiState, school: Color, selected: Eq
 @Composable
 private fun SlotWithLabel(d: Disciple, slot: EquipSlot, selected: Boolean, onClick: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        GearTile(Gear.inSlot(d, slot), slot, 68.dp, selected = selected, onClick = onClick)
-        Text(slot.polishName, style = AaaType.Overline.copy(fontSize = 8.5.sp, color = if (Gear.inSlot(d, slot) != null) Aaa.GoldMid else Aaa.TextLow), modifier = Modifier.offset(y = (-4).dp))
+        GearTile(Gear.inSlot(d, slot), slot, 64.dp, selected = selected, onClick = onClick)
+        Text(slot.polishName, style = AaaType.Overline.copy(fontSize = 8.5.sp, color = if (Gear.inSlot(d, slot) != null) Aaa.GoldMid else Aaa.TextLow), modifier = Modifier.padding(top = 1.dp))
     }
 }
 

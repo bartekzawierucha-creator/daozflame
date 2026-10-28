@@ -58,7 +58,7 @@ fun DiscipleMindStrip(d: Disciple, ui: WuxiaUiState, onOpen: () -> Unit) {
             Text("Zaufanie ${d.trust}", style = AaaType.Numeric.copy(fontSize = 9.5.sp, color = Aaa.GoldMid))
             Text("Posłucha ~$p%", style = AaaType.Numeric.copy(fontSize = 9.5.sp, color = obedienceColor(p)))
             if (d.holdUntilDay >= ui.currentDay) StateTag("czeka do dnia ${d.holdUntilDay}", Aaa.Azure)
-            Text("Dziennik ›", style = AaaType.Label.copy(fontSize = 9.5.sp, color = Aaa.TextLow), modifier = Modifier.weight(1f), maxLines = 1)
+            Text("Mistrz i więzi ›", style = AaaType.Label.copy(fontSize = 9.5.sp, color = Aaa.TextLow), modifier = Modifier.weight(1f), maxLines = 1)
         }
     }
 }
