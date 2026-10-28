@@ -71,6 +71,17 @@ fun DiscipleLifeInfo(d: Disciple, modifier: Modifier = Modifier) {
     }
 }
 
+/** Jedna linia pod statystykami: korzeń duchowy i cechy (bez rangi – jest na przycisku, lojalność – w statystykach). */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun DiscipleTraitsRow(d: Disciple) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        d.spiritRoot?.let { TraitChip("Korzeń: " + it.label.substringBefore(" ("), rootColor(it.grade)) }
+        d.traitIds.forEach { id -> DiscipleRules.trait(id)?.let { TraitChip(it.name, if (it.positive) Aaa.Jade else Aaa.Cinnabar) } }
+        d.hiddenTraitIds.forEach { _ -> TraitChip("???", Aaa.TextLow) }
+    }
+}
+
 @Composable
 private fun TraitChip(text: String, color: Color) {
     Text(

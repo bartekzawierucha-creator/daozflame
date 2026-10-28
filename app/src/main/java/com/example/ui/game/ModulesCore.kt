@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -135,28 +136,29 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                     val who = ui.disciples.firstOrNull { it.id == id } ?: d
                     Box(Modifier.fillMaxSize()) {
                         val (heroKey, cut) = heroKey(who)
+                        // Etap 17: postać zajmuje górę ekranu, nic na nią nie nachodzi poza paskiem uczniów.
                         HeroArt(
                             heroKey,
                             cutout = cut,
+                            fadeStart = 0.001f,
                             modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(top = 44.dp)
-                                .offset(x = 36.dp)
-                                .fillMaxHeight(0.84f)
-                                .aspectRatio(768f / 1376f)
+                                .align(Alignment.TopCenter)
+                                .padding(top = 96.dp)
+                                .fillMaxWidth()
+                                .fillMaxHeight(0.6f)
                         )
                     }
                 }
 
-                // Pasek uczniów
-                Column(
+                // Pasek uczniów: poziomo pod nagłówkiem.
+                Row(
                     modifier = Modifier
                         .safeTop()
-                        .padding(start = 10.dp, top = 74.dp)
-                        .width(70.dp)
-                        .fillMaxHeight(0.52f)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                        .padding(top = 62.dp)
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     ui.disciples.forEach { x ->
                         RosterTile(
@@ -178,7 +180,8 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                     }
                 }
 
-                ModuleSheet {
+                ModuleSheet(Modifier.background(Brush.verticalGradient(0f to Color.Transparent, 0.07f to Aaa.Ink0.copy(alpha = 0.93f), 1f to Aaa.Ink0))) {
+                    Spacer(Modifier.height(22.dp))
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         EdgeTag(d.martialSchool.polishName, schoolColor(d.martialSchool))
                         Text(
@@ -194,8 +197,10 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                             Text(com.example.game.engine.Realms.label(d), style = AaaType.Label.copy(fontSize = 12.sp, color = Aaa.TextHi, fontWeight = FontWeight.Bold), maxLines = 1)
                             d.majorRealm?.let { StagePips(d.stage, it.stages) }
                         }
-                        GameIcon(roleKey(d.role), 26.dp)
-                        Text(d.role.polishName.substringBefore(" "), style = AaaType.Label.copy(fontSize = 10.sp, color = Aaa.TextMid), maxLines = 1)
+                        Row(Modifier.background(Aaa.Ink2).padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            GameIcon(roleKey(d.role), 28.dp)
+                            Text(d.role.polishName.substringBefore(" "), style = AaaType.Label.copy(fontSize = 10.sp, color = Aaa.TextHi), maxLines = 1)
+                        }
                     }
                     IconStatRow(
                         listOf(
@@ -213,7 +218,7 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                         Box(Modifier.weight(1f)) { ThinBar(d.realmProgress / 100f, schoolColor(d.martialSchool)) }
                         Text(if (isReady) "gotowy" else "${d.realmProgress}%", style = AaaType.Label.copy(fontSize = 11.sp, color = if (isReady) Aaa.Gold else Aaa.TextHi, fontWeight = FontWeight.Bold))
                     }
-                    DiscipleLifeInfo(d)
+                    DiscipleTraitsRow(d)
                     DiscipleStateTags(d, ui)
                     if (ui.autonomy) DiscipleMindStrip(d, ui) { legacy = "mind" }
                     // Rozwój ucznia: zakładki z ikonami – stałe miejsce, zawsze widoczne.
@@ -311,7 +316,7 @@ private fun RosterTile(disciple: Disciple, selected: Boolean, onClick: () -> Uni
     val c = schoolColor(disciple.martialSchool)
     Box(
         Modifier
-            .offset(x = if (selected) 4.dp else 0.dp)
+            .offset(y = if (selected) 3.dp else 0.dp)
             .size(56.dp)
     ) {
         Box(

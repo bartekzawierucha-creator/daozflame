@@ -417,7 +417,7 @@ fun IconStatRow(items: List<Triple<String, String, String>>, modifier: Modifier 
         items.forEach { (key, value, label) ->
             Column(
                 Modifier.weight(1f)
-                    .background(Aaa.Ink0.copy(alpha = 0.55f))
+                    .background(Aaa.Ink2)
                     .then(if (onTap != null) Modifier.clickable { onTap(key) } else Modifier)
                     .padding(vertical = 5.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -435,8 +435,8 @@ fun IconStatRow(items: List<Triple<String, String, String>>, modifier: Modifier 
 @Composable
 fun IconTab(key: String, label: String, modifier: Modifier = Modifier, badge: String? = null, onClick: () -> Unit) {
     Column(
-        modifier.clip(cutCornerTicket()).background(Aaa.Ink0.copy(alpha = 0.6f))
-            .androidxBorder(Aaa.Hairline)
+        modifier.clip(cutCornerTicket()).background(Aaa.Ink2)
+            .border(1.dp, Aaa.Hairline, cutCornerTicket())
             .clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onClick)
             .padding(vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -451,4 +451,3 @@ fun IconTab(key: String, label: String, modifier: Modifier = Modifier, badge: St
     }
 }
 
-private fun Modifier.androidxBorder(c: Color) = this.then(Modifier.border(1.dp, c))
