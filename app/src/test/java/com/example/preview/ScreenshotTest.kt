@@ -179,7 +179,7 @@ class ScreenshotTest {
         run {
             val ids = calm.disciples.map { it.id }
             var e = calm.copy(
-                vaultArtifacts = calm.vaultArtifacts + com.example.game.engine.GameContent.forgingRecipes.take(6).map { it.artifactResult },
+                vaultArtifacts = calm.vaultArtifacts + com.example.game.engine.GameContent.forgingRecipes.drop(10).take(15).map { it.artifactResult },
                 weeklyGoal = calm.weeklyGoal ?: com.example.model.SectGoal(com.example.model.GoalKind.TOURNAMENT, "Turniej Pięciu Sekt",
                     "Za 7 dni turniej. Trzech najlepszych musi mieć łącznie dużo mocy.", com.example.game.engine.SectGoals.champions(calm) * 11 / 10, 0, calm.currentDay, calm.currentDay + 5, 900, 60, "Pigułka Przełomu Qi"),
                 opportunity = com.example.model.Opportunity(com.example.model.OpportunityKind.WANDERING_MASTER, calm.currentDay + 2, cost = 1200),
