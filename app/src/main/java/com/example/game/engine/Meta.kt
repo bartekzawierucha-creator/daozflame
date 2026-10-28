@@ -216,6 +216,7 @@ object Achievements {
         ev.filterIsInstance<GameEvent.Tribulation>().filter { it.result.survived }.forEach { inc("tribulations") }
         ev.filterIsInstance<GameEvent.Notice>().count { it.message.startsWith("🛡 Najazd") }.takeIf { it > 0 }?.let { inc("raids_repelled", it.toLong()) }
         if (command is GameCommand.FuseFlames && s.flames.size == before.flames.size - 1) inc("fusions")
+        if (command is GameCommand.FulfillContract && s.contracts.count { it.done } > before.contracts.count { it.done }) inc("contracts")
         if (stats != s.meta.stats) s = s.copy(meta = s.meta.copy(stats = stats))
         s = DailyGoals.progress(command, before, s, ev)
         val triggers = triggers(command, before, s, ev)

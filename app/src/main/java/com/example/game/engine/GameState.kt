@@ -156,6 +156,20 @@ data class GameState(
     /** Etap 10: uczniowie decydują sami, mistrz doradza. */
     val autonomy: Boolean = false,
 
+    // --- Etap 11 ---
+    val weeklyGoal: com.example.model.SectGoal? = null,
+    /** Dzień ogłoszenia następnego celu tygodnia (0 = od razu). */
+    val nextGoalDay: Int = 0,
+    val goalsWon: Int = 0,
+    val goalsLost: Int = 0,
+    val bonds: List<com.example.model.Bond> = emptyList(),
+    val opportunity: com.example.model.Opportunity? = null,
+    val lastOpportunityDay: Int = 0,
+    /** Skupienie mistrza: ile osobistych działań (medytacja, pochwała, obietnica) zostało na dzień [focusDay]. */
+    val masterFocus: Int = Mentor.MAX_FOCUS,
+    val focusDay: Int = 0,
+    val steward: com.example.model.StewardPolicy = com.example.model.StewardPolicy(),
+
     /** Krok samouczka; brak pola w starym zapisie = samouczek ukończony. */
     val tutorialStep: Int = Tutorial.DONE,
 

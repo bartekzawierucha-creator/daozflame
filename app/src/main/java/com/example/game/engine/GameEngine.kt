@@ -77,7 +77,7 @@ object GameEngine {
     }
 
     /** Wywoływane po wczytaniu zapisu: jednorazowe migracje logiczne (korzenie w Etapie 2, etapy w Etapie 3). */
-    fun normalize(state: GameState): GameState = Autonomy.normalize(Lifecycle.normalize(Secrets.normalize(Fog.normalize(WorldAI.normalize(economy(Realms.normalize(DiscipleRules.normalize(state))))))))
+    fun normalize(state: GameState): GameState = Stage11.normalize(Autonomy.normalize(Lifecycle.normalize(Secrets.normalize(Fog.normalize(WorldAI.normalize(economy(Realms.normalize(DiscipleRules.normalize(state)))))))))
 
     /** Migracja do Etapu 4: stare zapisy zachowują wszystkie płomienie i znają wszystkie receptury. */
     private fun economy(s: GameState): GameState {
@@ -100,7 +100,8 @@ object GameEngine {
     /** Jedyne wejście do zmiany stanu gry. */
     fun apply(state: GameState, command: GameCommand): StepResult {
         val ctx = EngineContext(state.worldSeed, state.step)
-        val result = Autonomy.afterDirect(command, state, dispatch(state, command, ctx))
+        val raw = Autonomy.afterDirect(command, state, dispatch(state, command, ctx))
+        val result = raw.copy(state = Bonds.afterEvents(raw.state, raw.events))
         // Przyjęta rada liczy się jak wykonana komenda (samouczek, cele dnia, osiągnięcia).
         val effective = if (command is GameCommand.Advise && result.events.any { it is GameEvent.AdviceOutcome && it.accepted }) command.command else command
         val advanced = Tutorial.afterCommand(state, effective, result.state)
@@ -139,7 +140,7 @@ object GameEngine {
             is GameCommand.CraftTalisman -> Talismans.craft(state, command.name)
             is GameCommand.HealWithTalisman -> Talismans.heal(state, command.discipleId)
             is GameCommand.CombatTalisman -> CombatSystem.withForm(CombatSystem.talisman(state, command.name), 'T')
-            is GameCommand.BeginExpedition -> Expeditions.begin(state, command.regionId, command.discipleId, command.auto, ctx)
+            is GameCommand.BeginExpedition -> Expeditions.begin(state, command.regionId, command.discipleId, command.auto, ctx, command.companionId)
             is GameCommand.ChooseNode -> Expeditions.choose(state, command.index, ctx)
             GameCommand.EnterLair -> Expeditions.toBoss(state)
             GameCommand.RetreatExpedition -> if (state.expedition?.atBoss == true) fail(state, "Walka trwa.") else Expeditions.retreat(state)
@@ -212,7 +213,15 @@ object GameEngine {
 
             is GameCommand.BrewPill -> if (state.e4Initialized) CraftV2.brew(state, ctx, command.recipeId) else CraftCommands.brewPill(state, command.recipeId)
             is GameCommand.ForgeArtifact -> if (state.e4Initialized) CraftV2.forge(state, ctx, command.recipeId) else CraftCommands.forgeArtifact(state, command.recipeId)
-            is GameCommand.EquipArtifact -> CraftCommands.equipArtifact(state, command.discipleId, command.artifact)
+            is GameCommand.EquipArtifact -> Gear.equipLegacy(state, command.discipleId, command.artifact)
+            is GameCommand.Equip -> Gear.equip(state, command.discipleId, command.vaultIndex)
+            is GameCommand.Unequip -> Gear.unequip(state, command.discipleId, command.slot)
+            is GameCommand.MeditateWith -> Mentor.meditate(state, command.discipleId)
+            is GameCommand.Praise -> Mentor.praise(state, command.discipleId)
+            is GameCommand.MakePromise -> Mentor.promise(state, command.discipleId, command.reward)
+            is GameCommand.AcceptOpportunity -> Opportunities.accept(state, ctx, command.discipleId)
+            GameCommand.DeclineOpportunity -> Opportunities.decline(state)
+            is GameCommand.SetSteward -> Steward.set(state, command.policy)
             is GameCommand.SelectFlame -> if (state.e4Initialized) Flames.toCauldron(state, command.flameId) else CraftCommands.selectFlame(state, command.flameId)
             is GameCommand.RefineFlame -> {
                 val f = state.flames.find { it.id == command.flameId }
@@ -269,7 +278,9 @@ object GameEngine {
         val (world, notes) = WorldDaily.run(result.state, ctx)
         // Etap 10: uczniowie sami decydują o dniu.
         val (lived, lives) = Autonomy.daily(world, ctx)
-        return StepResult(lived, result.events + notes.map { GameEvent.Notice(it) } + lives)
+        // Etap 11: blizny, obietnice, więzi, cel tygodnia, okazje, zarządca.
+        val (e11, notes11) = Stage11.daily(lived, ctx)
+        return StepResult(e11, result.events + notes.map { GameEvent.Notice(it) } + lives + notes11.map { GameEvent.Notice(it) })
     }
 
     val STARTING_INVENTORY: Map<String, Int> = mapOf(

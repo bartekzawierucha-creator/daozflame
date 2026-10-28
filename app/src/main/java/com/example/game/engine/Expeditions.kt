@@ -1,5 +1,7 @@
 package com.example.game.engine
 
+import com.example.game.engine.DiscipleRules.has
+
 import com.example.model.BiomeType
 import com.example.model.Disciple
 import com.example.model.ExpNode
@@ -151,7 +153,8 @@ object Expeditions {
         val rng = GameRng.stream(s.worldSeed, s.step, "expedition:${region.id}")
         val count = 3 + rng.nextInt(3)
         val layers = MutableList(count) {
-            List(2) { ExpNode(roll(rng), power = region.dangerLevel) }.distinctBy { n -> n.type }
+            // Etap 11: siła węzła waha się 70–150% – zwiad ma sens.
+            List(2) { val t = roll(rng); ExpNode(t, power = if (t == ExpNodeType.FIGHT) region.dangerLevel * (70 + rng.nextInt(81)) / 100 else region.dangerLevel) }.distinctBy { n -> n.type }
                 .let { l -> if (l.size == 1) l + ExpNode(ExpNodeType.REST) else l }
         }
         FlameSources.available(s, region.id)?.let { id ->
@@ -160,14 +163,41 @@ object Expeditions {
         return layers
     }
 
-    fun begin(s: GameState, regionId: String, discipleId: String, auto: Boolean, ctx: EngineContext): StepResult {
+    /** Udział towarzysza w sile drużyny – zależy od więzi (przysięgli walczą jak jedno ciało). */
+    fun companionShare(s: GameState, leader: String, companion: String): Double = when (com.example.model.BondKind.of(Bonds.value(s, leader, companion))) {
+        com.example.model.BondKind.SWORN -> 0.75
+        com.example.model.BondKind.FRIEND -> 0.6
+        com.example.model.BondKind.RIVAL -> 0.35
+        com.example.model.BondKind.ENEMY -> 0.2
+        com.example.model.BondKind.NEUTRAL -> 0.5
+    }
+
+    /** Siła drużyny: (atak, obrona) prowadzącego plus część towarzysza. */
+    fun team(s: GameState, run: ExpeditionRun, d: com.example.model.Disciple): Pair<Int, Int> {
+        val c = run.companionId?.let { s.disciple(it) } ?: return d.attack to d.defense
+        val f = companionShare(s, d.id, c.id)
+        return (d.attack + c.attack * f).toInt() to (d.defense + c.defense * f).toInt()
+    }
+
+    /** Dopasowanie żywiołu ucznia do krainy w % (100 = obojętne). */
+    fun matchup(d: com.example.model.Disciple, region: WorldRegion): Int = (Elements.attackFactor(d, Elements.of(region.biome)) * 100).toInt()
+
+    /** Ile warstw naprzód widać: 1, +1 z towarzyszem, +1 dla wnikliwego. */
+    fun sightOf(d: com.example.model.Disciple, companion: com.example.model.Disciple?): Int =
+        1 + (if (companion != null) 1 else 0) + (if (d.has("insightful") || companion?.has("insightful") == true) 1 else 0)
+
+    fun begin(s: GameState, regionId: String, discipleId: String, auto: Boolean, ctx: EngineContext, companionId: String? = null): StepResult {
         if (s.expedition != null || s.combat != null) return fail(s, "Inna wyprawa jest w toku.")
         val region = s.regions.find { it.id == regionId } ?: return ok(s)
         val d = s.disciple(discipleId) ?: return ok(s)
         if (s.discoveredRegionIds.isNotEmpty() && regionId !in s.discoveredRegionIds) return fail(s, "Kraina kryje się we mgle – najpierw wyślij zwiad.")
         if (d.currentHp < d.maxHp / 3) return fail(s, "${d.name} jest zbyt ranny na wyprawę.")
+        val comp = companionId?.takeIf { it != discipleId }?.let { s.disciple(it) }
+        if (comp != null && comp.currentHp < comp.maxHp / 3) return fail(s, "${comp.name} jest zbyt ranny na wyprawę.")
+        if (comp != null && comp.secludedUntilDay >= s.currentDay) return fail(s, "${comp.name} trwa w odosobnieniu.")
         val run = ExpeditionRun(regionId, discipleId, generate(s, region), hp = d.currentHp, auto = auto,
-            log = listOf("${d.name} wyrusza do krainy ${region.name}."))
+            log = listOf("${d.name} wyrusza do krainy ${region.name}." + (comp?.let { " Towarzyszy ${Autonomy.short(it)}." } ?: "")),
+            companionId = comp?.id, sight = sightOf(d, comp))
         val started = s.copy(expedition = run)
         return if (auto) runAuto(started, ctx) else ok(started, "Wyprawa: ${region.name}. Wybierz ścieżkę.")
     }
@@ -197,9 +227,11 @@ object Expeditions {
         when (node.type) {
             ExpNodeType.FIGHT -> {
                 val el = Elements.of(region.biome)
+                val (atk, def) = team(s, r, d)
+                val f = if (region.dangerLevel > 0) node.power.toDouble() / region.dangerLevel else 1.0
                 val res = Skirmish.resolve(
-                    attack = (d.attack * Elements.attackFactor(d, el)).toInt(), defense = d.defense, hp = r.hp,
-                    enemyHp = (boss?.hp ?: 500) * 3 / 10, enemyAttack = ((boss?.attack ?: 50) * 0.6 * Elements.defenseFactor(d, el)).toInt(),
+                    attack = (atk * Elements.attackFactor(d, el)).toInt(), defense = def, hp = r.hp,
+                    enemyHp = ((boss?.hp ?: 500) * 3 / 10 * f).toInt(), enemyAttack = ((boss?.attack ?: 50) * 0.6 * f * Elements.defenseFactor(d, el)).toInt(),
                     enemyDefense = (boss?.defense ?: 20) / 2, rng = rng
                 )
                 if (!res.win) return r.copy(hp = res.hpLeft.coerceAtLeast(10), log = r.log + "⚔ Strażnicy krainy przepędzili ucznia.") to true
@@ -249,7 +281,14 @@ object Expeditions {
         if (run.layer < run.layers.size) return fail(s, "Najpierw przejdź wszystkie ścieżki.")
         val withHp = s.copy(disciples = s.disciples.map { if (it.id == run.discipleId) it.copy(currentHp = run.hp) else it })
         val started = CombatSystem.start(withHp, run.regionId, run.discipleId)
-        return started.copy(state = started.state.copy(expedition = run.copy(atBoss = true)))
+        // Towarzysz wspiera w legowisku.
+        val c = started.state.combat
+        val d = s.disciple(run.discipleId)
+        val boosted = if (c != null && d != null && run.companionId != null) {
+            val (atk, _) = team(s, run, d)
+            c.copy(effectiveAttack = c.effectiveAttack + (atk - d.attack).coerceAtLeast(0))
+        } else c
+        return started.copy(state = started.state.copy(combat = boosted, expedition = run.copy(atBoss = true)))
     }
 
     /** Odwrót bez bossa: połowa łupów. */
@@ -279,6 +318,7 @@ object Expeditions {
                 else -> inv[k] = (inv[k] ?: 0) + (v * factor).toInt().coerceAtLeast(if (factor >= 1.0) v else 0)
             }
         }
+        run.companionId?.let { st = Bonds.shift(st, run.discipleId, it, 10) }
         return st.copy(
             inventory = inv.toMap(),
             spiritStones = st.spiritStones + (run.stones * factor).toInt(),
@@ -302,8 +342,9 @@ object Expeditions {
         val region = s.regions.first { it.id == run.regionId }
         val boss = region.bossBeast ?: return ok(payout(s, run, AUTO_LOOT).copy(expedition = null), "Wyprawa (auto) zakończona.")
         val el = Elements.of(region.biome)
+        val (tAtk, tDef) = team(s, run, d)
         val res = Skirmish.resolve(
-            attack = (d.attack * Elements.attackFactor(d, el)).toInt(), defense = d.defense, hp = run.hp,
+            attack = (tAtk * Elements.attackFactor(d, el)).toInt(), defense = tDef, hp = run.hp,
             enemyHp = boss.hp, enemyAttack = (boss.attack * Elements.defenseFactor(d, el)).toInt(), enemyDefense = boss.defense,
             rng = ctx.rng("expedition-boss")
         )

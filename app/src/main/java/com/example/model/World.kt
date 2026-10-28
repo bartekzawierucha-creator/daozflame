@@ -33,7 +33,11 @@ data class ExpeditionRun(
     val log: List<String> = emptyList(),
     val auto: Boolean = false,
     /** Walka z bossem trwa (wynik rozliczy [com.example.game.engine.CombatSystem]). */
-    val atBoss: Boolean = false
+    val atBoss: Boolean = false,
+    /** Etap 11: drugi uczeń w drużynie (dokłada połowę ataku i obrony). */
+    val companionId: String? = null,
+    /** Ile warstw naprzód widać (zwiad); reszta mapy kryje się we mgle. */
+    val sight: Int = 99
 )
 
 /** Etap 5b: zapowiedziany najazd rywala. */

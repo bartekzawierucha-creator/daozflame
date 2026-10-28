@@ -116,7 +116,7 @@ object CultivationCommands {
                 ascendedNames = s.ascendedNames + d.name,
                 sectReputation = s.sectReputation + 100,
                 inventory = inv,
-                vaultArtifacts = s.vaultArtifacts + listOfNotNull(d.equippedArtifact)
+                vaultArtifacts = s.vaultArtifacts + Gear.items(d)
             ),
             "✨ ${d.name} wstępuje do Wyższego Świata! Sekta zyskuje Dziedzictwo Wniebowstąpienia (+5% Qi na zawsze)."
         )

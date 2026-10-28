@@ -74,6 +74,7 @@ fun ExpeditionPanel(region: WorldRegion?, ui: WuxiaUiState, viewModel: WuxiaGame
 private fun PlanView(region: WorldRegion, ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     val healthy = ui.disciples.filter { it.currentHp >= it.maxHp / 3 }.sortedByDescending { it.combatPower }
     var pick by remember { mutableStateOf(healthy.firstOrNull()?.id) }
+    var mate by remember { mutableStateOf<String?>(null) }
     RuleHint(
         "Wyprawa to 3–5 rozwidleń, a na końcu legowisko strażnika. Z każdej warstwy wybierasz jedną ścieżkę. " +
             "Odwrót przed bossem zachowuje połowę łupów. Tryb Auto wybiera bezpieczniej, ale przynosi 20% mniej.",
@@ -84,18 +85,33 @@ private fun PlanView(region: WorldRegion, ui: WuxiaUiState, viewModel: WuxiaGame
     if (!ui.hasRing) {
         GhostButton("Wykuj Pierścień Przestrzenny · 2000 + 5× Gwiezdne Żelazo", onClick = { viewModel.craftRing() }, modifier = Modifier.fillMaxWidth(), height = 36.dp)
     }
-    Section("Uczeń")
+    // Etap 11: żywioł krainy i dopasowanie ucznia.
+    val element = com.example.game.engine.Elements.of(region.biome)
+    KvRow("Żywioł krainy", element.polishName, valueColor = Aaa.Ember)
+    Section("Prowadzi", "dopasowanie żywiołu")
     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        healthy.take(12).forEach { d ->
+        healthy.sortedByDescending { it.combatPower * com.example.game.engine.Expeditions.matchup(it, region) }.take(12).forEach { d ->
             val on = d.id == pick
-            SelectChip("${d.name.substringBefore(" (").substringBefore(" ")} · ${d.combatPower}", on, Aaa.Gold) { pick = d.id }
+            val m = com.example.game.engine.Expeditions.matchup(d, region)
+            val tag = when { m > 100 -> " ▲$m%"; m < 100 -> " ▼$m%"; else -> "" }
+            SelectChip("${d.name.substringBefore(" (").substringBefore(" ")} · ${d.combatPower}$tag", on, if (m > 100) Aaa.Jade else if (m < 100) Aaa.Cinnabar else Aaa.Gold) { pick = d.id; if (mate == d.id) mate = null }
         }
     }
     if (healthy.isEmpty()) SheetBody("Wszyscy uczniowie są ranni.", color = Aaa.Cinnabar)
+    Section("Towarzysz", "+1 warstwa zwiadu")
+    RuleHint("Towarzysz dokłada część swojej siły (przyjaciel 60%, brat przysięgły 75%, rywal 35%) i wypatruje drogi. Wspólna wyprawa zbliża.", maxLines = 3)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        SelectChip("Sam", mate == null, Aaa.TextMid) { mate = null }
+        healthy.filter { it.id != pick }.take(10).forEach { d ->
+            val k = pick?.let { p -> ui.bonds.find { it.has(p) && it.has(d.id) }?.kind } ?: com.example.model.BondKind.NEUTRAL
+            val g = if (k == com.example.model.BondKind.NEUTRAL) "" else " ${k.glyph}"
+            SelectChip("${d.name.substringBefore(" (").substringBefore(" ")}$g", d.id == mate, bondColor(k).takeIf { k != com.example.model.BondKind.NEUTRAL } ?: Aaa.Gold) { mate = d.id }
+        }
+    }
     val id = pick
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        GhostButton("Auto", enabled = id != null, onClick = { id?.let { viewModel.beginExpedition(region.id, it, auto = true) } }, modifier = Modifier.weight(1f))
-        GoldCta("Wyrusz", enabled = id != null, onClick = { id?.let { viewModel.beginExpedition(region.id, it, auto = false) } }, modifier = Modifier.weight(1.6f))
+        GhostButton("Auto", enabled = id != null, onClick = { id?.let { viewModel.beginExpedition(region.id, it, auto = true, companionId = mate) } }, modifier = Modifier.weight(1f))
+        GoldCta("Wyrusz", enabled = id != null, onClick = { id?.let { viewModel.beginExpedition(region.id, it, auto = false, companionId = mate) } }, modifier = Modifier.weight(1.6f))
     }
     Section("Szybkie starcie")
     SheetBody("Bez mapy: od razu walka ze strażnikiem krainy.", color = Aaa.TextLow)
@@ -105,7 +121,7 @@ private fun PlanView(region: WorldRegion, ui: WuxiaUiState, viewModel: WuxiaGame
 @Composable
 private fun RunView(run: com.example.model.ExpeditionRun, ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     val d = ui.disciples.find { it.id == run.discipleId }
-    KvRow("Uczeń", d?.name?.substringBefore(" (") ?: "—")
+    KvRow("Uczeń", (d?.name?.substringBefore(" (") ?: "—") + (run.companionId?.let { c -> ui.disciples.find { it.id == c } }?.let { " + ${it.name.substringBefore(" (")}" } ?: ""))
     KvRow("HP", "${run.hp} / ${d?.maxHp ?: run.hp}", valueColor = if (d != null && run.hp < d.maxHp / 3) Aaa.Cinnabar else Aaa.Jade)
     ThinBar(if (d != null) run.hp.toFloat() / d.maxHp else 1f, Aaa.Jade)
     KvRow("Warstwa", "${(run.layer + 1).coerceAtMost(run.layers.size)} / ${run.layers.size}")
@@ -117,8 +133,13 @@ private fun RunView(run: com.example.model.ExpeditionRun, ui: WuxiaUiState, view
         val current = i == run.layer && !run.atBoss
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("${i + 1}", style = AaaType.Numeric.copy(fontSize = 11.sp, color = if (current) Aaa.GoldHi else Aaa.TextLow))
+            // Etap 11: dalsze warstwy kryje mgła – widać tylko tyle, ile sięga zwiad.
+            val hidden = i >= run.layer + run.sight && !run.atBoss
             layer.forEachIndexed { j, node ->
-                NodeTile(node, enabled = current, modifier = Modifier.weight(1f)) { viewModel.chooseNode(j) }
+                if (hidden) FogTile(Modifier.weight(1f))
+                else NodeTile(node, enabled = current, modifier = Modifier.weight(1f), danger = node.power.takeIf { node.type == ExpNodeType.FIGHT }?.let { p ->
+                    ui.regions.find { it.id == run.regionId }?.dangerLevel?.takeIf { it > 0 }?.let { p * 100 / it }
+                }) { viewModel.chooseNode(j) }
             }
         }
     }
@@ -131,7 +152,14 @@ private fun RunView(run: com.example.model.ExpeditionRun, ui: WuxiaUiState, view
 }
 
 @Composable
-private fun NodeTile(node: ExpNode, enabled: Boolean, modifier: Modifier, onClick: () -> Unit) {
+private fun FogTile(modifier: Modifier) {
+    Column(modifier.background(Aaa.Ink3.copy(alpha = 0.4f)).border(1.dp, Aaa.Hairline).padding(8.dp)) {
+        Text("☁ Mgła", style = AaaType.Label.copy(fontSize = 11.sp, color = Aaa.TextLow))
+    }
+}
+
+@Composable
+private fun NodeTile(node: ExpNode, enabled: Boolean, modifier: Modifier, danger: Int? = null, onClick: () -> Unit) {
     val c = nodeColor(node.type)
     Column(
         modifier
@@ -142,6 +170,8 @@ private fun NodeTile(node: ExpNode, enabled: Boolean, modifier: Modifier, onClic
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         Text("${node.type.glyph} ${node.type.polishName}", style = AaaType.Label.copy(fontSize = 11.sp, color = if (enabled) Aaa.TextHi else Aaa.TextLow))
+        if (danger != null && danger != 100) Text(if (danger > 100) "silni ×${"%.1f".format(danger / 100f)}" else "słabi ×${"%.1f".format(danger / 100f)}",
+            style = AaaType.Label.copy(fontSize = 9.sp, color = if (danger > 100) Aaa.Cinnabar else Aaa.Jade))
         if (enabled) Text(nodeHint(node.type), style = AaaType.Label.copy(fontSize = 9.sp, color = Aaa.TextMid), maxLines = 3)
     }
 }

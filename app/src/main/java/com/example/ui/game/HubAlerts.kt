@@ -46,7 +46,9 @@ enum class Shortcut(val module: GameModule) {
     FIELDS(GameModule.ALCHEMY),
     FLAMES(GameModule.ALCHEMY),
     EGGS(GameModule.BEASTS),
-    ARENA(GameModule.DAO_NET)
+    ARENA(GameModule.DAO_NET),
+    WEEKLY_GOAL(GameModule.PALACE),
+    OPPORTUNITY(GameModule.PALACE)
 }
 
 /** Oczekujący skrót: hub ustawia, moduł po otwarciu odbiera i czyści. */
@@ -77,6 +79,12 @@ fun hubAlerts(ui: WuxiaUiState): List<HubAlert> = buildList {
     }
     if (ui.expedition != null) add(HubAlert("⛰", "Wyprawa w toku", Aaa.Jade, Shortcut.EXPEDITION, 90))
     ui.secretRealms.firstOrNull { it.open && !it.visited }?.let { add(HubAlert("🌀", "Otwarte: ${shortName(it.name, 2)}", Aaa.Violet, Shortcut.SECRET_REALMS, 60)) }
+    ui.opportunity?.let { o -> add(HubAlert(o.kind.glyph, "${o.kind.polishName} · ${(o.untilDay - ui.currentDay).coerceAtLeast(0)} d.", Aaa.Violet, Shortcut.OPPORTUNITY, 65)) }
+    ui.weeklyGoal?.let { g ->
+        val left = (g.deadline - ui.currentDay).coerceAtLeast(0)
+        val pct = (ui.weeklyProgress.coerceAtMost(g.target) * 100 / g.target.coerceAtLeast(1))
+        add(HubAlert("挑", "${shortName(g.title, 2)} $pct% · ${left} d.", if (left <= 1) Aaa.Cinnabar else Aaa.Gold, Shortcut.WEEKLY_GOAL, if (left <= 1) 75 else 45))
+    }
     if (ui.rebirthAvailable) add(HubAlert("🌅", "Odrodzenie dostępne", Aaa.GoldHi, Shortcut.META, 55))
     val goals = ui.meta.goals
     if (goals.isNotEmpty() && !goals.all { it.done }) add(HubAlert("☯", "Cele dnia ${goals.count { it.done }}/${goals.size}", Aaa.Azure, Shortcut.META_DAILY, 30))

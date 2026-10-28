@@ -54,7 +54,7 @@ sealed interface GameCommand {
     data class FlameToDisciple(val flameId: String, val discipleId: String) : GameCommand
 
     // Etap 5a
-    data class BeginExpedition(val regionId: String, val discipleId: String, val auto: Boolean = false) : GameCommand
+    data class BeginExpedition(val regionId: String, val discipleId: String, val auto: Boolean = false, val companionId: String? = null) : GameCommand
     data class ChooseNode(val index: Int) : GameCommand
     data object EnterLair : GameCommand
     data object RetreatExpedition : GameCommand
@@ -126,6 +126,18 @@ sealed interface GameCommand {
     data class BrewPill(val recipeId: String) : GameCommand
     data class ForgeArtifact(val recipeId: String) : GameCommand
     data class EquipArtifact(val discipleId: String, val artifact: Artifact) : GameCommand
+
+    // --- Etap 11 ---
+    /** Załóż artefakt ze skarbca (indeks) – trafia na swoje miejsce (broń, szata, skarb). */
+    data class Equip(val discipleId: String, val vaultIndex: Int) : GameCommand
+    data class Unequip(val discipleId: String, val slot: com.example.model.EquipSlot) : GameCommand
+    data class MeditateWith(val discipleId: String) : GameCommand
+    data class Praise(val discipleId: String) : GameCommand
+    /** [reward] = klucz przedmiotu w magazynie albo "art:<indeks w skarbcu>". */
+    data class MakePromise(val discipleId: String, val reward: String) : GameCommand
+    data class AcceptOpportunity(val discipleId: String? = null) : GameCommand
+    data object DeclineOpportunity : GameCommand
+    data class SetSteward(val policy: com.example.model.StewardPolicy) : GameCommand
     data class SelectFlame(val flameId: String) : GameCommand
     data class RefineFlame(val flameId: String) : GameCommand
     data class UpgradeFacility(val type: FacilityType) : GameCommand

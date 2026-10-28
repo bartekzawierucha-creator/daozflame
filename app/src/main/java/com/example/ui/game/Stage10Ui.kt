@@ -81,6 +81,9 @@ fun MindPanel(d: Disciple, ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onCl
         KvRow("Ogólna szansa, że posłucha", "$p%", valueColor = obedienceColor(p))
         RuleHint("Zaufanie rośnie, gdy rady okazują się trafne, przy awansie, łasce i leczeniu. Spada po chybionej radzie, karze i naciskaniu kilka razy dziennie.", color = Aaa.TextLow, maxLines = 4)
 
+        MentorSection(d, ui, viewModel)
+        BondsSection(d, ui)
+
         Section("Doradź zajęcie")
         DiscipleRole.entries.forEach { role ->
             val chance = ui.roleAdvice[d.id]?.get(role) ?: p

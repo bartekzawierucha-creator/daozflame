@@ -124,7 +124,9 @@ object Lifecycle {
     }
 
     /** Śmierć ucznia: wpis w Sali Przodków i sprzątanie odwołań. */
-    fun die(s: GameState, d: Disciple, cause: String): GameState {
+    fun die(s0: GameState, d: Disciple, cause: String): GameState {
+        // Etap 11: śmierć ma sens – spuścizna dla bliskich, ekwipunek wraca do skarbca.
+        val s = Legacy.onDeath(s0, d, cause)
         val record = AncestorRecord(d.name, d.majorRealm?.polishName ?: d.realm.polishName, d.majorRealm?.ordinal ?: 0, s.currentDay, cause)
         return WorldAI.note(
             s.copy(
@@ -132,7 +134,10 @@ object Lifecycle {
                 ancestors = (s.ancestors + record).takeLast(100),
                 gates = s.gates.filterValues { it != d.id },
                 researcherId = s.researcherId.takeIf { it != d.id },
-                companions = s.companions.filter { it.a != d.id && it.b != d.id }
+                companions = s.companions.filter { it.a != d.id && it.b != d.id },
+                bonds = s.bonds.filter { !it.has(d.id) },
+                vaultArtifacts = s.vaultArtifacts + Gear.items(d),
+                steward = if (s.steward.stewardId == d.id) s.steward.copy(stewardId = null) else s.steward
             ),
             "${d.name} umiera (${cause})."
         )

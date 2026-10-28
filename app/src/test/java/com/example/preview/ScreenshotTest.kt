@@ -175,6 +175,34 @@ class ScreenshotTest {
         shot("55_life", "Życie ucznia") { LifePanel(chosen, u, vm, noop) }
         shot("56_mind", "Umysł ucznia – zamiar, więź, rady, dziennik") { MindPanel(chosen, u, vm, noop) }
 
+        // ── Etap 11 ─────────────────────────────────────────────────────────
+        run {
+            val ids = calm.disciples.map { it.id }
+            var e = calm.copy(
+                vaultArtifacts = calm.vaultArtifacts + com.example.game.engine.GameContent.forgingRecipes.take(6).map { it.artifactResult },
+                weeklyGoal = calm.weeklyGoal ?: com.example.model.SectGoal(com.example.model.GoalKind.TOURNAMENT, "Turniej Pięciu Sekt",
+                    "Za 7 dni turniej. Trzech najlepszych musi mieć łącznie dużo mocy.", com.example.game.engine.SectGoals.champions(calm) * 11 / 10, 0, calm.currentDay, calm.currentDay + 5, 900, 60, "Pigułka Przełomu Qi"),
+                opportunity = com.example.model.Opportunity(com.example.model.OpportunityKind.WANDERING_MASTER, calm.currentDay + 2, cost = 1200),
+                steward = com.example.model.StewardPolicy(ids.getOrNull(1), keepAbove = 50, autoContracts = true)
+            )
+            if (ids.size >= 4) {
+                e = com.example.game.engine.Bonds.shift(e, calm.chosenId ?: ids[0], ids.first { it != calm.chosenId }, 60)
+                e = com.example.game.engine.Bonds.shift(e, calm.chosenId ?: ids[0], ids.last { it != calm.chosenId }, -55)
+            }
+            val cid = calm.chosenId ?: ids[0]
+            e = com.example.game.engine.Gear.equip(e, cid, e.vaultArtifacts.indexOfFirst { com.example.game.engine.Gear.slotOf(it) == com.example.model.EquipSlot.ARMOR }.coerceAtLeast(0)).state
+            val ue = ui(e)
+            val ch = ue.disciples.first { it.id == cid }
+            shot("57_gear", "Ekwipunek ucznia") { GearPanel(ch, ue, vm, noop) }
+            shot("58_mind_mentor", "Umysł – czas mistrza i więzi") { MindPanel(ch, ue, vm, noop) }
+            shot("59_palace_e11", "Pałac – cel tygodnia, okazja, zarządca") { PalaceModule(ue, vm, noop) }
+            shot("5a_goal", "Cel tygodnia") { WeeklyGoalPanel(ue, noop) }
+            shot("5b_opportunity", "Okazja") { OpportunityPanel(ue, vm, noop) }
+            shot("5c_steward", "Zarządca skarbca") { StewardPanel(ue, vm, noop) }
+            shot("5d_hub_e11", "Hub – alerty celu i okazji") { SectHub(ue, vm, onOpen = { _, _ -> }) }
+            ui(calm)
+        }
+
         // ── Etap 8: meta ────────────────────────────────────────────────────
         MetaTab.entries.forEachIndexed { i, t ->
             shot("6${i}_meta_${t.name.lowercase()}", "Niebiosa – ${t.label}") { MetaPanel(u, vm, t, noop) }

@@ -58,7 +58,7 @@ object SectLifePhase : TickPhase {
             when {
                 loyalty < 15 && !d.has("loyal") && rng.nextInt(100) < 10 -> {
                     deserters += d.name
-                    d.equippedArtifact?.let { frame.returnedArtifacts += it }
+                    frame.returnedArtifacts += Gear.items(d)
                     return@mapNotNull null
                 }
                 d.has("greedy") && loyalty < 30 && rng.nextInt(100) < 10 -> {

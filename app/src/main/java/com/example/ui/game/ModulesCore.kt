@@ -209,6 +209,13 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                         GhostButton("Życie", onClick = { legacy = "life" }, modifier = Modifier.weight(1f), height = 36.dp)
                         GhostButton("Księga", onClick = { legacy = "disciples" }, modifier = Modifier.weight(1f), height = 36.dp)
                     }
+                    // Etap 11: ekwipunek i więzi.
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        val worn = com.example.game.engine.Gear.items(d).size
+                        GhostButton("Ekwipunek $worn/3", onClick = { legacy = "gear" }, modifier = Modifier.weight(1f), height = 32.dp)
+                        val ties = ui.bonds.count { it.has(d.id) && it.kind != com.example.model.BondKind.NEUTRAL }
+                        GhostButton(if (ui.autonomy) "Mistrz i więzi" + if (ties > 0) " · $ties" else "" else "Więzi", onClick = { legacy = "mind" }, modifier = Modifier.weight(1f), height = 32.dp)
+                    }
                     // Dyscyplina: ranga, kara, łaska.
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         GhostButton(
@@ -286,6 +293,7 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
             "secrets" -> if (d != null) SecretsPanel(d, ui, viewModel, onClose = { legacy = null })
             "life" -> if (d != null) LifePanel(d, ui, viewModel, onClose = { legacy = null })
             "mind" -> if (d != null) MindPanel(d, ui, viewModel, onClose = { legacy = null })
+            "gear" -> if (d != null) GearPanel(d, ui, viewModel, onClose = { legacy = null })
         }
     }
 }
@@ -342,8 +350,11 @@ fun PalaceModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
     var sect by remember { mutableStateOf<SectTab?>(null) }
     var metaOpen by remember { mutableStateOf<MetaTab?>(null) }
     var journal by remember { mutableStateOf(false) }
+    var e11 by remember { mutableStateOf<String?>(null) }
     ConsumeShortcut(GameModule.PALACE) { sc ->
         when (sc) {
+            Shortcut.WEEKLY_GOAL -> e11 = "goal"
+            Shortcut.OPPORTUNITY -> e11 = "opportunity"
             Shortcut.MARKET -> eco = EconomyTab.MARKET
             Shortcut.CONTRACTS -> eco = EconomyTab.CONTRACTS
             Shortcut.VEIN -> eco = EconomyTab.VEIN
@@ -376,6 +387,7 @@ fun PalaceModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
             Column(Modifier.fillMaxSize()) {
                 if (ui.economy.enabled) PalaceTiles(ui,
                     onEco = { eco = it }, onSect = { sect = it }, onMeta = { metaOpen = it }, onJournal = { journal = true })
+                Box(Modifier.padding(horizontal = 12.dp, vertical = 2.dp)) { Stage11Tiles(ui) { e11 = it } }
                 Box(Modifier.weight(1f)) {
                     SectSanctuaryScreen(viewModel = viewModel, uiState = ui, onNavigateToDisciples = onBack)
                 }
@@ -386,6 +398,11 @@ fun PalaceModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
     sect?.let { SectPanel(ui, viewModel, it, onClose = { sect = null }) }
     metaOpen?.let { MetaPanel(ui, viewModel, it, onClose = { metaOpen = null }) }
     if (journal) JournalPanel(ui, onClose = { journal = false })
+    when (e11) {
+        "goal" -> WeeklyGoalPanel(ui, onClose = { e11 = null })
+        "opportunity" -> OpportunityPanel(ui, viewModel, onClose = { e11 = null })
+        "steward" -> StewardPanel(ui, viewModel, onClose = { e11 = null })
+    }
 }
 
 /** Zarząd sekty: 2 rzędy kafli z najważniejszą liczbą każdego systemu i odznaką, gdy coś czeka. */

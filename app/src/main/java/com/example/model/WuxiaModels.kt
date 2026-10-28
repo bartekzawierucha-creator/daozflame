@@ -317,7 +317,18 @@ data class Disciple(
     val adviceDay: Int = -1,
     val adviceCount: Int = 0,
     /** Dziennik ucznia: ostatnie decyzje (najnowsze na końcu). */
-    val diary: List<String> = emptyList()
+    val diary: List<String> = emptyList(),
+    // --- Etap 11 ---
+    /** Szata i skarb ([equippedArtifact] to broń). */
+    val armor: Artifact? = null,
+    val treasure: Artifact? = null,
+    /** Blizny po zagojonych ciężkich ranach – każda hartuje (+obrona). */
+    val scars: Int = 0,
+    /** Dzień końca rany, za którą blizna już jest policzona. */
+    val scarredForDay: Int = 0,
+    val promise: MasterPromise? = null,
+    /** Ostatni dzień wspólnej medytacji z mistrzem. */
+    val meditatedWithMasterDay: Int = -1
 )
 
 enum class ResourceCategory { MINERAL, HERB, PILL, ESSENCE }

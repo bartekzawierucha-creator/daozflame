@@ -132,7 +132,16 @@ data class WuxiaUiState(
     /** Szansa przyjęcia rady o zajęciu: uczeń → rola → %. */
     val roleAdvice: Map<String, Map<DiscipleRole, Int>> = emptyMap(),
     /** Zajęcie, które uczeń wybrałby sam. */
-    val preferredRoles: Map<String, DiscipleRole> = emptyMap()
+    val preferredRoles: Map<String, DiscipleRole> = emptyMap(),
+    // Etap 11
+    val weeklyGoal: com.example.model.SectGoal? = null,
+    val weeklyProgress: Long = 0,
+    val goalsWon: Int = 0,
+    val goalsLost: Int = 0,
+    val bonds: List<com.example.model.Bond> = emptyList(),
+    val masterFocus: Int = 3,
+    val opportunity: com.example.model.Opportunity? = null,
+    val steward: com.example.model.StewardPolicy = com.example.model.StewardPolicy()
 )
 
 data class ArenaUi(
@@ -474,6 +483,15 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     }
     /** Rada „wstrzymaj się z ryzykiem”. */
     fun adviseHold(discipleId: String) = dispatch(GameCommand.Hold(discipleId))
+    // Etap 11
+    fun equip(discipleId: String, vaultIndex: Int) = dispatch(GameCommand.Equip(discipleId, vaultIndex))
+    fun unequip(discipleId: String, slot: com.example.model.EquipSlot) = dispatch(GameCommand.Unequip(discipleId, slot))
+    fun meditateWith(discipleId: String) = dispatch(GameCommand.MeditateWith(discipleId))
+    fun praise(discipleId: String) = dispatch(GameCommand.Praise(discipleId))
+    fun makePromise(discipleId: String, reward: String) = dispatch(GameCommand.MakePromise(discipleId, reward))
+    fun acceptOpportunity(discipleId: String?) = dispatch(GameCommand.AcceptOpportunity(discipleId))
+    fun declineOpportunity() = dispatch(GameCommand.DeclineOpportunity)
+    fun setSteward(policy: com.example.model.StewardPolicy) = dispatch(GameCommand.SetSteward(policy))
     fun attemptBreakthrough(discipleId: String, usePill: Boolean) = dispatch(GameCommand.AttemptBreakthrough(discipleId, usePill))
     fun unlockSkill(discipleId: String, skillId: String) = dispatch(GameCommand.UnlockSkill(discipleId, skillId))
     fun usePill(discipleId: String, pillName: String) = dispatch(GameCommand.UsePill(discipleId, pillName))
@@ -512,7 +530,7 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     fun upgradeFacility(type: FacilityType) = dispatch(GameCommand.UpgradeFacility(type))
 
     // --- Etap 5a: wyprawy, Wieża Prób ---
-    fun beginExpedition(regionId: String, discipleId: String, auto: Boolean) = dispatch(GameCommand.BeginExpedition(regionId, discipleId, auto))
+    fun beginExpedition(regionId: String, discipleId: String, auto: Boolean, companionId: String? = null) = dispatch(GameCommand.BeginExpedition(regionId, discipleId, auto, companionId))
     fun chooseNode(index: Int) = dispatch(GameCommand.ChooseNode(index))
     fun enterLair() {
         combatFx = CombatFx()
@@ -910,6 +928,14 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
         obedience = game.disciples.associate { it.id to com.example.game.engine.Autonomy.chance(game, it) },
         roleAdvice = game.disciples.associate { d -> d.id to DiscipleRole.entries.associateWith { com.example.game.engine.Autonomy.chance(game, d, GameCommand.AssignRole(d.id, it)) } },
         preferredRoles = game.disciples.associate { it.id to com.example.game.engine.Autonomy.preferredRole(game, it) },
+        weeklyGoal = game.weeklyGoal,
+        weeklyProgress = game.weeklyGoal?.let { com.example.game.engine.SectGoals.progress(game, it) } ?: 0,
+        goalsWon = game.goalsWon,
+        goalsLost = game.goalsLost,
+        bonds = game.bonds,
+        masterFocus = com.example.game.engine.Mentor.focusLeft(game),
+        opportunity = game.opportunity,
+        steward = game.steward,
         rebirthAvailable = com.example.game.engine.Rebirth.available(game),
         essenceOnRebirth = com.example.game.engine.Rebirth.essence(game),
         arena = arena.copy(rating = game.pvpRating, wins = game.pvpWins, losses = game.pvpLosses, online = net.enabled),
