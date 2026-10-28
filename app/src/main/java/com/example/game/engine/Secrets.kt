@@ -495,7 +495,7 @@ object SecretStates {
 
 /** Narzędzia odkrywania: sny, Badacz, Lustro Dao. */
 object SecretTools {
-    const val DREAM_CHANCE = 15
+    const val DREAM_CHANCE = 3
     const val MIRROR = "Lustro Dao"
 
     private fun unknownHints(s: GameState): List<Hint> = s.rules?.hints.orEmpty().filter { !Journal.certain(s, it.secretId) }

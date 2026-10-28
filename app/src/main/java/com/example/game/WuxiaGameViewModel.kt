@@ -141,7 +141,10 @@ data class WuxiaUiState(
     val bonds: List<com.example.model.Bond> = emptyList(),
     val masterFocus: Int = 3,
     val opportunity: com.example.model.Opportunity? = null,
-    val steward: com.example.model.StewardPolicy = com.example.model.StewardPolicy()
+    val steward: com.example.model.StewardPolicy = com.example.model.StewardPolicy(),
+    // Etap 12: szanse wielkiego przełomu (bez pigułki, z pigułką) – tribulacja: przeżycie
+    val majorOdds: Map<String, Pair<Int, Int>> = emptyMap(),
+    val focusNextIn: Int = 0
 )
 
 data class ArenaUi(
@@ -936,6 +939,12 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
         masterFocus = com.example.game.engine.Mentor.focusLeft(game),
         opportunity = game.opportunity,
         steward = game.steward,
+        majorOdds = game.disciples.filter { com.example.game.engine.Realms.atPeak(it) && com.example.game.engine.CultivationSystem.ready(it) }.mapNotNull { d ->
+            val trib = com.example.game.engine.CultivationSystem.tribulationOdds(game, d, false)
+            if (trib != null) d.id to (trib to (com.example.game.engine.CultivationSystem.tribulationOdds(game, d, true) ?: trib))
+            else com.example.game.engine.CultivationSystem.majorOdds(game, d, false)?.let { d.id to (it to (com.example.game.engine.CultivationSystem.majorOdds(game, d, true) ?: it)) }
+        }.toMap(),
+        focusNextIn = com.example.game.engine.Mentor.nextFocusIn(game),
         rebirthAvailable = com.example.game.engine.Rebirth.available(game),
         essenceOnRebirth = com.example.game.engine.Rebirth.essence(game),
         arena = arena.copy(rating = game.pvpRating, wins = game.pvpWins, losses = game.pvpLosses, online = net.enabled),

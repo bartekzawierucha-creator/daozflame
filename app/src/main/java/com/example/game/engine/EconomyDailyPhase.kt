@@ -8,7 +8,7 @@ object EconomyDailyPhase : TickPhase {
         if (s.veinUpgradeDoneDay in 1..frame.day) {
             frame.veinLevel = (s.veinLevel + 1).coerceAtMost(Vein.MAX_LEVEL)
             frame.veinUpgradeDoneDay = 0
-            frame.notice = frame.notice ?: "Żyła duchowa pogłębiona: ${Vein.name(frame.veinLevel)} (Qi ×${Vein.qiMultiplier(frame.veinLevel)})."
+            frame.notice = frame.notice ?: "Żyła duchowa pogłębiona: ${Vein.name(frame.veinLevel)} (Qi +${((Vein.qiMultiplier(frame.veinLevel) - 1) * 100).toInt()}%)."
         }
         Market.daily(frame)
         Contracts.daily(frame)

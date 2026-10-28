@@ -156,9 +156,12 @@ fun CultivationPanel(d: Disciple, ui: WuxiaUiState, viewModel: WuxiaGameViewMode
                 atPeak && next != null && next.tribulationStrikes > 0 -> {
                     SheetBody(
                         "Wejście w ${next.polishName} wywoła tribulację: ${next.tribulationStrikes} uderzeń pioruna. " +
-                            "Porażka to rany i 60% postępu; 2% szansy na śmierć. Pigułka Dziewięciu Gromów Tribulacji osłabia pioruny.",
-                        maxLines = 5
+                            "Porażka to rany i 60% postępu; 2% szansy na śmierć. Osłabiają je: obrona, Pigułka Dziewięciu Gromów, Talizman Piorunochronu, Ścieżka Ciała, premie szansy przełomu i pełnia.",
+                        maxLines = 6
                     )
+                    ui.majorOdds[d.id]?.let { (bare, pill) ->
+                        KvRow("Przeżycie", "~$bare% · z pigułką ~$pill%", valueColor = obedienceColor(bare))
+                    }
                     if (!confirmTribulation) {
                         GoldCta("Przygotuj tribulację", onClick = { confirmTribulation = true }, modifier = Modifier.fillMaxWidth())
                     } else {
@@ -169,11 +172,14 @@ fun CultivationPanel(d: Disciple, ui: WuxiaUiState, viewModel: WuxiaGameViewMode
                         }, modifier = Modifier.fillMaxWidth())
                     }
                 }
-                else -> GoldCta(
+                else -> {
+                    if (atPeak) ui.majorOdds[d.id]?.let { (bare, pill) -> KvRow("Szansa", "$bare% · z pigułką $pill%", valueColor = obedienceColor(bare)) }
+                    GoldCta(
                     if (atPeak) "Wielki przełom" else "Przełom etapu",
                     onClick = { viewModel.attemptBreakthrough(d.id, usePill = ui.autoUsePillsForBreakthrough) },
                     modifier = Modifier.fillMaxWidth()
-                )
+                    )
+                }
             }
             Spacer(Modifier.height(24.dp))
         }

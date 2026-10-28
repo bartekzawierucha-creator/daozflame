@@ -97,7 +97,7 @@ class GameEngineTest {
     fun randomEventsOnlyOnEverySixteenthTickAndNotRepeated() {
         var s = GameEngine.newGame(6L)
         val seen = mutableListOf<String>()
-        repeat(2000) {
+        repeat(16_000) {
             val r = GameEngine.apply(s, GameCommand.Tick).state
             // Zaplanowane ogniwa (Etap 5: Imperium, łańcuchy) wypadają w swoim dniu – rytm 16 ticków dotyczy losowania.
             if (r.activeEventId != null && s.activeEventId == null && GameContent.script(r.activeEventId)?.random == true) {
@@ -145,7 +145,9 @@ class GameEngineTest {
         val after = run(rich, GameCommand.BrewPill(recipe.id))
         assertEquals(50 - recipe.requiredHerbCount, after.inventory[recipe.requiredHerbName])
         assertEquals(Quality.count(rich.inventory, recipe.pillName) + 1, Quality.count(after.inventory, recipe.pillName))
-        assertEquals(rich.spiritStones - recipe.requiredSpiritStones, after.spiritStones)
+        // Koszt może obniżyć Geniusz Alchemii (do −30%).
+        val paid = rich.spiritStones - after.spiritStones
+        assertTrue("zapłacono $paid", paid in (recipe.requiredSpiritStones * 7 / 10)..recipe.requiredSpiritStones)
     }
 
     @Test
@@ -174,7 +176,7 @@ class GameEngineTest {
         val after = r.state.disciple(d.id)!!
         assertTrue(after.majorRealm == com.example.model.MajorRealm.FOUNDATION || after.realmProgress == 40)
         assertEquals(
-            40 + d.karmicLuck / 5 + 35 + 45,
+            (35 + (d.karmicLuck - 50) / 4 + 35 + CultivationRules.FULL_MOON_BONUS).coerceIn(CultivationRules.MIN_CHANCE, CultivationRules.MAX_CHANCE),
             CultivationRules.breakthroughChance(d.copy(bloodline = com.example.model.BloodlineType.GOLDEN_DRAGON), 35, TimeOfDay.FULL_MOON)
         )
     }

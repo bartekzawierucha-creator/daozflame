@@ -31,12 +31,20 @@ object CultivationRules {
     fun epiphanyChance(d: Disciple, stack: ModifierStack): Int =
         ((d.karmicLuck / 25).coerceIn(3, 20) * stack.factor(Stat.EPIPHANY_CHANCE)).toInt().coerceIn(0, 100)
 
+    const val MIN_CHANCE = 10
+    const val MAX_CHANCE = 95
+    const val FULL_MOON_BONUS = 15
+
+    /** Etap 12: szansa w granicach 10–95%; szczęście ±12, pełnia +15, pigułka 27–61 zależnie od jakości. */
     fun breakthroughChance(d: Disciple, pillBonus: Int, time: TimeOfDay, bonus: Int = 0): Int {
-        var chance = 40 + d.karmicLuck / 5 + pillBonus + bonus
-        if (time == TimeOfDay.FULL_MOON) chance += 45
-        if (d.bloodline == BloodlineType.PURE_MORTAL) chance += 15
-        return chance
+        var chance = 35 + (d.karmicLuck - 50) / 4 + pillBonus + bonus
+        if (time == TimeOfDay.FULL_MOON) chance += FULL_MOON_BONUS
+        if (d.bloodline == BloodlineType.PURE_MORTAL) chance += 10
+        return chance.coerceIn(MIN_CHANCE, MAX_CHANCE)
     }
+
+    /** Premia pigułki przełomu: rośnie z jakością z malejącym zyskiem (√efekt). */
+    fun pillBonus(effect: Double): Int = Math.round(35 * Math.sqrt(effect)).toInt()
 
     fun nextRealm(current: CultivationRealm): CultivationRealm? {
         val all = CultivationRealm.entries

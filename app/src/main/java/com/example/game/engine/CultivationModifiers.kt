@@ -17,7 +17,7 @@ object CultivationModifiers {
 
         when (d.path) {
             CultivationPath.ORTHODOX -> add(Modifier("Ścieżka Ortodoksyjna", Stat.QI_GAIN, ModOp.PERCENT, 15.0))
-            CultivationPath.BODY -> add(Modifier("Ścieżka Ciała", Stat.QI_GAIN, ModOp.MULTIPLY, 0.6))
+            CultivationPath.BODY -> add(Modifier("Ścieżka Ciała", Stat.QI_GAIN, ModOp.MULTIPLY, 0.85))
             CultivationPath.SWORD -> add(Modifier("Ścieżka Miecza", Stat.COMBAT_DAMAGE, ModOp.PERCENT, 20.0))
             CultivationPath.PILLS -> add(Modifier("Ścieżka Pigułek", Stat.COMBAT_DAMAGE, ModOp.PERCENT, -15.0))
             CultivationPath.DEMONIC -> Unit

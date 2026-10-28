@@ -162,7 +162,8 @@ object WuxiaGenerator {
         } * talentMultiplier).toInt()
 
         val comprehension = (70 + rng.nextInt(30) * talentMultiplier).toInt().coerceAtMost(100)
-        val karmicLuck = (60 + rng.nextInt(40) * talentMultiplier).toInt().coerceAtMost(100)
+        // Etap 12: szczęście w rozkładzie dzwonowym (20–100), talent przesuwa w górę.
+        val karmicLuck = (20 + rng.nextInt(27) + rng.nextInt(27) + rng.nextInt(27) + (talentMultiplier - 1.0) * 30).toInt().coerceIn(20, 100)
 
         val finalHp = (baseHp * predefinedRealm.powerMultiplier).toInt()
         val finalAtk = (baseAtk * predefinedRealm.powerMultiplier).toInt()

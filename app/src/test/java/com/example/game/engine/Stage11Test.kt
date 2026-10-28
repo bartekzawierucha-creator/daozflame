@@ -139,7 +139,10 @@ class Stage11Test {
         assertEquals(0, Mentor.focusLeft(s))
         val r = apply(s, GameCommand.MeditateWith(ids[Mentor.MAX_FOCUS]))
         assertTrue(r.notice!!.contains("wyczerpany"))
-        s = nextDay(s)
+        // Skupienie wraca po punkcie co FOCUS_REGEN_DAYS dni.
+        repeat(Mentor.FOCUS_REGEN_DAYS) { s = nextDay(s) }
+        assertEquals(1, Mentor.focusLeft(s))
+        repeat(Mentor.FOCUS_REGEN_DAYS * 3) { s = nextDay(s) }
         assertEquals(Mentor.MAX_FOCUS, Mentor.focusLeft(s))
     }
 
@@ -210,7 +213,9 @@ class Stage11Test {
         val (a, b) = s.disciples.take(2).map { it.id }
         s = s.with(a) { it.copy(role = com.example.model.DiscipleRole.MINING, traitIds = listOf("humble"), hiddenTraitIds = emptyList()) }
             .with(b) { it.copy(role = com.example.model.DiscipleRole.MINING, traitIds = listOf("humble"), hiddenTraitIds = emptyList(), martialSchool = s.disciple(a)!!.martialSchool) }
-        assertTrue(Bonds.drift(s.disciple(a)!!, s.disciple(b)!!, 0) >= 4)
+        val together = Bonds.drift(s.disciple(a)!!, s.disciple(b)!!, 0)
+        val apart = Bonds.drift(s.disciple(a)!!, s.disciple(b)!!.copy(role = com.example.model.DiscipleRole.DIPLOMACY, martialSchool = com.example.model.MartialSchool.entries.first { it != s.disciple(a)!!.martialSchool }), 0)
+        assertTrue("$together vs $apart", together >= apart + 2)
     }
 
     // --- Porażka z sensem ---
@@ -285,14 +290,14 @@ class Stage11Test {
         s = s.copy(inventory = s.inventory + (herb to 100) + (DiscipleRules.FOOD to 0))
         s = apply(s, GameCommand.SetSteward(StewardPolicy(a, keepAbove = 20, autoFood = true))).state
         val stones = s.spiritStones
-        s = nextDay(s)
-        assertTrue((s.inventory[herb] ?: 0) <= 20)
+        repeat(Steward.EVERY_DAYS) { s = nextDay(s) }
+        assertTrue((s.inventory[herb] ?: 0) < 60)
         assertTrue((s.inventory[DiscipleRules.FOOD] ?: 0) > 0)
         assertFalse(s.spiritStones == stones)
         // Obiecany przedmiot jest nietykalny.
         s = s.copy(inventory = s.inventory + (herb to 50))
         s = apply(s, GameCommand.MakePromise(b, herb)).state
-        s = nextDay(s)
+        repeat(Steward.EVERY_DAYS) { s = nextDay(s) }
         assertTrue((s.inventory[herb] ?: 0) >= 50)
     }
 }

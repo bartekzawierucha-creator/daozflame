@@ -28,7 +28,10 @@ object Steward {
 
     private val tradeGoods by lazy { (ResourceCatalog.herbs + ResourceCatalog.minerals).map { it.name }.toSet() }
 
+    const val EVERY_DAYS = 5
+
     fun daily(s0: GameState): Pair<GameState, List<String>> {
+        if (s0.currentDay % EVERY_DAYS != 0) return s0 to emptyList()
         val p = s0.steward
         val d = p.stewardId?.let { s0.disciple(it) } ?: return s0 to emptyList()
         if (s0.expedition?.discipleId == d.id) return s0 to emptyList()

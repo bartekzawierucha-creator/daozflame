@@ -77,7 +77,7 @@ object GameEngine {
     }
 
     /** Wywoływane po wczytaniu zapisu: jednorazowe migracje logiczne (korzenie w Etapie 2, etapy w Etapie 3). */
-    fun normalize(state: GameState): GameState = Stage11.normalize(Autonomy.normalize(Lifecycle.normalize(Secrets.normalize(Fog.normalize(WorldAI.normalize(economy(Realms.normalize(DiscipleRules.normalize(state)))))))))
+    fun normalize(state: GameState): GameState = Power.refresh(Stage11.normalize(Autonomy.normalize(Lifecycle.normalize(Secrets.normalize(Fog.normalize(WorldAI.normalize(economy(Realms.normalize(DiscipleRules.normalize(state))))))))))
 
     /** Migracja do Etapu 4: stare zapisy zachowują wszystkie płomienie i znają wszystkie receptury. */
     private fun economy(s: GameState): GameState {
@@ -107,7 +107,8 @@ object GameEngine {
         val advanced = Tutorial.afterCommand(state, effective, result.state)
         // Etap 8: liczniki, cele dzienne i osiągnięcia – liczone ze zdarzeń tego kroku.
         val withMeta = Achievements.after(effective, state, result.copy(state = advanced))
-        return withMeta.copy(state = withMeta.state.copy(step = state.step + 1))
+        // Etap 12: Moc zawsze z bieżących statystyk.
+        return withMeta.copy(state = Power.refresh(withMeta.state).copy(step = state.step + 1))
     }
 
     private fun dispatch(state: GameState, command: GameCommand, ctx: EngineContext): StepResult =

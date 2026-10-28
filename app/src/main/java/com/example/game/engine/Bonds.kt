@@ -11,7 +11,9 @@ import com.example.model.Disciple
  * i czasem ścierają się na dziedzińcu, bracia przysięgli walczą razem lepiej.
  */
 object Bonds {
-    const val EVERY_DAYS = 3
+    const val EVERY_DAYS = 10
+    /** Wygasanie ku zeru przy każdej aktualizacji (stan równowagi = dryf / 0,08). */
+    const val DECAY = 0.06
     const val MIN_STORED = 5
     const val RIVAL_SPUR_PERCENT = 15.0
     const val FRIEND_ROLE_PULL = 8
@@ -43,9 +45,14 @@ object Bonds {
     }
 
     /** Naturalny dryf więzi między parą uczniów (deterministyczny + szum). */
+    /** Stała „chemia” pary (−3…+3): jedni po prostu się lubią, inni nie znoszą – niezależnie od okoliczności. */
+    fun chemistry(a: String, b: String): Int = Math.floorMod((minOf(a, b) + "|" + maxOf(a, b)).hashCode(), 7) - 3
+
     fun drift(a: Disciple, b: Disciple, roll: Int): Int {
-        var v = 0
-        if (a.role == b.role) v += 2
+        var v = chemistry(a.id, b.id)
+        if (a.role == b.role) v += 1
+        // Rówieśnicy (ta sama ranga i królestwo) konkurują o awans, pigułki i uwagę mistrza.
+        if (a.rank == b.rank && a.majorRealm == b.majorRealm) v -= 1
         if (a.martialSchool == b.martialSchool) v += 1
         if (a.mentorId == b.id || b.mentorId == a.id) v += 2
         if (a.has("charismatic") || b.has("charismatic")) v += 1
@@ -65,7 +72,9 @@ object Bonds {
         val notes = mutableListOf<String>()
         val ds = s0.disciples
         for (i in ds.indices) for (j in i + 1 until ds.size) {
-            val delta = drift(ds[i], ds[j], rng.nextInt(5) - 2)
+            val cur = value(s, ds[i].id, ds[j].id)
+            val decay = -Math.round(cur * DECAY).toInt()
+            val delta = drift(ds[i], ds[j], rng.nextInt(7) - 3) + decay
             s = shift(s, ds[i].id, ds[j].id, delta)
         }
         // Spięcia rywali: sparing na dziedzińcu – rany albo pojednanie.

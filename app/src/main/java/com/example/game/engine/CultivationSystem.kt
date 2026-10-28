@@ -89,11 +89,14 @@ object CultivationSystem {
     fun majorOdds(s: GameState, d: Disciple, withPill: Boolean): Int? {
         val target = d.majorRealm?.next ?: return null
         if (target.tribulationStrikes > 0) return null
-        val mods = Modifiers.disciple(Modifiers.sect(s), d)
-        return when (target) {
-            MajorRealm.FOUNDATION -> if (withPill) 70 + d.karmicLuck / 10 else FOUNDATION_PILL_LESS_CHANCE
-            else -> CultivationRules.breakthroughChance(d, if (withPill) 35 else 0, s.timeOfDay, mods.flat(Stat.BREAKTHROUGH_CHANCE).toInt())
-        }
+        return majorChance(s, d, target, if (withPill) 35 else 0)
+    }
+
+    /** Etap 12: jedna formuła wielkiego przełomu bez tribulacji (Fundamenty trudniejsze bez pigułki). */
+    fun majorChance(s: GameState, d: Disciple, target: MajorRealm, pillBonus: Int): Int {
+        val flat = Modifiers.disciple(Modifiers.sect(s), d).flat(Stat.BREAKTHROUGH_CHANCE).toInt()
+        val base = if (target == MajorRealm.FOUNDATION && pillBonus == 0) FOUNDATION_PILL_LESS_CHANCE - 35 else 0
+        return CultivationRules.breakthroughChance(d, pillBonus, s.timeOfDay, flat + base)
     }
 
     fun bottleneck(s: GameState, d: Disciple): String? {
@@ -158,7 +161,7 @@ object CultivationSystem {
         val mods = Modifiers.disciple(sect, d)
         var pillBonus = 0
         if (usePill) {
-            Quality.takeBest(inventory, GameContent.BREAKTHROUGH_PILL)?.let { q -> pillBonus = (35 * q.effect).toInt() }
+            Quality.takeBest(inventory, GameContent.BREAKTHROUGH_PILL)?.let { q -> pillBonus = CultivationRules.pillBonus(q.effect) }
         }
 
         // Odchylenie Qi przy wysokiej toksyczności.
@@ -178,10 +181,7 @@ object CultivationSystem {
         }
 
         if (target.tribulationStrikes == 0) {
-            val chance = when (target) {
-                MajorRealm.FOUNDATION -> if (pillBonus > 0) 70 + d.karmicLuck / 10 else FOUNDATION_PILL_LESS_CHANCE
-                else -> CultivationRules.breakthroughChance(d, pillBonus, s.timeOfDay, mods.flat(Stat.BREAKTHROUGH_CHANCE).toInt())
-            }
+            val chance = majorChance(s, d, target, pillBonus)
             return if (rng.nextInt(100) < chance) {
                 val entered = SecretStates.afterSuccess(enter(d, target, pillBonus > 0, perfect = false, rng), pillBonus > 0, s.currentDay)
                 Advance(entered, "🌟 ${d.name} wkracza w ${target.polishName}!", 25, majorSuccess = true, attempted = true)
@@ -190,7 +190,7 @@ object CultivationSystem {
             }
         }
 
-        val trib = tribulation(d, target, inventory, rng, if (s.e4Initialized) Vein.tribulationMitigation(s.veinLevel) else 0.0)
+        val trib = tribulation(d, target, inventory, rng, (if (s.e4Initialized) Vein.tribulationMitigation(s.veinLevel) else 0.0) + preparation(s, d, mods))
         return when {
             trib.catastrophe -> Advance(null, "☠️ Katastrofa! ${d.name} nie przetrwał gniewu niebios.", -10, attempted = true, died = true, tribulation = trib)
             !trib.survived -> Advance(
@@ -243,26 +243,57 @@ object CultivationSystem {
         return Realms.sync(x)
     }
 
-    /** Tribulacja: kolejne uderzenia pioruna osłabiane przez obronę i przygotowanie. */
+    /** Etap 12: premie szansy przełomu, pełnia i szczęście osłabiają pioruny (szansa przełomu nie ginie po Fundamentach). */
+    fun preparation(s: GameState, d: Disciple, mods: ModifierStack = Modifiers.disciple(Modifiers.sect(s), d)): Double =
+        (mods.flat(Stat.BREAKTHROUGH_CHANCE) / 200.0).coerceIn(-0.1, 0.15) +
+            (if (s.timeOfDay == TimeOfDay.FULL_MOON) 0.08 else 0.0) +
+            ((d.karmicLuck - 50) / 500.0)
+
+    /** Łączna siła piorunów przed osłoną (×maks. HP) – skalibrowana na ok. 75–80% przeżycia bez przygotowań. */
+    const val TRIBULATION_TOTAL = 1.65
+    const val ROD_MITIGATION = 0.12
+    const val PILL_MITIGATION = 0.2
+    const val BODY_MITIGATION = 0.2
+
+    /** Opór obrony rośnie z królestwem – obrona musi nadążać za piorunami. */
+    fun defenseScale(target: MajorRealm): Double = 350.0 * Math.pow(1.5, (target.ordinal - MajorRealm.CORE_FORMATION.ordinal).toDouble())
+
+    /** Szacowana szansa przeżycia (%) – Monte Carlo bez zużycia przedmiotów (dla UI i autonomii). */
+    fun tribulationOdds(s: GameState, d: Disciple, withPill: Boolean): Int? {
+        val target = d.majorRealm?.next ?: return null
+        if (target.tribulationStrikes == 0) return null
+        val extra = (if (s.e4Initialized) Vein.tribulationMitigation(s.veinLevel) else 0.0) + preparation(s, d)
+        var ok = 0
+        repeat(200) { i ->
+            val inv = mutableMapOf<String, Int>().apply { if (withPill) put(TRIBULATION_PILL, 1); if ((s.inventory["Talizman Piorunochronu"] ?: 0) > 0) put("Talizman Piorunochronu", 1) }
+            if (tribulation(d, target, inv, Random(i * 7919L + d.id.hashCode()), extra).survived) ok++
+        }
+        return ok / 2
+    }
+
+    /** Tribulacja: kolejne uderzenia pioruna osłabiane przez obronę i przygotowanie; gniew niebios losuje siłę całości. */
     fun tribulation(d: Disciple, target: MajorRealm, inventory: MutableMap<String, Int>, rng: Random, extraMitigation: Double = 0.0): TribulationResult {
-        var mitigation = (d.defense / (d.defense + 500.0)).coerceAtMost(0.6) + extraMitigation
+        var mitigation = (d.defense / (d.defense + defenseScale(target))).coerceAtMost(0.55) + extraMitigation
         val rod = inventory["Talizman Piorunochronu"] ?: 0
         if (rod > 0) {
             inventory["Talizman Piorunochronu"] = rod - 1
-            mitigation += 0.15
+            mitigation += ROD_MITIGATION
         }
-        if (d.path == CultivationPath.BODY) mitigation += 0.3
+        if (d.path == CultivationPath.BODY) mitigation += BODY_MITIGATION
         val pills = inventory[TRIBULATION_PILL] ?: 0
         if (pills > 0) {
             inventory[TRIBULATION_PILL] = pills - 1
-            mitigation += 0.3
+            mitigation += PILL_MITIGATION
         }
-        mitigation = mitigation.coerceAtMost(0.85)
+        mitigation = mitigation.coerceIn(0.0, 0.85)
+        val weights = (0 until target.tribulationStrikes).map { 1 + it * 0.1 }
+        val k = TRIBULATION_TOTAL / weights.sum()
+        val wrath = rng.nextInt(100).let { if (it < 30) 0.8 else if (it < 80) 1.0 else 1.3 }
         var hp = d.maxHp
         val hits = mutableListOf<Int>()
-        for (i in 0 until target.tribulationStrikes) {
-            val variance = 0.85 + rng.nextDouble() * 0.3
-            val dmg = (d.maxHp * 0.15 * (1 + i * 0.08) * variance * (1 - mitigation)).toInt()
+        for (w in weights) {
+            val variance = 0.5 + rng.nextDouble()
+            val dmg = (d.maxHp * k * w * variance * wrath * (1 - mitigation)).toInt()
             hits += dmg
             hp -= dmg
             if (hp <= 0) break

@@ -117,7 +117,7 @@ class Stage10Test {
             x.copy(stageQi = Realms.required(x))
         }
         s = apply(s, GameCommand.Hold(id)).state
-        repeat(Autonomy.HOLD_DAYS - 1) { s = nextDay(s) }
+        repeat(15) { s = nextDay(s) }
         val d = s.disciple(id)!!
         assertEquals(MajorRealm.QI_CONDENSATION, d.majorRealm)
         assertFalse(d.diary.any { "przełomu" in it })
@@ -143,9 +143,10 @@ class Stage10Test {
 
     @Test
     fun disciplesPickRolesThemselvesAndKeepADiary() {
-        var s = fresh(7L)
-        repeat(40) { s = nextDay(s) }
-        assertTrue(s.disciples.all { it.plan != null })
+        // nextDay pomija cykle dochodu – bez zapasu kamieni sekta zbankrutowałaby w teście.
+        var s = fresh(7L).copy(spiritStones = 1_000_000)
+        repeat(60) { s = nextDay(s) }
+        assertTrue(s.disciples.map { it.name to it.plan }.toString(), s.disciples.all { it.plan != null })
         assertTrue(s.disciples.any { it.diary.isNotEmpty() })
     }
 

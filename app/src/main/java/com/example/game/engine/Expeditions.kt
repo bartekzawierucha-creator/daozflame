@@ -174,9 +174,9 @@ object Expeditions {
 
     /** Siła drużyny: (atak, obrona) prowadzącego plus część towarzysza. */
     fun team(s: GameState, run: ExpeditionRun, d: com.example.model.Disciple): Pair<Int, Int> {
-        val c = run.companionId?.let { s.disciple(it) } ?: return d.attack to d.defense
+        val c = run.companionId?.let { s.disciple(it) } ?: return Power.attack(s, d) to d.defense
         val f = companionShare(s, d.id, c.id)
-        return (d.attack + c.attack * f).toInt() to (d.defense + c.defense * f).toInt()
+        return (Power.attack(s, d) + Power.attack(s, c) * f).toInt() to (d.defense + c.defense * f).toInt()
     }
 
     /** Dopasowanie żywiołu ucznia do krainy w % (100 = obojętne). */
@@ -286,7 +286,7 @@ object Expeditions {
         val d = s.disciple(run.discipleId)
         val boosted = if (c != null && d != null && run.companionId != null) {
             val (atk, _) = team(s, run, d)
-            c.copy(effectiveAttack = c.effectiveAttack + (atk - d.attack).coerceAtLeast(0))
+            c.copy(effectiveAttack = c.effectiveAttack + (atk - Power.attack(s, d)).coerceAtLeast(0))
         } else c
         return started.copy(state = started.state.copy(combat = boosted, expedition = run.copy(atBoss = true)))
     }
@@ -391,13 +391,14 @@ object Expeditions {
 /** Etap 5a: Wieża Prób – piętra coraz silniejszych strażników, 3 próby na dzień gry (licznik od dnia gry, nie od zegara). */
 object Tower {
     const val ATTEMPTS_PER_DAY = 3
-    const val GROWTH = 1.08
+    const val GROWTH_PER_FLOOR = 0.08
 
     data class Guardian(val hp: Int, val attack: Int, val defense: Int)
 
     fun guardian(floor: Int): Guardian {
-        val f = GROWTH.pow(floor - 1)
-        return Guardian((400 * f).toInt(), (45 * f).toInt(), (18 * f).toInt())
+        // Etap 12: wzrost liniowy (8% bazy na piętro) – wieża rośnie razem z sektą zamiast stawiać ścianę.
+        val f = 1 + GROWTH_PER_FLOOR * (floor - 1)
+        return Guardian((1500 * f).toInt(), (150 * f).toInt(), (50 * f).toInt())
     }
 
     fun attemptsLeft(s: GameState): Int = if (s.towerDay != s.currentDay) ATTEMPTS_PER_DAY else (ATTEMPTS_PER_DAY - s.towerAttempts).coerceAtLeast(0)
@@ -407,7 +408,7 @@ object Tower {
         if (attemptsLeft(s) <= 0) return fail(s, "Wieża Prób jest zamknięta do jutra (3 próby dziennie).")
         val floor = s.towerFloor + 1
         val g = guardian(floor)
-        val res = Skirmish.resolve(d.attack, d.defense, d.maxHp, g.hp, g.attack, g.defense, ctx.rng("tower"))
+        val res = Skirmish.resolve(Power.attack(s, d), d.defense, d.maxHp, g.hp, g.attack, g.defense, ctx.rng("tower"))
         val used = (if (s.towerDay == s.currentDay) s.towerAttempts else 0) + 1
         val base = s.copy(towerDay = s.currentDay, towerAttempts = used)
         if (!res.win) return ok(base, "Wieża Prób: strażnik piętra $floor okazał się silniejszy.")

@@ -9,9 +9,10 @@ import com.example.model.SectGoal
  * kosztuje morale i reputację. Postęp liczy się z liczników silnika od chwili ogłoszenia.
  */
 object SectGoals {
-    const val DURATION = 7
-    const val PAUSE = 1
-    const val FIRST_DAY = 3
+    // Etap 12: dzień gry trwa ~48 s – „tydzień” sekty to 75 dni (~1 h gry), przerwa ~6 min.
+    const val DURATION = 75
+    const val PAUSE = 8
+    const val FIRST_DAY = 20
     const val FAIL_MORALE = 8
 
     /** Wartość licznika danego rodzaju celu. */

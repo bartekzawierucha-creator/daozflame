@@ -67,10 +67,10 @@ fun bondColor(k: BondKind) = when (k) {
 fun MentorSection(d: Disciple, ui: WuxiaUiState, viewModel: WuxiaGameViewModel) {
     var choosing by remember(d.id) { mutableStateOf(false) }
     Section("Czas mistrza", "skupienie ${ui.masterFocus}/${Mentor.MAX_FOCUS}")
-    RuleHint("Mistrz ma ${Mentor.MAX_FOCUS} osobiste działania na dzień. Pochwała budzi zazdrość rywali i zazdrosnych. Złamana obietnica niszczy zaufanie.", maxLines = 3)
+    RuleHint("Mistrz ma do ${Mentor.MAX_FOCUS} punktów skupienia; jeden wraca co ${Mentor.FOCUS_REGEN_DAYS} dni gry. Pochwała budzi zazdrość rywali i zazdrosnych. Złamana obietnica niszczy zaufanie.", maxLines = 3)
     val tired = ui.masterFocus <= 0
-    val meditated = d.meditatedWithMasterDay == ui.currentDay
-    ActionRow("Wspólna medytacja", if (meditated) "Już dziś medytowaliście razem." else "Qi dla ucznia i +${Mentor.MEDITATION_TRUST} zaufania.") {
+    val meditated = d.meditatedWithMasterDay >= 0 && ui.currentDay - d.meditatedWithMasterDay < Mentor.MEDITATION_COOLDOWN
+    ActionRow("Wspólna medytacja", if (meditated) "Znów za ${Mentor.MEDITATION_COOLDOWN - (ui.currentDay - d.meditatedWithMasterDay)} dni." else "Qi dla ucznia i +${Mentor.MEDITATION_TRUST} zaufania.") {
         GhostButton("Medytuj", enabled = !tired && !meditated, onClick = { viewModel.meditateWith(d.id) }, height = 30.dp)
     }
     ActionRow("Pochwała przy sekcie", "+${Mentor.PRAISE_LOYALTY} lojalności, +${Mentor.PRAISE_TRUST} zaufania. Rywale zapamiętają.") {
@@ -102,7 +102,7 @@ fun MentorSection(d: Disciple, ui: WuxiaUiState, viewModel: WuxiaGameViewModel) 
             if (pills.isEmpty() && ui.vaultArtifacts.isEmpty()) SheetBody("Nie masz czego obiecać – zdobądź pigułki albo artefakty.", color = Aaa.TextLow)
         }
     }
-    if (tired) SheetBody("Mistrz jest dziś wyczerpany. Skupienie wróci jutro.", color = Aaa.TextLow, maxLines = 1)
+    if (tired) SheetBody("Mistrz jest wyczerpany. Punkt skupienia wróci za ${ui.focusNextIn} dni.", color = Aaa.TextLow, maxLines = 1)
 }
 
 /** Mały portret ucznia w ramce szkoły z podpisem – do wyboru i list więzi. */

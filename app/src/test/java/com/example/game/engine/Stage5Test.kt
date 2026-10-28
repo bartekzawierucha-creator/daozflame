@@ -82,7 +82,7 @@ class Stage5Test {
     fun chainLinksNeverFireRandomly() {
         var s = fresh(4L).copy(currentDay = 40, sectReputation = 5_000)
         val seen = mutableSetOf<String>()
-        repeat(3_000) {
+        repeat(8_000) {
             s = apply(s, GameCommand.Tick).state
             s.activeEventId?.let { seen += it }
             s = s.copy(activeEventId = null, scheduledEvents = emptyList())
@@ -248,7 +248,8 @@ class Stage5Test {
 
     @Test
     fun towerGrowsEightPercentPerFloorAndLimitsAttempts() {
-        assertEquals((400 * 1.08).toInt(), Tower.guardian(2).hp)
+        assertEquals((1500 * (1 + Tower.GROWTH_PER_FLOOR)).toInt(), Tower.guardian(2).hp)
+        assertEquals((1500 * (1 + Tower.GROWTH_PER_FLOOR * 10)).toInt(), Tower.guardian(11).hp)
         var s = fresh(19L).let { it.copy(disciples = it.disciples.map { d -> d.copy(attack = 9_999, defense = 9_999) }) }
         val id = s.disciples.first().id
         repeat(3) { s = apply(s, GameCommand.ClimbTower(id)).state }
@@ -300,7 +301,7 @@ class Stage5Test {
         var tries = 0
         while (s.raid == null && tries++ < 200) s = nextDay(s)
         val raid = s.raid!!
-        assertEquals(s.currentDay + 2, raid.arriveDay)
+        assertEquals(s.currentDay + WorldAI.RAID_WARNING_DAYS, raid.arriveDay)
         // Silni strażnicy na wszystkich bramach.
         val strong = s.copy(disciples = s.disciples.map { it.copy(attack = 2_000, defense = 1_000) })
         var guarded = strong
@@ -425,9 +426,10 @@ class Stage5Test {
     @Test
     fun secretRealmsOpenEveryFortyDaysWithRankLimit() {
         val r = SecretRealms.REALMS.first { it.id == "sr_bamboo" }
-        assertEquals(5, SecretRealms.openingDay(r, 9))
-        assertNull(SecretRealms.openingDay(r, 10))
-        assertEquals(45, SecretRealms.openingDay(r, 45))
+        val off = r.offset
+        assertEquals(off, SecretRealms.openingDay(r, off + SecretRealms.OPEN_DAYS - 1))
+        assertNull(SecretRealms.openingDay(r, off + SecretRealms.OPEN_DAYS))
+        assertEquals(off + SecretRealms.EVERY, SecretRealms.openingDay(r, off + SecretRealms.EVERY))
         val s = fresh(43L).copy(currentDay = 6)
         val high = s.disciples.first { (it.majorRealm?.ordinal ?: 0) > r.maxRealm.ordinal }
         assertTrue(apply(s, GameCommand.EnterSecretRealm(r.id, high.id)).notice!!.contains("odrzuca"))
@@ -436,7 +438,7 @@ class Stage5Test {
         val inside = apply(ss, GameCommand.EnterSecretRealm(r.id, low.id)).state
         assertEquals((ss.inventory["Trawa Wiecznej Wiosny"] ?: 0) + 10, inside.inventory["Trawa Wiecznej Wiosny"])
         assertTrue(apply(inside, GameCommand.EnterSecretRealm(r.id, low.id)).notice!!.contains("już"))
-        assertTrue(apply(s.copy(currentDay = 20), GameCommand.EnterSecretRealm(r.id, low.id)).notice!!.contains("zamknięte"))
+        assertTrue(apply(s.copy(currentDay = off + SecretRealms.OPEN_DAYS + 1), GameCommand.EnterSecretRealm(r.id, low.id)).notice!!.contains("zamknięte"))
     }
 
     @Test

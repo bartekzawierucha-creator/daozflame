@@ -212,8 +212,9 @@ object DiscipleWorkPhase : TickPhase {
 
 /** 4. Zdarzenie losowe: co 16 ticków 65% szansy, jeśli żadne nie jest aktywne. */
 object RandomEventPhase : TickPhase {
-    const val EVERY_TICKS = 16
-    const val CHANCE_PERCENT = 65
+    // Etap 12: zdarzenie co ~5 min gry (było co ~40 s – okno wyboru wisiało 64% czasu).
+    const val EVERY_TICKS = 120
+    const val CHANCE_PERCENT = 60
     const val MEMORY = 12
 
     override fun run(frame: TickFrame) {

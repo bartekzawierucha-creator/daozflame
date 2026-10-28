@@ -44,7 +44,8 @@ object Meditation {
                 daoPoints = d.daoPoints + 2,
                 laws = d.laws.mapValues { (it.value + INSIGHT_LAW_PERCENT).coerceAtMost(100.0) }
             )
-            if (frame.notice == null) frame.notice = "Wgląd Dao! ${d.name.substringBefore(" (")} pojmuje coś, czego nie da się nauczyć (+2 pkt Dao)."
+            // Etap 12: wgląd trafia do dziennika ucznia, nie na ekran (było ~300 komunikatów na godzinę).
+            d = d.copy(diary = (d.diary + "Dz. ${frame.day}: Wgląd Dao – pojąłem coś, czego nie da się nauczyć (+2 pkt Dao).").takeLast(Autonomy.DIARY_SIZE))
         }
         return d
     }

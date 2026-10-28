@@ -104,7 +104,8 @@ object Modifiers {
             list += Modifier("Formacja Pięciu Żywiołów", Stat.QI_GAIN, ModOp.PERCENT, Formation.qiBonusPercent(s))
         }
         if (s.e4Initialized && s.veinLevel > 1) {
-            list += Modifier("Żyła: ${Vein.name(s.veinLevel)}", Stat.QI_GAIN, ModOp.MULTIPLY, Vein.qiMultiplier(s.veinLevel))
+            // Etap 12: żyła dodaje procent (jak inne premie sekty) – nie mnoży całego stosu.
+            list += Modifier("Żyła: ${Vein.name(s.veinLevel)}", Stat.QI_GAIN, ModOp.PERCENT, (Vein.qiMultiplier(s.veinLevel) - 1.0) * 100)
         }
         if (s.ascendedNames.isNotEmpty()) {
             list += Modifier("Dziedzictwo Wniebowstąpienia (${s.ascendedNames.size})", Stat.QI_GAIN, ModOp.PERCENT, 5.0 * s.ascendedNames.size)

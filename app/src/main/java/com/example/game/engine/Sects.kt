@@ -13,7 +13,9 @@ import com.example.model.SpyType
  * więc koszt symulacji offline rośnie z dniami, a nie z tickami.
  */
 object WorldAI {
-    const val ACTION_EVERY_DAYS = 10
+    // Etap 12: sekty działają co ~25 min gry; najazd zapowiadany z wyprzedzeniem ~6 min.
+    const val ACTION_EVERY_DAYS = 30
+    const val RAID_WARNING_DAYS = 8
     const val FIRST_RAID_DAY = 20
     const val MAX_NEMESES = 3
     const val NEMESIS_GRUDGE = 3
@@ -70,8 +72,8 @@ object WorldAI {
 
         // Najazd na gracza: tylko wrogowie, nie za wcześnie, jeden naraz.
         if (hostile(sect) && s.currentDay >= FIRST_RAID_DAY && s.raid == null && rng.nextInt(100) < if (sect.nemesisLevel > 0) 60 else 35) {
-            val raid = Raid(sect.id, sect.name, s.currentDay + 2, (Raids.strength(sect) * Rebirth.raidFactor(s)).toInt())
-            val msg = "⚠ ${sect.name} szykuje najazd! Wojownicy staną u bram za 2 dni. Obsadź bramy."
+            val raid = Raid(sect.id, sect.name, s.currentDay + RAID_WARNING_DAYS, (Raids.strength(sect) * Rebirth.raidFactor(s)).toInt())
+            val msg = "⚠ ${sect.name} szykuje najazd! Wojownicy staną u bram za $RAID_WARNING_DAYS dni. Obsadź bramy."
             return note(s.copy(raid = raid), "${sect.name} wyrusza na sektę gracza.") to msg
         }
         val roll = rng.nextInt(100)
@@ -147,10 +149,11 @@ object Raids {
     fun strength(sect: RivalSect): Int = (sect.strength * 0.5 * (1 + 0.25 * sect.nemesisLevel)).toInt()
 
     fun guardPower(d: Disciple): Int = d.attack * 8 + d.defense * 4
+    fun guardPower(s: GameState, d: Disciple): Int = Power.attack(s, d) * 8 + d.defense * 4
 
     fun gatePower(s: GameState, gate: String): Int {
         val d = s.gates[gate]?.let { s.disciple(it) }
-        return ((WALL + (d?.let { guardPower(it) } ?: 0)) * Formation.defenseFactor(s)).toInt()
+        return ((WALL + (d?.let { guardPower(s, it) } ?: 0)) * Formation.defenseFactor(s)).toInt()
     }
 
     fun assign(s: GameState, gate: String, discipleId: String?): StepResult {
@@ -285,7 +288,7 @@ object Wars {
         val army = discipleIds.distinct().take(MAX_ARMY).mapNotNull { s.disciple(it) }.filter { it.currentHp > it.maxHp / 3 }
         if (army.isEmpty()) return fail(s, "Brak zdolnych do walki uczniów.")
         val rng = ctx.rng("battle")
-        val power = army.sumOf { Raids.guardPower(it) }
+        val power = army.sumOf { Raids.guardPower(s, it) }
         val enemy = sect.strength * (0.8 + rng.nextDouble() * 0.4)
         val ids = army.map { it.id }.toSet()
         if (power >= enemy) {
@@ -315,7 +318,7 @@ object Wars {
         val d = s.disciple(discipleId) ?: return ok(s)
         if (toDeath && !confirmed) return fail(s, "Pojedynek na śmierć wymaga potwierdzenia – przegrany nie wraca.")
         val champ = sect.strength * (1 + 0.2 * sect.nemesisLevel)
-        val res = Skirmish.resolve(d.attack, d.defense, d.maxHp, champ.toInt(), (champ / 20).toInt(), (champ / 40).toInt(), ctx.rng("duel"))
+        val res = Skirmish.resolve(Power.attack(s, d), d.defense, d.maxHp, champ.toInt(), (champ / 20).toInt(), (champ / 40).toInt(), ctx.rng("duel"))
         if (res.win) {
             var st = s.copy(
                 sectReputation = s.sectReputation + if (toDeath) 100 else 40,

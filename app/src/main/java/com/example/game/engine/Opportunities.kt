@@ -10,9 +10,10 @@ import com.example.model.OpportunityKind
  * trwają [DURATION] dni i wymagają decyzji – kogo wysłać, czy zapłacić, czy odmówić.
  */
 object Opportunities {
-    const val DURATION = 3
-    const val MIN_GAP = 8
-    const val DAILY_CHANCE = 15
+    // Etap 12: okazja co ~25–40 min gry, trwa ~10 min.
+    const val DURATION = 12
+    const val MIN_GAP = 30
+    const val DAILY_CHANCE = 8
     const val MASTER_COMPREHENSION = 4
     const val MASTER_ATTACK_PERCENT = 8
     const val CAVE_QI_TICKS = 400

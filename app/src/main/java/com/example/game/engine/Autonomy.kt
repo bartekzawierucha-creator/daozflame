@@ -17,9 +17,10 @@ import kotlin.random.Random
 object Autonomy {
     const val BASE_OBEDIENCE = 40
     const val NAG_PENALTY = 15
-    const val COMMIT_DAYS = 10
-    const val HOLD_DAYS = 10
-    const val VENTURE_COOLDOWN = 8
+    // Etap 12: dzień gry to ~48 s – obietnice i wyzwania liczone na kilkadziesiąt dni (kilkadziesiąt minut).
+    const val COMMIT_DAYS = 40
+    const val HOLD_DAYS = 60
+    const val VENTURE_COOLDOWN = 40
     const val ROLE_INERTIA = 12
     const val DIARY_SIZE = 8
 
@@ -364,8 +365,10 @@ object Autonomy {
         if (d.holdUntilDay >= day) return wait("Czeka z przełomem, jak radził mistrz (do dnia ${d.holdUntilDay}).")
         if (CultivationSystem.tribulationAhead(d)) {
             if (d.currentHp < d.maxHp) return wait("Leczy się przed tribulacją.")
-            val daring = when { d.has("coward") -> waited / 10; bold -> 25; d.has("ambitious") -> 20; else -> 6 + waited / 5 }
-            if (rng.nextInt(100) >= daring) return wait(if (daring == 0) "Boi się gromów tribulacji." else "Zbiera odwagę przed tribulacją.")
+            // Etap 12: uczeń ocenia realne szanse przeżycia piorunów (z pigułką tribulacji, jeśli jest w magazynie).
+            val odds = CultivationSystem.tribulationOdds(s, d, (s.inventory[CultivationSystem.TRIBULATION_PILL] ?: 0) > 0) ?: 0
+            val need = (when { d.has("coward") -> 92; bold -> 60; d.has("ambitious") -> 68; else -> 80 } - waited / 4).coerceAtLeast(50)
+            if (odds < need) return wait(if (d.has("coward")) "Boi się gromów tribulacji (przeżycie ok. $odds%)." else "Przygotowuje się do tribulacji (przeżycie ok. $odds%).")
         } else {
             val odds = CultivationSystem.majorOdds(s, d, pill) ?: return wait("Czeka u progu królestwa.")
             val need = when { d.has("coward") -> 75; bold -> 30; d.has("ambitious") -> 40; else -> 55 } - 2 * waited

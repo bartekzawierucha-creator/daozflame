@@ -86,7 +86,7 @@ class Stage3Test {
 
     @Test
     fun meditationNeverExceedsStageRequirement() {
-        var s = fresh(4L).copy(autoBreakthroughEnabled = false)
+        var s = fresh(4L).copy(autoBreakthroughEnabled = false, autonomy = false)
         val d = at(s.disciples.first(), MajorRealm.QI_CONDENSATION, 9)
         s = only(s, d)
         repeat(3000) { s = apply(s, GameCommand.Tick).state }

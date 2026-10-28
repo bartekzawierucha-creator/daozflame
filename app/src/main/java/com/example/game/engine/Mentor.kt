@@ -12,6 +12,10 @@ import com.example.model.MasterPromise
  */
 object Mentor {
     const val MAX_FOCUS = 3
+    /** Etap 12: jeden punkt skupienia wraca co [FOCUS_REGEN_DAYS] dni gry (~4 min). */
+    const val FOCUS_REGEN_DAYS = 5
+    /** Z tym samym uczniem medytuje się najwyżej raz na tyle dni. */
+    const val MEDITATION_COOLDOWN = 15
     const val MEDITATION_TICKS = 90
     const val MEDITATION_TRUST = 6
     const val PRAISE_TRUST = 4
@@ -22,23 +26,33 @@ object Mentor {
     const val PROMISE_KEPT_LOYALTY = 10
     const val PROMISE_BROKEN_TRUST = 25
     const val PROMISE_BROKEN_LOYALTY = 15
-    const val PROMISE_DAYS = 60
+    const val PROMISE_DAYS = 1800
 
-    fun focusLeft(s: GameState): Int = if (s.focusDay == s.currentDay) s.masterFocus else MAX_FOCUS
+    fun focusLeft(s: GameState): Int =
+        (s.masterFocus + ((s.currentDay - s.focusDay).coerceAtLeast(0) / FOCUS_REGEN_DAYS)).coerceAtMost(MAX_FOCUS)
 
-    private fun spend(s: GameState): GameState = s.copy(focusDay = s.currentDay, masterFocus = focusLeft(s) - 1)
+    /** Za ile dni wróci następny punkt (0 = pełne skupienie). */
+    fun nextFocusIn(s: GameState): Int = if (focusLeft(s) >= MAX_FOCUS) 0 else FOCUS_REGEN_DAYS - (s.currentDay - s.focusDay).coerceAtLeast(0) % FOCUS_REGEN_DAYS
+
+    private fun spend(s: GameState): GameState {
+        val left = focusLeft(s)
+        val elapsed = (s.currentDay - s.focusDay).coerceAtLeast(0)
+        // Pełne skupienie: odliczanie startuje od dziś; inaczej zachowuje rozpoczęty cykl.
+        val anchor = if (left >= MAX_FOCUS) s.currentDay else s.focusDay + elapsed / FOCUS_REGEN_DAYS * FOCUS_REGEN_DAYS
+        return s.copy(focusDay = anchor, masterFocus = left - 1)
+    }
 
     private fun GameState.update(id: String, f: (Disciple) -> Disciple) = copy(disciples = disciples.map { if (it.id == id) f(it) else it })
     private fun Disciple.v(m: String, f: String) = if (gender == "Kobieta") f else m
     private fun Disciple.note(day: Int, text: String) = copy(diary = (diary + "Dz. $day: $text").takeLast(Autonomy.DIARY_SIZE))
 
-    private fun tired(s: GameState) = fail(s, "Mistrz jest dziś wyczerpany – skupienie wróci jutro.")
+    private fun tired(s: GameState) = fail(s, "Mistrz jest wyczerpany – skupienie wróci za ${nextFocusIn(s)} dni.")
 
     /** Wspólna medytacja: Qi i zaufanie. Raz dziennie z tym samym uczniem. */
     fun meditate(s: GameState, id: String): StepResult {
         val d = s.disciple(id) ?: return ok(s)
         if (focusLeft(s) <= 0) return tired(s)
-        if (d.meditatedWithMasterDay == s.currentDay) return fail(s, "${Autonomy.short(d)} medytował${d.v("", "a")} już dziś z mistrzem.")
+        if (d.meditatedWithMasterDay >= 0 && s.currentDay - d.meditatedWithMasterDay < MEDITATION_COOLDOWN) return fail(s, "${Autonomy.short(d)} medytował${d.v("", "a")} niedawno z mistrzem.")
         if (d.secludedUntilDay >= s.currentDay) return fail(s, "${Autonomy.short(d)} trwa w odosobnieniu.")
         val day = s.currentDay
         val st = spend(s).update(id) {

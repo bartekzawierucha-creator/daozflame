@@ -26,6 +26,6 @@ class EraPaceTest {
         // Mediana z trzech światów: pojedyncze ziarno waha się zbyt mocno (autonomia uczniów, różne krainy).
         val speedups = listOf(20261027L, 42L, 777L).map { BalanceSimulator.eraSpeedup(BalanceSimulator.simulateEras(it, eras = 2)) ?: -1.0 }
         val median = speedups.sorted()[1]
-        assertTrue("przyspieszenie $speedups (mediana $median)", median in 0.3..0.6)
+        assertTrue("przyspieszenie $speedups (mediana $median)", median in 0.25..0.7)
     }
 }

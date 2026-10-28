@@ -90,7 +90,7 @@ object Dungeon {
         val depth = s.dungeonDepth + 1
         val f = Math.pow(1.12, (depth - 1).toDouble())
         val rng = ctx.rng("dungeon")
-        val res = Skirmish.resolve(d.attack, d.defense, d.currentHp, (500 * f).toInt(), (50 * f).toInt(), (20 * f).toInt(), rng)
+        val res = Skirmish.resolve(Power.attack(s, d), d.defense, d.currentHp, (500 * f).toInt(), (50 * f).toInt(), (20 * f).toInt(), rng)
         val base = s.copy(dungeonDay = s.currentDay, dungeonAttempts = (if (s.dungeonDay == s.currentDay) s.dungeonAttempts else 0) + 1,
             disciples = s.disciples.map { if (it.id == d.id) it.copy(currentHp = res.hpLeft.coerceAtLeast(10)) else it })
         if (!res.win) return ok(base, "${d.name} wycofuje się z piętra $depth lochów.")

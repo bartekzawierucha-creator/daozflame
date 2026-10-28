@@ -36,8 +36,8 @@ object DaoNet {
     data class Bout(val a: Int, val b: Int, val winnerA: Boolean, val rounds: Int)
     data class Duel(val winnerA: Boolean, val bouts: List<Bout>, val seed: Long)
 
-    fun fighter(d: Disciple): ShadowFighter =
-        ShadowFighter(d.name.substringBefore(" ("), d.majorRealm?.ordinal ?: 0, d.stage, d.attack, d.defense, d.maxHp)
+    fun fighter(d: Disciple, attack: Int = d.attack): ShadowFighter =
+        ShadowFighter(d.name.substringBefore(" ("), d.majorRealm?.ordinal ?: 0, d.stage, attack.toLong().coerceAtMost(maxStat(d.majorRealm?.ordinal ?: 0)).toInt(), d.defense, d.maxHp)
 
     /** Cień drużyny: trzech najsilniejszych uczniów. */
     fun shadow(s: GameState, id: String = "local"): ShadowTeam = ShadowTeam(
@@ -45,7 +45,7 @@ object DaoNet {
         sectName = s.sectName,
         rating = s.pvpRating,
         era = s.meta.era,
-        fighters = s.disciples.sortedByDescending { it.combatPower }.take(TEAM_SIZE).map { fighter(it) }
+        fighters = s.disciples.sortedByDescending { it.combatPower }.take(TEAM_SIZE).map { fighter(it, Power.attack(s, it)) }
     )
 
     // --- Zakresy statystyk (sprawdzane też na serwerze) ---

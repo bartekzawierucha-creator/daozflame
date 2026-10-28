@@ -148,8 +148,9 @@ object Catastrophes {
 
 /** Tajne królestwa: 6 miejsc, każde otwiera się co 40 dni na 5 dni; wejść mogą tylko uczniowie do określonego królestwa. */
 object SecretRealms {
-    const val EVERY = 40
-    const val OPEN_DAYS = 5
+    // Etap 12: dzień gry ~48 s – każde królestwo co ~2 h gry, otwarte ~12 min.
+    const val EVERY = 160
+    const val OPEN_DAYS = 15
 
     data class Realm(
         val id: String,
@@ -187,7 +188,7 @@ object SecretRealms {
     fun daily(s: GameState): Pair<GameState, List<String>> {
         if (!s.e5Initialized) return s to emptyList()
         val opened = REALMS.filter { openingDay(it, s.currentDay) == s.currentDay }
-        return s to opened.map { "🌀 Otwiera się tajne królestwo: ${it.name} (5 dni)." }
+        return s to opened.map { "🌀 Otwiera się tajne królestwo: ${it.name} ($OPEN_DAYS dni)." }
     }
 
     fun enter(s: GameState, ctx: EngineContext, realmId: String, discipleId: String): StepResult {
