@@ -77,7 +77,7 @@ class WuxiaGameUnitTest {
         assertEquals(50, WuxiaGenerator.getRandomEvents().size)
         assertEquals(24, WuxiaGenerator.getInitialTerritories().size)
         assertEquals(16, WuxiaGenerator.getInitialRivalSects().size)
-        assertEquals(36, WuxiaGenerator.getAlchemyRecipes().size)
+        assertEquals(37, WuxiaGenerator.getAlchemyRecipes().size)
         assertEquals(30, WuxiaGenerator.getForgingRecipes().size)
         assertEquals(12, WuxiaGenerator.getInitialSectBeasts().size)
         assertEquals(12, WuxiaGenerator.getGeocentricFlames().size)
