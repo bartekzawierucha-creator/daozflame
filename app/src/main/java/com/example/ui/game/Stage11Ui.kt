@@ -273,11 +273,11 @@ fun OpportunityPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: (
         }
         Text(Opportunities.description(o), style = AaaType.Body.copy(fontSize = 12.sp, lineHeight = 17.sp, color = Aaa.TextHi))
         o.artifact?.let { a ->
-            Row(Modifier.fillMaxWidth().background(Aaa.Ink3.copy(alpha = 0.85f)).border(1.dp, rarityColor(a.rarity).copy(alpha = 0.5f)).padding(8.dp),
+            Row(Modifier.fillMaxWidth().background(Aaa.Ink3.copy(alpha = 0.85f)).border(1.dp, gearRarityColor(a.rarity).copy(alpha = 0.5f)).padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 GearTile(a, com.example.game.engine.Gear.slotOf(a), 64.dp) {}
                 Column(Modifier.weight(1f)) {
-                    Text(a.name, style = AaaType.Label.copy(fontSize = 12.sp, color = rarityColor(a.rarity), fontWeight = FontWeight.Bold), maxLines = 2)
+                    Text(a.name, style = AaaType.Label.copy(fontSize = 12.sp, color = gearRarityColor(a.rarity), fontWeight = FontWeight.Bold), maxLines = 2)
                     Text("${a.rarity} · ${a.quality.polishName} · atak +${a.attackBonus} · obrona +${a.defenseBonus}", style = AaaType.Label.copy(fontSize = 10.sp, color = Aaa.TextMid))
                     if (a.specialEffect.isNotBlank()) Text(a.specialEffect, style = AaaType.Label.copy(fontSize = 10.sp, color = Aaa.TextHi), maxLines = 2)
                 }

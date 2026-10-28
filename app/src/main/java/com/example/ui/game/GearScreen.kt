@@ -108,7 +108,7 @@ fun gearIconKey(a: Artifact): String? {
     }
 }
 
-fun rarityColor(rarity: String): Color = when (rarity) {
+fun gearRarityColor(rarity: String): Color = when (rarity) {
     "Rzadki" -> Aaa.Jade
     "Niebiański" -> Aaa.Azure
     "Boski" -> Aaa.Ember
@@ -141,7 +141,7 @@ fun GearTile(
     better: Boolean = false,
     onClick: () -> Unit
 ) {
-    val c = a?.let { rarityColor(it.rarity) } ?: Aaa.TextLow
+    val c = a?.let { gearRarityColor(it.rarity) } ?: Aaa.TextLow
     Box(
         Modifier
             .size(size)
@@ -306,7 +306,7 @@ private fun Stat(label: String, value: String, note: String?) {
 /** Karta przedmiotu z porównaniem: ile zmieni się atak i obrona. */
 @Composable
 private fun ItemCard(d: Disciple, a: Artifact, worn: Boolean, onAction: () -> Unit) {
-    val c = rarityColor(a.rarity)
+    val c = gearRarityColor(a.rarity)
     val slot = Gear.slotOf(a)
     val current = Gear.inSlot(d, slot)
     val (na, nd) = if (worn) d.attack to d.defense else Gear.preview(d, a)
