@@ -207,7 +207,6 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                         GhostButton("Kultywacja", onClick = { legacy = "cultivation" }, modifier = Modifier.weight(1.2f), height = 36.dp)
                         GhostButton("Dao" + if (d.openedMeridians.isNotEmpty()) " ${d.openedMeridians.size}" else "", onClick = { legacy = "secrets" }, modifier = Modifier.weight(1f), height = 36.dp)
                         GhostButton("Życie", onClick = { legacy = "life" }, modifier = Modifier.weight(1f), height = 36.dp)
-                        GhostButton("Ekwip. ${com.example.game.engine.Gear.items(d).size}", onClick = { legacy = "gear" }, modifier = Modifier.weight(1.1f), height = 36.dp)
                         GhostButton("Księga", onClick = { legacy = "disciples" }, modifier = Modifier.weight(1f), height = 36.dp)
                     }
                     // Dyscyplina: ranga, kara, łaska.
@@ -221,6 +220,7 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                         )
                         GhostButton("Kara", onClick = { viewModel.punish(d.id) }, danger = true, modifier = Modifier.weight(1f), height = 32.dp)
                         GhostButton("Łaska", onClick = { viewModel.pardon(d.id) }, modifier = Modifier.weight(1f), height = 32.dp)
+                        GhostButton("Ekwipunek", onClick = { legacy = "gear" }, modifier = Modifier.weight(1.3f), height = 32.dp)
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         GhostButton(
