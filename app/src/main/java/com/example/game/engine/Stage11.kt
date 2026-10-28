@@ -21,6 +21,8 @@ object Stage11 {
         run { Auction.daily(it, ctx) }
         run { SelfStudy.daily(it) }
         run { Elders.daily(it) }
+        // Etap 14
+        run { Buildings.daily(it) }
         return s to notes
     }
 }

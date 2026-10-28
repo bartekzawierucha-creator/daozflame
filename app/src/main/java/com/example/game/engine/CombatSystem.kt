@@ -257,6 +257,8 @@ object CombatSystem {
         )
         var result = state
         val notes = mutableListOf<String>()
+        // Etap 14: pierwszy strażnik zostawia jajo bestii.
+        if (victory && region != null) Road.firstEgg(result).let { (st, msg) -> result = st; msg?.let { notes += it } }
         // Etap 13: bossowie zostawiają artefakty.
         if (victory && region != null) {
             val rng = GameRng.stream(s.worldSeed, s.step, "boss-loot")

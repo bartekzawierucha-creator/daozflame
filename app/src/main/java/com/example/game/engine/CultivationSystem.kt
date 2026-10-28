@@ -103,12 +103,15 @@ object CultivationSystem {
         val major = d.majorRealm ?: return "Brak danych kultywacji."
         val next = major.next ?: return "To szczyt drabiny kultywacji."
         if (next.ordinal > Realms.ceiling(d).ordinal) {
-            return "Wąskie gardło metody: ${Realms.method(d.methodId).name} nie sięga ${next.polishName}. Potrzebny lepszy zwój."
+            val need = com.example.model.MethodGrade.entries.first { it.ceiling.ordinal >= next.ordinal }
+            return "Wąskie gardło metody: ${Realms.method(d.methodId).name} nie sięga ${next.polishName}. Potrzebny zwój stopnia ${need.polishName} lub wyższego – " +
+                "zdobędziesz go z bossów na wyprawach, w Domu Aukcyjnym albo w Zatopionej Bibliotece. Uczeń sam go przeczyta, gdy trafi do magazynu."
         }
         return when (next) {
             MajorRealm.CORE_FORMATION -> when {
-                d.path == null -> "Najpierw wybierz ścieżkę kultywacji."
-                d.unlockedSkillIds.none { (GameContent.skill(it)?.tier ?: 0) >= 2 } -> "Złoty Rdzeń wymaga opanowania techniki co najmniej 2. stopnia."
+                d.path == null -> "Najpierw wybierz ścieżkę kultywacji (Kultywacja → Ścieżka)."
+                d.unlockedSkillIds.none { (GameContent.skill(it)?.tier ?: 0) >= 2 } ->
+                    "Złoty Rdzeń wymaga techniki co najmniej 2. stopnia. Techniki 2. stopnia może poznać Uczeń Wewnętrzny (awans w karcie ucznia) za punkty Dao."
                 else -> null
             }
             MajorRealm.NASCENT_SOUL -> when {

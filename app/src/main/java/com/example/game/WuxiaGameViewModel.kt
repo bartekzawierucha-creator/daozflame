@@ -149,7 +149,11 @@ data class WuxiaUiState(
     val auction: List<com.example.model.AuctionLot> = emptyList(),
     val auctionRefreshIn: Int = 0,
     /** Bilans dnia bez handlu: (dochód, koszty). */
-    val dailyBalance: Pair<Int, Int> = 0 to 0
+    val dailyBalance: Pair<Int, Int> = 0 to 0,
+    // Etap 14
+    val roadStep: Int = 0,
+    val seenModules: Set<String> = emptySet(),
+    val tutorialDone: Boolean = true
 )
 
 data class ArenaUi(
@@ -339,7 +343,7 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
             return GameEngine.normalize(state).copy(lastActiveAtMs = now)
         }
         if (loaded?.error != null) notification = "Nie udało się wczytać zapisu – rozpoczęto nową grę."
-        return GameEngine.newGame(worldSeed = now, nowMs = now)
+        return GameEngine.newGame(worldSeed = now, nowMs = now, startSmall = true)
     }
 
     private fun startAutosave() {
@@ -392,7 +396,7 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
         combatJob?.cancel()
         store.delete()
         val now = System.currentTimeMillis()
-        game = GameEngine.newGame(worldSeed = now, nowMs = now)
+        game = GameEngine.newGame(worldSeed = now, nowMs = now, startSmall = true)
         selectedDiscipleId = game.disciples.firstOrNull()?.id
         combatFx = CombatFx()
         notification = "Rozpoczęto nową grę."
@@ -501,6 +505,8 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     fun declineOpportunity() = dispatch(GameCommand.DeclineOpportunity)
     fun setSteward(policy: com.example.model.StewardPolicy) = dispatch(GameCommand.SetSteward(policy))
     fun buyLot(index: Int) = dispatch(GameCommand.BuyLot(index))
+    fun seeModule(module: String) = dispatch(GameCommand.SeeModule(module))
+    fun build(type: com.example.model.FacilityType) = dispatch(GameCommand.UpgradeFacility(type))
     fun attemptBreakthrough(discipleId: String, usePill: Boolean) = dispatch(GameCommand.AttemptBreakthrough(discipleId, usePill))
     fun unlockSkill(discipleId: String, skillId: String) = dispatch(GameCommand.UnlockSkill(discipleId, skillId))
     fun usePill(discipleId: String, pillName: String) = dispatch(GameCommand.UsePill(discipleId, pillName))
@@ -954,6 +960,9 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
         auction = game.auction,
         auctionRefreshIn = (game.auctionRefreshDay - game.currentDay).coerceAtLeast(0),
         dailyBalance = com.example.game.engine.Upkeep.daily(game),
+        roadStep = game.roadStep,
+        seenModules = game.seenModules,
+        tutorialDone = game.tutorialStep == com.example.game.engine.Tutorial.DONE,
         rebirthAvailable = com.example.game.engine.Rebirth.available(game),
         essenceOnRebirth = com.example.game.engine.Rebirth.essence(game),
         arena = arena.copy(rating = game.pvpRating, wins = game.pvpWins, losses = game.pvpLosses, online = net.enabled),

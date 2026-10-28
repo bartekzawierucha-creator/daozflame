@@ -34,7 +34,8 @@ object GameEngine {
         AutoBreakthroughPhase
     )
 
-    fun newGame(worldSeed: Long, nowMs: Long = 0L): GameState {
+    /** [startSmall] = nowa sekta od zera (Etap 14): tylko Pawilon Kultywacji, bez bestii, mniej zapasów. */
+    fun newGame(worldSeed: Long, nowMs: Long = 0L, startSmall: Boolean = false): GameState {
         val rng = GameRng.stream(worldSeed, 0L, "new-game")
         fun named(realm: CultivationRealm, blood: BloodlineType, name: String, school: MartialSchool) =
             WuxiaGenerator.generateDisciple(rng, realm, blood).copy(name = name, martialSchool = school)
@@ -73,7 +74,13 @@ object GameEngine {
             knownRecipeIds = if (com.example.game.FeatureFlags.ECONOMY_V2) CraftV2.startingRecipes() else emptySet(),
             fields = if (com.example.game.FeatureFlags.ECONOMY_V2) Fields.empty(Fields.BASE_SIZE) else emptyList()
         )
-        return normalize(created)
+        if (!startSmall) return normalize(created)
+        return normalize(created.copy(
+            facilities = Buildings.starting(created.facilities),
+            sectBeasts = emptyList(),
+            activeBeastId = null,
+            inventory = created.inventory + (GameContent.BREAKTHROUGH_PILL to 3)
+        ))
     }
 
     /** Wywoływane po wczytaniu zapisu: jednorazowe migracje logiczne (korzenie w Etapie 2, etapy w Etapie 3). */
@@ -100,15 +107,18 @@ object GameEngine {
     /** Jedyne wejście do zmiany stanu gry. */
     fun apply(state: GameState, command: GameCommand): StepResult {
         val ctx = EngineContext(state.worldSeed, state.step)
-        val raw = Autonomy.afterDirect(command, state, dispatch(state, command, ctx))
+        // Etap 14: działy gry otwierają budynki.
+        val raw = Buildings.gate(state, command) ?: Autonomy.afterDirect(command, state, dispatch(state, command, ctx))
         val result = raw.copy(state = Bonds.afterEvents(raw.state, raw.events))
         // Przyjęta rada liczy się jak wykonana komenda (samouczek, cele dnia, osiągnięcia).
         val effective = if (command is GameCommand.Advise && result.events.any { it is GameEvent.AdviceOutcome && it.accepted }) command.command else command
         val advanced = Tutorial.afterCommand(state, effective, result.state)
         // Etap 8: liczniki, cele dzienne i osiągnięcia – liczone ze zdarzeń tego kroku.
         val withMeta = Achievements.after(effective, state, result.copy(state = advanced))
+        // Etap 14: Droga Sekty – kroki zaliczają się same.
+        val (road, roadNotes) = Road.after(withMeta.state)
         // Etap 12: Moc zawsze z bieżących statystyk.
-        return withMeta.copy(state = Power.refresh(withMeta.state).copy(step = state.step + 1))
+        return withMeta.copy(state = Power.refresh(road).copy(step = state.step + 1), events = withMeta.events + roadNotes.map { GameEvent.Notice(it) })
     }
 
     private fun dispatch(state: GameState, command: GameCommand, ctx: EngineContext): StepResult =
@@ -224,6 +234,7 @@ object GameEngine {
             GameCommand.DeclineOpportunity -> Opportunities.decline(state)
             is GameCommand.SetSteward -> Steward.set(state, command.policy)
             is GameCommand.BuyLot -> Auction.buy(state, command.index)
+            is GameCommand.SeeModule -> Road.markSeen(state, command.module)
             is GameCommand.SelectFlame -> if (state.e4Initialized) Flames.toCauldron(state, command.flameId) else CraftCommands.selectFlame(state, command.flameId)
             is GameCommand.RefineFlame -> {
                 val f = state.flames.find { it.id == command.flameId }

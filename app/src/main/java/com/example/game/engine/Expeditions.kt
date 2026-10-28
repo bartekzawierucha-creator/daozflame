@@ -360,13 +360,15 @@ object Expeditions {
         val lootRng = ctx.rng("boss-loot")
         val dropped = if (lootRng.nextInt(100) < Loot.BOSS_ARTIFACT_CHANCE) Loot.artifactFor(s.regions.indexOfFirst { it.id == region.id }, lootRng) else null
         if (dropped != null) paid = paid.copy(vaultArtifacts = paid.vaultArtifacts + dropped)
+        val (withEgg, eggMsg) = Road.firstEgg(paid)
+        paid = withEgg
         paid = paid.copy(
             inventory = inv.toMap(),
             expedition = null,
             sectReputation = paid.sectReputation + 25,
             regions = paid.regions.map { if (it.id == region.id) it.copy(explorationProgress = (it.explorationProgress + 25).coerceAtMost(100)) else it }
         )
-        val notes = mutableListOf("Wyprawa (auto): pokonano ${boss.name}." + (dropped?.let { " Łup: ${it.name}." } ?: ""))
+        val notes = mutableListOf("Wyprawa (auto): pokonano ${boss.name}." + (dropped?.let { " Łup: ${it.name}." } ?: "") + (eggMsg?.let { " $it" } ?: ""))
         if (paid.regions.first { it.id == region.id }.explorationProgress >= 100) {
             val (withTrail, msg) = FlameSources.onRegionExplored(paid, region.id)
             paid = withTrail

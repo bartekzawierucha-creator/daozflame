@@ -103,7 +103,7 @@ object Rebirth {
             ironWill = ironWill ?: s.meta.ironWill,
             stats = s.meta.stats + ("eras" to (s.meta.stats["eras"] ?: 0) + 1)
         )
-        val fresh = start(GameEngine.newGame(newSeed(s), s.lastActiveAtMs), meta)
+        val fresh = start(GameEngine.newGame(newSeed(s), s.lastActiveAtMs, startSmall = !s.facilities.all { it.level > 0 } || s.facilities.any { it.buildDoneDay > 0 } || s.roadStep > 0), meta)
         return ok(fresh, "🌅 Era ${meta.era} się zaczyna. Zebrano $gained Esencji Niebios.")
     }
 
@@ -216,6 +216,7 @@ object Achievements {
         ev.filterIsInstance<GameEvent.Tribulation>().filter { it.result.survived }.forEach { inc("tribulations") }
         ev.filterIsInstance<GameEvent.Notice>().count { it.message.startsWith("🛡 Najazd") }.takeIf { it > 0 }?.let { inc("raids_repelled", it.toLong()) }
         if (command is GameCommand.FuseFlames && s.flames.size == before.flames.size - 1) inc("fusions")
+        if (command is GameCommand.BrewPill && GameContent.recipe(command.recipeId)?.pillName?.let { Quality.count(s.inventory, it) > Quality.count(before.inventory, it) } == true) inc("brews")
         if (command is GameCommand.FulfillContract && s.contracts.count { it.done } > before.contracts.count { it.done }) inc("contracts")
         if (stats != s.meta.stats) s = s.copy(meta = s.meta.copy(stats = stats))
         s = DailyGoals.progress(command, before, s, ev)

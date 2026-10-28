@@ -53,16 +53,17 @@ object BalanceSimulator {
 
     /** Cele tempa z planu wdrożenia (godziny gry gracza aktywnego). Do potwierdzenia przez autora. */
     val PACE_TARGETS_HOURS: Map<CultivationRealm, Double> = mapOf(
-        CultivationRealm.CORE_FORMATION to 24.0,
-        CultivationRealm.NASCENT_SOUL to 7 * 24.0,
-        CultivationRealm.SOUL_TRANSFORMATION to 21 * 24.0,
-        CultivationRealm.VOID_TRIBULATION to 42 * 24.0,
-        CultivationRealm.MAHAYANA_GREAT_VEHICLE to 90 * 24.0
+        // Etap 14: gra mobilna – pierwszy kamień milowy w pierwszej sesji.
+        CultivationRealm.CORE_FORMATION to 1.0,
+        CultivationRealm.NASCENT_SOUL to 4.0,
+        CultivationRealm.SOUL_TRANSFORMATION to 24.0,
+        CultivationRealm.VOID_TRIBULATION to 3 * 24.0,
+        CultivationRealm.MAHAYANA_GREAT_VEHICLE to 7 * 24.0
     )
 
     fun simulate(profile: Profile, seed: Long, hours: Double, snapshotEveryTicks: Int = 2250): Run {
         val totalTicks = (hours * 3600 / SECONDS_PER_TICK).toLong()
-        var s = GameEngine.newGame(seed)
+        var s = GameEngine.newGame(seed, startSmall = true).copy(tutorialStep = com.example.game.engine.Tutorial.DONE)
         val reached = linkedMapOf<CultivationRealm, Double>()
         s.disciples.forEach { d -> reached.putIfAbsent(d.realm, 0.0) }
         val snaps = mutableListOf<Snapshot>()
@@ -107,7 +108,7 @@ object BalanceSimulator {
     const val PACE_DAY = 360
 
     fun simulateEras(seed: Long, eras: Int = 3): List<EraRun> {
-        var s = GameEngine.newGame(seed)
+        var s = GameEngine.newGame(seed, startSmall = true).copy(tutorialStep = com.example.game.engine.Tutorial.DONE)
         val out = mutableListOf<EraRun>()
         var target: Long? = null
         val baselines = mutableListOf<Double?>()
@@ -129,7 +130,7 @@ object BalanceSimulator {
             val essence = com.example.game.engine.Rebirth.essence(s)
             out += EraRun(e + 1, core, essence, s.currentDay, reachedPower, if (e == 0) reachedPower else baselines.getOrNull(e - 1))
             s = apply(s, GameCommand.Rebirth(confirmed = true))
-            val baselineStart = GameEngine.newGame(s.worldSeed, s.lastActiveAtMs)
+            val baselineStart = GameEngine.newGame(s.worldSeed, s.lastActiveAtMs, startSmall = true).copy(tutorialStep = com.example.game.engine.Tutorial.DONE)
             // Bot wydaje Esencję na gałąź Qi Drzewa Niebios.
             // Na przemian gałęzie Qi i Bogactwa, poziom po poziomie.
             (1..10).forEach { tier -> listOf("qi", "bogactwo").forEach { b -> s = apply(s, GameCommand.BuyHeavenNode("${b}_$tier")) } }
@@ -227,6 +228,14 @@ object BalanceSimulator {
             s.inventory.filter { (k, v) -> v > 60 && (com.example.game.engine.Market.basePrice(k) ?: 0) > 0 && k != com.example.game.engine.DiscipleRules.FOOD }
                 .forEach { (k, v) -> s = apply(s, GameCommand.Sell(k, v - 40)) }
         }
+
+        // Etap 14: budowa kolejnych budynków i wysiadywanie jaj.
+        listOf(FacilityType.ALCHEMY_CHAMBER, FacilityType.MISSION_HALL, FacilityType.DIVINE_FORGE, FacilityType.MARTIAL_ARCHIVES, FacilityType.DIPLOMACY_HALL)
+            .firstOrNull { !com.example.game.engine.Buildings.has(s, it) && !com.example.game.engine.Buildings.building(s, it) }?.let { t ->
+                val p = com.example.game.engine.Buildings.PLANS.getValue(t)
+                if (canSpend(p.stones)) s = apply(s, GameCommand.UpgradeFacility(t))
+            }
+        if ((s.inventory[com.example.game.engine.Creatures.EGG] ?: 0) > 0) s = apply(s, GameCommand.IncubateEgg)
 
         // Etap 13: aukcja (artefakty i zwoje, gdy stać z zapasem), ekwipunek dla najsilniejszych, uczta przy niskim morale.
         s.auction.forEachIndexed { i, lot ->

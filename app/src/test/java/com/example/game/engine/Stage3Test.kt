@@ -100,7 +100,8 @@ class Stage3Test {
     @Test
     fun methodCeilingBlocksMajorBreakthrough() {
         val s = fresh(5L)
-        val d = at(s.disciples.first(), MajorRealm.FOUNDATION, 4, full = true).copy(methodId = Realms.BASIC_METHOD, path = CultivationPath.ORTHODOX)
+        // Etap 14: podstawowa metoda sięga Złotego Rdzenia – gardło pojawia się przed Narodzinami Duszy.
+        val d = at(s.disciples.first(), MajorRealm.CORE_FORMATION, 4, full = true).copy(methodId = Realms.BASIC_METHOD, path = CultivationPath.ORTHODOX)
         assertTrue(CultivationSystem.bottleneck(s, d)!!.contains("Wąskie gardło metody"))
     }
 

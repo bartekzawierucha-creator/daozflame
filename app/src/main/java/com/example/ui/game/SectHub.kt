@@ -1,5 +1,15 @@
 package com.example.ui.game
 
+import androidx.compose.runtime.remember
+
+import androidx.compose.runtime.getValue
+
+import androidx.compose.runtime.setValue
+
+import androidx.compose.runtime.mutableStateOf
+
+import androidx.compose.ui.draw.alpha
+
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -71,6 +81,7 @@ fun SectHub(
         ui.celebration?.let { celebration.fire(it.text) }
     }
     val chronicle = rememberChronicle(ui)
+    var roadBuild by remember { mutableStateOf<com.example.model.FacilityType?>(null) }
 
     Box(modifier.background(Aaa.Ink0)) {
         // 1. Świat
@@ -106,7 +117,13 @@ fun SectHub(
                 .padding(start = 12.dp, end = 12.dp, top = 10.dp),
             verticalAlignment = Alignment.Top
         ) {
-            PlayerBlock(ui, Modifier.weight(1f))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                PlayerBlock(ui)
+                RoadBanner(ui, onGo = { target ->
+                    if (target.startsWith("build:")) roadBuild = com.example.model.FacilityType.valueOf(target.removePrefix("build:"))
+                    else runCatching { GameModule.valueOf(target) }.getOrNull()?.let { onOpen(it, Offset.Unspecified) }
+                })
+            }
             Spacer(Modifier.width(8.dp))
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 CurrencyPill(AaaGlyph.SPIRIT_STONE, ui.spiritStones)
@@ -133,9 +150,9 @@ fun SectHub(
                 ui.secretRealms.any { it.open && !it.visited } -> "!"
                 else -> null
             }
-            SideModuleButton(GameModule.WORLD, GameModule.WORLD.title, SideIcon.WORLD, badge = worldBadge, onOpen = onOpen)
-            SideModuleButton(GameModule.CLANS, GameModule.CLANS.title, SideIcon.CLAN, badge = if (ui.raid != null) "⚠" else if (hostile > 0) "$hostile" else null, onOpen = onOpen)
-            SideModuleButton(GameModule.DAO_NET, GameModule.DAO_NET.title, SideIcon.NET, badge = null, onOpen = onOpen)
+            SideModuleButton(GameModule.WORLD, GameModule.WORLD.title, SideIcon.WORLD, badge = if (moduleLocked(ui, GameModule.WORLD)) "🔒" else worldBadge, onOpen = onOpen)
+            SideModuleButton(GameModule.CLANS, GameModule.CLANS.title, SideIcon.CLAN, badge = if (moduleLocked(ui, GameModule.CLANS)) "🔒" else if (ui.raid != null) "⚠" else if (hostile > 0) "$hostile" else null, onOpen = onOpen)
+            SideModuleButton(GameModule.DAO_NET, GameModule.DAO_NET.title, SideIcon.NET, badge = if (moduleLocked(ui, GameModule.DAO_NET)) "🔒" else null, onOpen = onOpen)
             SideModuleButton(GameModule.VAULT, GameModule.VAULT.title, SideIcon.CHEST, badge = null, onOpen = onOpen)
         }
 
@@ -165,6 +182,7 @@ fun SectHub(
             )
         }
 
+        roadBuild?.let { BuildPanel(it, ui, viewModel, onClose = { roadBuild = null }) }
         CelebrationOverlay(celebration)
     }
 }
@@ -262,21 +280,24 @@ private fun SceneLayer(ui: WuxiaUiState, ready: Int, onOpen: OpenModule, onHarve
 
             Building(sceneW, sceneH, 0.62f, 0.57f, labelLeft = true,
                 title = "Sala Alchemii",
-                sub = ui.activeFlame?.name?.let { shortName(it, 3) } ?: "Kocioł · poz. $alchemyLevel",
+                sub = if (moduleLocked(ui, GameModule.ALCHEMY)) lockedSub(ui, GameModule.ALCHEMY) else ui.activeFlame?.name?.let { shortName(it, 3) } ?: "Kocioł · poz. $alchemyLevel",
+                locked = moduleLocked(ui, GameModule.ALCHEMY),
                 badge = ui.economy.fields.count { it.herb != null && it.readyDay <= ui.currentDay }.takeIf { it > 0 }?.let { "🌿" },
                 tag = "hub_building_alchemy"
             ) { onOpen(GameModule.ALCHEMY, it) }
 
             Building(sceneW, sceneH, 0.24f, 0.26f, labelLeft = false,
                 title = "Gniazdo Bestii",
-                sub = ui.activeBeast?.name?.let { shortName(it, 2) } ?: "${ui.sectBeasts.size} strażników",
+                sub = if (moduleLocked(ui, GameModule.BEASTS)) lockedSub(ui, GameModule.BEASTS) else ui.activeBeast?.name?.let { shortName(it, 2) } ?: "${ui.sectBeasts.size} strażników",
+                locked = moduleLocked(ui, GameModule.BEASTS),
                 badge = ui.sectLife.eggs.size.takeIf { it > 0 }?.let { "🥚$it" },
                 tag = "hub_building_beasts"
             ) { onOpen(GameModule.BEASTS, it) }
 
             Building(sceneW, sceneH, 0.52f, 0.79f, labelLeft = false,
                 title = "Boska Kuźnia",
-                sub = if (forge != null) "Poz. ${forge.level} · rozbudowa ${forge.upgradeCostStones}" else "Artefakty",
+                sub = if (moduleLocked(ui, GameModule.FORGE)) lockedSub(ui, GameModule.FORGE) else if (forge != null) "Poz. ${forge.level} · rozbudowa ${forge.upgradeCostStones}" else "Artefakty",
+                locked = moduleLocked(ui, GameModule.FORGE),
                 badge = null,
                 tag = "hub_building_forge"
             ) { onOpen(GameModule.FORGE, it) }
@@ -299,6 +320,7 @@ private fun Building(
     sub: String,
     badge: String?,
     tag: String,
+    locked: Boolean = false,
     onClick: (Offset) -> Unit
 ) {
     val ref = remember { CenterRef() }
@@ -309,6 +331,7 @@ private fun Building(
         Modifier
             .offset(x = sceneW * fx, y = sceneH * fy)
             .size(0.dp)
+            .alpha(if (locked) 0.72f else 1f)
     ) {
         Row(
             modifier = Modifier

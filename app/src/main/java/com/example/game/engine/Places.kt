@@ -144,7 +144,7 @@ object Library {
 /** Istoty: jaja, ewolucja (3 etapy), wierzchowce, duchy artefaktów i płomieni, fuzja i pożeranie płomieni. */
 object Creatures {
     const val EGG = "Jajo Bestii"
-    const val HATCH_DAYS = 10
+    const val HATCH_DAYS = 25
     const val MAX_TIER = 3
     const val FUSION_EXPLOSION = 30
     const val SPIRIT_PLUS = 7
@@ -166,7 +166,7 @@ object Creatures {
             ready.forEach { e ->
                 val t = templates[e.template] ?: return@forEach
                 val young = t.copy(id = e.id, name = "Młody " + t.name, tier = 1, intimacy = 50, currentEnergy = t.maxEnergy / 2)
-                s = s.copy(sectBeasts = s.sectBeasts + young)
+                s = s.copy(sectBeasts = s.sectBeasts + young, activeBeastId = s.activeBeastId ?: young.id)
                 notes += "🥚 Z jaja wykluwa się ${young.name}!"
             }
             s = s.copy(eggs = s.eggs - ready.toSet())

@@ -16,16 +16,16 @@ enum class MajorRealm(
 ) {
     BODY_TEMPERING("Hartowanie Ciała", "Śmiertelna", 9, 200.0, 0, 80),
     QI_CONDENSATION("Kondensacja Qi", "Śmiertelna", 9, 1_200.0, 0, 120),
-    // Koszty skalibrowane symulatorem do celów tempa (gracz aktywny): Złoty Rdzeń ~1 dzień gry,
-    // Narodziny Duszy ~1 tydzień, Transformacja ~3 tygodnie, Pustka ~6 tygodni, Mahajana ~3 miesiące.
-    FOUNDATION("Fundamenty", "Śmiertelna", 4, 1_400_000.0, 0, 250),
-    CORE_FORMATION("Złoty Rdzeń", "Śmiertelna", 4, 14_000_000.0, 3, 500),
-    NASCENT_SOUL("Narodziny Duszy", "Duszy", 4, 39_000_000.0, 6, 1_200),
-    SOUL_TRANSFORMATION("Transformacja Duszy", "Duszy", 4, 160_000_000.0, 6, 2_500),
-    VOID_TRIBULATION("Pustka i Próba Niebios", "Duszy", 4, 640_000_000.0, 9, 5_000),
-    MAHAYANA("Wielki Pojazd Mahajana", "Nieśmiertelna", 4, 2_500_000_000.0, 9, 8_000),
-    HEAVENLY_IMMORTAL("Niebiański Nieśmiertelny", "Nieśmiertelna", 4, 10_000_000_000.0, 9, Int.MAX_VALUE),
-    CHAOS_GOLDEN_IMMORTAL("Złoty Nieśmiertelny Chaosu", "Nieśmiertelna", 1, 60_000_000_000.0, 9, Int.MAX_VALUE);
+    // Etap 14: tempo dla gry mobilnej (gracz aktywny): Złoty Rdzeń w pierwszej sesji (~1 h),
+    // Narodziny Duszy ~4 h, Transformacja ~1 dzień, Pustka ~3 dni, Mahajana ~1 tydzień.
+    FOUNDATION("Fundamenty", "Śmiertelna", 4, 28_000.0, 0, 250),
+    CORE_FORMATION("Złoty Rdzeń", "Śmiertelna", 4, 230_000.0, 3, 500),
+    NASCENT_SOUL("Narodziny Duszy", "Duszy", 4, 2_200_000.0, 6, 1_200),
+    SOUL_TRANSFORMATION("Transformacja Duszy", "Duszy", 4, 9_000_000.0, 6, 2_500),
+    VOID_TRIBULATION("Pustka i Próba Niebios", "Duszy", 4, 35_000_000.0, 9, 5_000),
+    MAHAYANA("Wielki Pojazd Mahajana", "Nieśmiertelna", 4, 120_000_000.0, 9, 8_000),
+    HEAVENLY_IMMORTAL("Niebiański Nieśmiertelny", "Nieśmiertelna", 4, 500_000_000.0, 9, Int.MAX_VALUE),
+    CHAOS_GOLDEN_IMMORTAL("Złoty Nieśmiertelny Chaosu", "Nieśmiertelna", 1, 3_000_000_000.0, 9, Int.MAX_VALUE);
 
     val next: MajorRealm? get() = entries.getOrNull(ordinal + 1)
 
@@ -56,9 +56,10 @@ enum class CultivationPath(val polishName: String, val description: String, val 
 
 /** Stopień metody kultywacji: mnożnik Qi i sufit (najwyższe osiągalne królestwo). */
 enum class MethodGrade(val polishName: String, val qiMultiplier: Double, val ceiling: MajorRealm) {
-    YELLOW("Żółty", 1.0, MajorRealm.FOUNDATION),
-    BLACK("Czarny", 1.3, MajorRealm.CORE_FORMATION),
-    MYSTIC("Mistyczny", 1.6, MajorRealm.SOUL_TRANSFORMATION),
+    // Etap 14: podstawowa metoda sięga Złotego Rdzenia – pierwszy zwój potrzebny dopiero do Narodzin Duszy.
+    YELLOW("Żółty", 1.0, MajorRealm.CORE_FORMATION),
+    BLACK("Czarny", 1.3, MajorRealm.NASCENT_SOUL),
+    MYSTIC("Mistyczny", 1.6, MajorRealm.VOID_TRIBULATION),
     HEAVENLY("Niebiański", 2.0, MajorRealm.MAHAYANA),
     PRIMORDIAL("Pierwotny", 2.5, MajorRealm.CHAOS_GOLDEN_IMMORTAL)
 }

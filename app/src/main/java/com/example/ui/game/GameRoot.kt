@@ -167,6 +167,9 @@ private fun ModuleHost(
     viewModel: WuxiaGameViewModel,
     onBack: () -> Unit
 ) {
+    // Etap 14: zamknięty dział pokazuje, jak go otworzyć; przy pierwszym wejściu – karta „po co to jest”.
+    if (moduleLocked(ui, module)) { LockedModule(module, ui, viewModel, onBack); return }
+    androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
     when (module) {
         GameModule.PALACE -> PalaceModule(ui, viewModel, onBack)
         GameModule.ADEPTS -> AdeptsModule(ui, viewModel, onBack)
@@ -178,5 +181,7 @@ private fun ModuleHost(
         GameModule.DAO_NET -> DaoNetModule(ui, viewModel, onBack)
         GameModule.VAULT -> VaultModule(ui, viewModel, onBack)
         GameModule.OMEN -> OmenModule(ui, viewModel, onBack)
+    }
+    FirstVisitCard(module, ui, viewModel)
     }
 }

@@ -205,6 +205,18 @@ class ScreenshotTest {
             ui(calm)
         }
 
+        // ── Etap 14: sekta od zera ──────────────────────────────────────────
+        run {
+            val sm = com.example.game.engine.GameEngine.newGame(5L, nowMs = 1_000L, startSmall = true).copy(tutorialStep = com.example.game.engine.Tutorial.DONE)
+            val us = ui(sm)
+            shot("5f_small_hub", "Nowa sekta – zamknięte budynki i Droga Sekty") { SectHub(us, vm, onOpen = { _, _ -> }) }
+            shot("5g_build", "Budowa – Sala Alchemii") { BuildPanel(com.example.model.FacilityType.ALCHEMY_CHAMBER, us, vm, noop) }
+            shot("5h_locked_beasts", "Gniazdo puste – skąd jajo") { LockedModule(GameModule.BEASTS, us, vm, noop) }
+            shot("5i_build_list", "Pałac – lista budowy") { BuildListPanel(us, vm, noop) }
+            shot("5j_first_visit", "Pierwsze wejście – karta działu") { Box(Modifier.fillMaxSize()) { AdeptsModule(us, vm, noop); FirstVisitCard(GameModule.ADEPTS, us, vm) } }
+            ui(calm)
+        }
+
         // ── Etap 8: meta ────────────────────────────────────────────────────
         MetaTab.entries.forEachIndexed { i, t ->
             shot("6${i}_meta_${t.name.lowercase()}", "Niebiosa – ${t.label}") { MetaPanel(u, vm, t, noop) }

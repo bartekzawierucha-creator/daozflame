@@ -108,6 +108,7 @@ object CraftCommands {
 
     fun upgradeFacility(s: GameState, type: FacilityType): StepResult {
         val facility = s.facilities.find { it.type == type } ?: return ok(s)
+        if (facility.level == 0) return Buildings.start(s, type)
         if (s.spiritStones < facility.upgradeCostStones) {
             return fail(s, "Zbyt mało Kamieni Ducha na rozbudowę (${facility.upgradeCostStones} wymagane)!")
         }

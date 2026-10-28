@@ -382,6 +382,11 @@ fun PalaceModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                 if (ui.economy.enabled) PalaceTiles(ui,
                     onEco = { eco = it }, onSect = { sect = it }, onMeta = { metaOpen = it }, onJournal = { journal = true })
                 Box(Modifier.padding(horizontal = 12.dp, vertical = 2.dp)) { Stage11Tiles(ui) { e11 = it } }
+                val toBuild = com.example.game.engine.Buildings.PLANS.keys.count { t -> !built(ui, t) }
+                if (toBuild > 0) Box(Modifier.padding(horizontal = 12.dp, vertical = 2.dp)) {
+                    ActionTile("建", "Budowa sekty", "$toBuild do postawienia · otwierają nowe działy", Modifier.fillMaxWidth(), accent = Aaa.Jade,
+                        badge = if (com.example.game.engine.Buildings.PLANS.keys.any { underConstruction(ui, it) }) "🏗" else null) { e11 = "build" }
+                }
                 Box(Modifier.weight(1f)) {
                     SectSanctuaryScreen(viewModel = viewModel, uiState = ui, onNavigateToDisciples = onBack)
                 }
@@ -397,6 +402,7 @@ fun PalaceModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
         "opportunity" -> OpportunityPanel(ui, viewModel, onClose = { e11 = null })
         "steward" -> StewardPanel(ui, viewModel, onClose = { e11 = null })
         "auction" -> AuctionPanel(ui, viewModel, onClose = { e11 = null })
+        "build" -> BuildListPanel(ui, viewModel, onClose = { e11 = null })
     }
 }
 

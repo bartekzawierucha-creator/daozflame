@@ -388,7 +388,9 @@ data class SectFacility(
     val type: FacilityType,
     val level: Int,
     val upgradeCostStones: Int,
-    val effectDescription: String
+    val effectDescription: String,
+    /** Etap 14: poziom 0 = niezbudowany; > 0 = budowa kończy się tego dnia. */
+    val buildDoneDay: Int = 0
 )
 
 enum class BiomeType(val polishName: String, val emoji: String) {
