@@ -215,11 +215,11 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                             text = if (d.id in ui.promotableIds) "Awans ↑" else d.rank.polishName.substringAfter(" "),
                             enabled = d.id in ui.promotableIds,
                             onClick = { viewModel.promote(d.id) },
-                            modifier = Modifier.weight(1.2f),
+                            modifier = Modifier.weight(1.45f),
                             height = 32.dp
                         )
-                        GhostButton("Kara", onClick = { viewModel.punish(d.id) }, danger = true, modifier = Modifier.weight(1f), height = 32.dp)
-                        GhostButton("Łaska", onClick = { viewModel.pardon(d.id) }, modifier = Modifier.weight(1f), height = 32.dp)
+                        GhostButton("Kara", onClick = { viewModel.punish(d.id) }, danger = true, modifier = Modifier.weight(0.85f), height = 32.dp)
+                        GhostButton("Łaska", onClick = { viewModel.pardon(d.id) }, modifier = Modifier.weight(0.9f), height = 32.dp)
                         GhostButton("Ekwipunek", onClick = { legacy = "gear" }, modifier = Modifier.weight(1.3f), height = 32.dp)
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
