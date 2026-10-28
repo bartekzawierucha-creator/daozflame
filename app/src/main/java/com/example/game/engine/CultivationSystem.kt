@@ -150,9 +150,10 @@ object CultivationSystem {
         val major = d.majorRealm ?: return Advance(d, null)
         if (!ready(d)) return Advance(d, null)
 
-        // Mały przełom – zawsze udany.
+        // Mały przełom – zawsze udany. Etap 15: Wieża Technik daje punkt Dao za każdy etap.
         if (d.stage < major.stages) {
-            val next = Realms.sync(grow(d, Realms.MINOR_STAT_GROWTH).copy(stage = d.stage + 1, stageQi = 0.0))
+            val archives = if (Vein.facilityLevel(s, FacilityType.MARTIAL_ARCHIVES) >= 1) 1 else 0
+            val next = Realms.sync(grow(d, Realms.MINOR_STAT_GROWTH).copy(stage = d.stage + 1, stageQi = 0.0, daoPoints = d.daoPoints + archives))
             return Advance(next, null, reputation = 1)
         }
 
@@ -187,6 +188,7 @@ object CultivationSystem {
             val chance = majorChance(s, d, target, pillBonus)
             return if (rng.nextInt(100) < chance) {
                 val entered = SecretStates.afterSuccess(enter(d, target, pillBonus > 0, perfect = false, rng), pillBonus > 0, s.currentDay)
+                    .let { it.copy(daoPoints = it.daoPoints + Vein.facilityLevel(s, FacilityType.MARTIAL_ARCHIVES).coerceAtLeast(0)) }
                 Advance(entered, "🌟 ${d.name} wkracza w ${target.polishName}!", 25, majorSuccess = true, attempted = true)
             } else {
                 Advance(SecretStates.afterFailure(Realms.sync(d.copy(stageQi = Realms.required(d) * 0.4)), s.currentDay), "Przełom ${d.name} się nie powiódł (postęp spadł do 40%).", attempted = true)
@@ -202,6 +204,7 @@ object CultivationSystem {
             )
             else -> {
                 val entered = SecretStates.afterSuccess(enter(d, target, pillBonus > 0, trib.perfect, rng), pillBonus > 0, s.currentDay)
+                    .let { it.copy(daoPoints = it.daoPoints + Vein.facilityLevel(s, FacilityType.MARTIAL_ARCHIVES).coerceAtLeast(0)) }
                 Advance(
                     entered,
                     (if (trib.perfect) "⚡ Doskonała tribulacja! " else "⚡ ") + "${d.name} wkracza w ${target.polishName}!",

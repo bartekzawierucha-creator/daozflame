@@ -107,6 +107,9 @@ object Modifiers {
             // Etap 12: żyła dodaje procent (jak inne premie sekty) – nie mnoży całego stosu.
             list += Modifier("Żyła: ${Vein.name(s.veinLevel)}", Stat.QI_GAIN, ModOp.PERCENT, (Vein.qiMultiplier(s.veinLevel) - 1.0) * 100)
         }
+        // Etap 15: rozbudowa Pawilonu Kultywacji przyspiesza Qi (+10% za każdy poziom ponad pierwszy).
+        val pavilion = s.facilities.find { it.type == com.example.model.FacilityType.CULTIVATION_PAVILION }?.level ?: 1
+        if (pavilion > 1) list += Modifier("Pawilon Kultywacji poz. $pavilion", Stat.QI_GAIN, ModOp.PERCENT, 10.0 * (pavilion - 1))
         if (s.ascendedNames.isNotEmpty()) {
             list += Modifier("Dziedzictwo Wniebowstąpienia (${s.ascendedNames.size})", Stat.QI_GAIN, ModOp.PERCENT, 5.0 * s.ascendedNames.size)
         }

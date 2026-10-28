@@ -18,52 +18,20 @@ object Tutorial {
         val goal: KClass<out GameCommand>? = null
     )
 
+    /** Etap 15: krótki wstęp – resztę prowadzi Droga Sekty (baner z kompasem na hubie). */
     val steps: List<Step> = listOf(
         Step(
             "Duch Założyciela",
             "Witaj, Patriarcho. Ta góra była niegdyś moją sektą. Pokażę ci, jak ją odbudować."
         ),
         Step(
-            "Uczniowie",
-            "Twoi uczniowie medytują i gromadzą Qi. Otwórz Salę Adeptów, by poznać ich talenty i zadania."
+            "Uczniowie żyją sami",
+            "Twoi uczniowie sami wybierają zajęcia i decydują o przełomach. Ty doradzasz. Otwórz Pawilon Adeptów i doradź komuś zajęcie.",
+            GameCommand.AssignRole::class
         ),
         Step(
-            "Przełom",
-            "Gdy pasek Qi ucznia dojdzie do 100%, może przejść przełom. Spróbuj przełomu w Sali Adeptów.",
-            GameCommand.AttemptBreakthrough::class
-        ),
-        Step(
-            "Alchemia",
-            "Pigułki zwiększają szansę przełomu. W Sali Alchemii uwarz dowolną pigułkę.",
-            GameCommand.BrewPill::class
-        ),
-        Step(
-            "Edykty",
-            "Edykty to prawa sekty: premia za koszt. W Pałacu aktywuj albo zmień edykt.",
-            GameCommand.ToggleDecree::class
-        ),
-        Step(
-            "Świat",
-            "Krainy kryją zioła, rudy i bossów. Wyślij ucznia na wyprawę z mapy Świata.",
-            GameCommand.StartExpedition::class
-        ),
-        Step(
-            "Kuźnia",
-            "Łupy z bossów i rudy przetopisz w Kuźni na artefakty. Wykuj pierwszy artefakt.",
-            GameCommand.ForgeArtifact::class
-        ),
-        Step(
-            "Rekrutacja",
-            "Sekta rośnie dzięki nowym uczniom. Przyjmij kandydata w Pałacu.",
-            GameCommand.Recruit::class
-        ),
-        Step(
-            "Omen",
-            "Świat przynosi zdarzenia. Gdy pojawi się Omen, Twój wybór ma konsekwencje."
-        ),
-        Step(
-            "Droga przed tobą",
-            "Reszta należy do ciebie. Wiele tajemnic tej góry odkryjesz tylko sam. Powodzenia, Patriarcho."
+            "Droga Sekty",
+            "Sekta zaczyna skromnie: budynki otwierają nowe działy. Baner z kompasem na górze ekranu zawsze podpowie następny krok i nagrodę."
         )
     )
 

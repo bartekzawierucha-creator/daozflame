@@ -49,6 +49,8 @@ enum class SectCampusTab(val title: String, val icon: String, val testTag: Strin
 
 @Composable
 fun SectSanctuaryScreen(
+    /** Etap 15: w Pałacu tylko zarząd (nabór, pawilony) – bez zdublowanej sceny, alchemii i sali kultywacji. */
+    palaceOnly: Boolean = true,
     viewModel: WuxiaGameViewModel,
     uiState: WuxiaUiState,
     onNavigateToDisciples: () -> Unit,
@@ -66,8 +68,8 @@ fun SectSanctuaryScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         contentPadding = PaddingValues(top = 10.dp, bottom = 24.dp)
     ) {
-        // 1. Interaktywna Scena 2D Kampusu na Świętej Górze
-        item {
+        // 1. Interaktywna Scena 2D Kampusu na Świętej Górze (poza Pałacem – w Pałacu scena to hub)
+        if (!palaceOnly) item {
             Wuxia2dSanctuaryCanvas(
                 timeOfDay = uiState.timeOfDay,
                 disciplesCount = uiState.disciples.size,
@@ -97,7 +99,7 @@ fun SectSanctuaryScreen(
         }
 
         // 2. Nawigacja kampusu – segmentowy przełącznik AAA
-        item {
+        if (!palaceOnly) item {
             AaaSegmentedTabs(
                 items = SectCampusTab.values().map { it.title },
                 selectedIndex = selectedCampusTab.ordinal,

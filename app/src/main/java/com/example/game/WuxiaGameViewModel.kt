@@ -507,6 +507,8 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     fun buyLot(index: Int) = dispatch(GameCommand.BuyLot(index))
     fun seeModule(module: String) = dispatch(GameCommand.SeeModule(module))
     fun build(type: com.example.model.FacilityType) = dispatch(GameCommand.UpgradeFacility(type))
+    fun studyScroll(discipleId: String, scroll: String) = dispatch(GameCommand.StudyScroll(discipleId, scroll))
+    fun assembleScroll(methodId: String) = dispatch(GameCommand.AssembleScroll(methodId))
     fun attemptBreakthrough(discipleId: String, usePill: Boolean) = dispatch(GameCommand.AttemptBreakthrough(discipleId, usePill))
     fun unlockSkill(discipleId: String, skillId: String) = dispatch(GameCommand.UnlockSkill(discipleId, skillId))
     fun usePill(discipleId: String, pillName: String) = dispatch(GameCommand.UsePill(discipleId, pillName))

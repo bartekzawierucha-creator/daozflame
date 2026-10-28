@@ -166,6 +166,16 @@ fun SecretsPanel(d: Disciple, ui: WuxiaUiState, viewModel: WuxiaGameViewModel, i
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     sec.places.forEachIndexed { i, p -> SelectChip(p, d.meditationPlace == i, Aaa.Jade) { viewModel.setBreath(d.id, d.breath ?: 0, i) } }
                 }
+                // Etap 15: fragmenty innych metod – pięć składa się w pełny zwój.
+                val others = sec.fragments.filter { (k, v) -> k != d.methodId && v > 0 }
+                if (others.isNotEmpty()) {
+                    Section("Fragmenty innych metod", "5 = pełny zwój")
+                    others.forEach { (m, n) ->
+                        ActionRow(com.example.game.engine.Realms.method(m).name, "$n/5 fragmentów") {
+                            GhostButton("Złóż zwój", enabled = n >= 5, onClick = { viewModel.assembleScroll(m) }, height = 30.dp)
+                        }
+                    }
+                }
                 d.methodId?.let { m ->
                     val frags = sec.fragments[m] ?: 0
                     Section("Szyfrowany zwój", "$frags/5")

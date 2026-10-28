@@ -207,7 +207,7 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                         GhostButton("Kultywacja", onClick = { legacy = "cultivation" }, modifier = Modifier.weight(1.2f), height = 36.dp)
                         GhostButton("Dao" + if (d.openedMeridians.isNotEmpty()) " ${d.openedMeridians.size}" else "", onClick = { legacy = "secrets" }, modifier = Modifier.weight(1f), height = 36.dp)
                         GhostButton("Życie", onClick = { legacy = "life" }, modifier = Modifier.weight(1f), height = 36.dp)
-                        GhostButton("Księga", onClick = { legacy = "disciples" }, modifier = Modifier.weight(1f), height = 36.dp)
+                        GhostButton("Techniki", onClick = { legacy = "disciples" }, modifier = Modifier.weight(1f), height = 36.dp)
                     }
                     // Dyscyplina: ranga, kara, łaska.
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {

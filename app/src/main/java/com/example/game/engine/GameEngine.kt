@@ -235,6 +235,8 @@ object GameEngine {
             is GameCommand.SetSteward -> Steward.set(state, command.policy)
             is GameCommand.BuyLot -> Auction.buy(state, command.index)
             is GameCommand.SeeModule -> Road.markSeen(state, command.module)
+            is GameCommand.StudyScroll -> Scrolls.study(state, command.discipleId, command.scroll)
+            is GameCommand.AssembleScroll -> Scrolls.assemble(state, command.methodId)
             is GameCommand.SelectFlame -> if (state.e4Initialized) Flames.toCauldron(state, command.flameId) else CraftCommands.selectFlame(state, command.flameId)
             is GameCommand.RefineFlame -> {
                 val f = state.flames.find { it.id == command.flameId }

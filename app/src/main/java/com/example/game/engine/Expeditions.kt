@@ -299,7 +299,11 @@ object Expeditions {
     }
 
     /** Rozliczenie łupów do skarbca. Klucze z „@” to nagrody specjalne (Qi, płomień). */
-    fun payout(s: GameState, run: ExpeditionRun, factor: Double): GameState {
+    /** Etap 15: Sala Ekspedycji – +10% łupów wypraw za każdy poziom ponad pierwszy. */
+    fun hallBonus(s: GameState): Double = 1.0 + 0.1 * (Vein.facilityLevel(s, com.example.model.FacilityType.MISSION_HALL) - 1).coerceAtLeast(0)
+
+    fun payout(s: GameState, run: ExpeditionRun, factor0: Double): GameState {
+        val factor = factor0 * hallBonus(s)
         var st = s
         val inv = st.inventory.toMutableMap()
         run.loot.forEach { (k, v) ->
@@ -407,7 +411,9 @@ object Tower {
         return Guardian((1500 * f).toInt(), (150 * f).toInt(), (50 * f).toInt())
     }
 
-    fun attemptsLeft(s: GameState): Int = if (s.towerDay != s.currentDay) ATTEMPTS_PER_DAY else (ATTEMPTS_PER_DAY - s.towerAttempts).coerceAtLeast(0)
+    /** Etap 15: Sala Ekspedycji od 3. poziomu daje dodatkową próbę dziennie. */
+    fun attempts(s: GameState): Int = ATTEMPTS_PER_DAY + if (Vein.facilityLevel(s, com.example.model.FacilityType.MISSION_HALL) >= 3) 1 else 0
+    fun attemptsLeft(s: GameState): Int = if (s.towerDay != s.currentDay) attempts(s) else (attempts(s) - s.towerAttempts).coerceAtLeast(0)
 
     fun climb(s: GameState, discipleId: String, ctx: EngineContext): StepResult {
         val d = s.disciple(discipleId) ?: return ok(s)

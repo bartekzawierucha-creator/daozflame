@@ -49,8 +49,11 @@ object Market {
                 MethodGrade.PRIMORDIAL -> 50_000
             }
         }
+        // Etap 15: talizmany (warsztat) też da się sprzedać – nadmiar ma ujście.
+        Talismans.recipes.find { it.name == base }?.let { return (it.stones * 0.6).toInt().coerceAtLeast(20) }
         return when (base) {
             DiscipleRules.FOOD -> DiscipleRules.FOOD_PRICE
+            Creatures.EGG -> 2_500
             SPIRIT_PAPER -> 8
             else -> null
         }
@@ -87,6 +90,8 @@ object Market {
             total += (basePrice(item)!! * mult * Seasons.sellFactor(Seasons.of(s.currentDay)) * Quality.parse(item).second.effect).roundToInt().coerceAtLeast(1)
             mult = (mult * (1 - SELL_PRESSURE)).coerceAtLeast(MIN_MULT)
         }
+        // Etap 15: Sala Dyplomacji – kupcy płacą +5% za każdy jej poziom ponad pierwszy.
+        total = (total * (1.0 + 0.05 * (Vein.facilityLevel(s, com.example.model.FacilityType.DIPLOMACY_HALL) - 1).coerceAtLeast(0))).toInt()
         return ok(
             s.copy(
                 spiritStones = s.spiritStones + total,

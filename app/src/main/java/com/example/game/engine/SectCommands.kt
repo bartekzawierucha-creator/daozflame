@@ -245,8 +245,15 @@ object SectCommands {
      */
     /** Etap 3: pigułka daje procent bieżącego etapu i dokłada toksyczności (ścieżka Pigułek: efekt ×2, toksyny ×1,5). */
     private fun usePillV2(s: GameState, d: Disciple, pillName: String, count: Int, recipe: AlchemyRecipe): StepResult {
-        val pillsPath = d.path == CultivationPath.PILLS
         val quality = Quality.parse(pillName).second
+        if (recipe.pillName == com.example.game.content.CraftCatalog.DETOX_PILL) {
+            val clean = (30 * quality.effect).toInt()
+            return ok(
+                s.withDisciple(d.id) { it.copy(toxicity = (it.toxicity - clean).coerceAtLeast(0)) }.copy(inventory = s.inventory + (pillName to count - 1)),
+                "💊 ${d.name.substringBefore(" (")} zażywa: $pillName. Toksyczność ${d.toxicity} → ${(d.toxicity - clean).coerceAtLeast(0)}."
+            )
+        }
+        val pillsPath = d.path == CultivationPath.PILLS
         val power = (if (pillsPath) 2.0 else 1.0) * quality.effect
         val efficiency = d.majorRealm?.let { CultivationSystem.pillEfficiency(recipe.tier, it) } ?: 1.0
         var x = CultivationSystem.gainPercent(d, recipe.breakthroughBonusPercent * power * efficiency)

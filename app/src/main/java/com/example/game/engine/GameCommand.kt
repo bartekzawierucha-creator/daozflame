@@ -142,6 +142,9 @@ sealed interface GameCommand {
     data class BuyLot(val index: Int) : GameCommand
     /** Etap 14: gracz poznał moduł (karta wyjaśnień już pokazana). */
     data class SeeModule(val module: String) : GameCommand
+    /** Etap 15 */
+    data class StudyScroll(val discipleId: String, val scroll: String) : GameCommand
+    data class AssembleScroll(val methodId: String) : GameCommand
     data class SelectFlame(val flameId: String) : GameCommand
     data class RefineFlame(val flameId: String) : GameCommand
     data class UpgradeFacility(val type: FacilityType) : GameCommand

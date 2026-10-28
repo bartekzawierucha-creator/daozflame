@@ -100,8 +100,13 @@ fun CultivationPanel(d: Disciple, ui: WuxiaUiState, viewModel: WuxiaGameViewMode
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(scroll.removePrefix("Zwój: "), style = AaaType.Label.copy(fontSize = 11.sp, color = Aaa.TextHi), modifier = Modifier.weight(1f))
                         GhostButton("Naucz", onClick = { viewModel.learnMethod(d.id, scroll) }, height = 32.dp)
+                        com.example.game.engine.Realms.methodForScroll(scroll)?.let { m ->
+                            GhostButton("Studiuj +${com.example.game.engine.Scrolls.daoValue(m.grade)} Dao", enabled = built(ui, com.example.model.FacilityType.MARTIAL_ARCHIVES),
+                                onClick = { viewModel.studyScroll(d.id, scroll) }, height = 32.dp, modifier = Modifier.padding(start = 6.dp))
+                        }
                     }
                 }
+                if (!built(ui, com.example.model.FacilityType.MARTIAL_ARCHIVES)) RuleHint("Zbędne zwoje zamienisz na punkty Dao w Wieży Technik (do zbudowania w Pałacu).", color = Aaa.TextLow, maxLines = 2)
             }
 
             // Prawa Dao

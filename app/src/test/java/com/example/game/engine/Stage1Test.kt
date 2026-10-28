@@ -155,16 +155,12 @@ class Stage1Test {
     fun tutorialAdvancesOnlyOnSuccessfulGoal() {
         var s = fresh(8L)
         s = apply(s, GameCommand.TutorialNext).state
-        s = apply(s, GameCommand.TutorialNext).state
-        assertEquals(GameCommand.AttemptBreakthrough::class, Tutorial.current(s)!!.goal)
-
-        val notReady = s.disciples.first()
-        val failed = apply(s.copy(disciples = listOf(notReady.copy(realmProgress = 10))), GameCommand.AttemptBreakthrough(notReady.id, false))
-        assertEquals(2, failed.state.tutorialStep)
-
-        val full = Realms.sync(notReady.copy(stageQi = Realms.required(notReady)))
-        val ready = s.copy(disciples = listOf(full))
-        assertEquals(3, apply(ready, GameCommand.AttemptBreakthrough(notReady.id, false)).state.tutorialStep)
+        assertEquals(GameCommand.AssignRole::class, Tutorial.current(s)!!.goal)
+        val d = s.disciples.first()
+        // Nieudana komenda (nieznany uczeń) nie przesuwa samouczka.
+        assertEquals(1, apply(s, GameCommand.AssignRole("nikt", com.example.model.DiscipleRole.MINING)).state.tutorialStep)
+        val other = com.example.model.DiscipleRole.entries.first { it != d.role }
+        assertEquals(2, apply(s, GameCommand.Advise(GameCommand.AssignRole(d.id, other))).state.tutorialStep)
     }
 
     @Test

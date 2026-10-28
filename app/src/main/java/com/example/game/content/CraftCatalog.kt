@@ -26,7 +26,12 @@ object CraftCatalog {
         secondaryHerbName = second, secondaryHerbCount = secondCount, daoPointsBonus = dao
     )
 
+    /** Etap 15: odtrutka – jedyne zastosowanie Kaktusa Duszy Pustki i lekarstwo na toksyczność pigułek. */
+    const val DETOX_PILL = "Pigułka Oczyszczenia Pustki"
+
     val extraRecipes: List<AlchemyRecipe> = listOf(
+        rec("rec_detox", DETOX_PILL, 1, T1, 1, "Kaktus Duszy Pustki", 3, 250,
+            "Pustynny kaktus wypłukuje toksyny pigułek: −30 toksyczności (jakość mnoży efekt)."),
         // Stopień 1
         rec("rec_x_1", "Pigułka Ciszy Umysłu", 1, T1, 1, "Trawa Wiecznej Wiosny", 2, 40,
             "Ucisza demony serca podczas medytacji. +10% postępu Qi.", breakthrough = 10),
