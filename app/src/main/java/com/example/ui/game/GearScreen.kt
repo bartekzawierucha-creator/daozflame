@@ -72,24 +72,7 @@ import com.example.ui.graphics.rememberWuxiaGraphic
 
 // ─── Grafika ─────────────────────────────────────────────────────────────────
 
-private val FEMALE = mapOf(
-    MartialSchool.SWORD_IMMORTAL to listOf("sword_buns", "sword_hairpin"),
-    MartialSchool.BODY_ASURA to listOf("asura_braid"),
-    MartialSchool.ELEMENTAL_TAOIST to listOf("taoist_flame", "taoist_sage"),
-    MartialSchool.SHADOW_VIPER to listOf("viper_masked", "viper_pale")
-)
-private val MALE = mapOf(
-    MartialSchool.SWORD_IMMORTAL to listOf("sword_ponytail", "sword_scar"),
-    MartialSchool.BODY_ASURA to listOf("asura_grin", "asura_wild", "asura_monk"),
-    MartialSchool.ELEMENTAL_TAOIST to listOf("taoist_lightning", "taoist_scholar"),
-    MartialSchool.SHADOW_VIPER to listOf("viper_hooded", "viper_elder")
-)
-
-/** Portret ucznia: szkoła + płeć, wybór stały dla danego ucznia. */
-fun portraitKey(d: Disciple): String {
-    val pool = (if (d.gender == "Kobieta") FEMALE else MALE)[d.martialSchool] ?: listOf("sword_ponytail")
-    return "portrait_" + pool[Math.floorMod(d.id.hashCode(), pool.size)]
-}
+// Portrety: portraitKey() w Art.kt.
 
 /** Ikona artefaktu z grafik gry; null = rysujemy znak miejsca. */
 fun gearIconKey(a: Artifact): String? {
@@ -257,7 +240,7 @@ private fun PaperDoll(d: Disciple, ui: WuxiaUiState, school: Color, selected: Eq
             drawCircle(Brush.radialGradient(listOf(school.copy(alpha = 0.28f), Color.Transparent), center = Offset(size.width / 2, size.height * 0.45f), radius = size.width * 0.42f))
         })
         Art("orn_seal_ring", Modifier.align(Alignment.Center).offset(y = (-14).dp).size(250.dp).rotate(angle).alpha(0.45f))
-        Art(portraitKey(d), Modifier.align(Alignment.BottomCenter).padding(bottom = 30.dp).width(190.dp).fillMaxHeight(0.92f), alignment = Alignment.BottomCenter)
+        Art(bodyKey(d), Modifier.align(Alignment.BottomCenter).padding(bottom = 22.dp).width(190.dp).fillMaxHeight(0.95f), alignment = Alignment.BottomCenter)
         // Wtopienie dołu portretu w tło.
         Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(90.dp).background(Brush.verticalGradient(listOf(Color.Transparent, Aaa.Ink1))))
         Column(Modifier.align(Alignment.CenterStart).padding(start = 10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {

@@ -69,10 +69,11 @@ internal const val PILL_BREAKTHROUGH = "Pigułka Przełomu Qi"
 
 /** Pełnowymiarowa postać wtopiona w tło z lewej strony. */
 @Composable
-internal fun HeroArt(assetKey: String, modifier: Modifier = Modifier, fadeStart: Float = 0.30f) {
+internal fun HeroArt(assetKey: String, modifier: Modifier = Modifier, fadeStart: Float = 0.30f, cutout: Boolean = false) {
     ArtImage(
         assetKey = assetKey,
-        alignment = Alignment.TopCenter,
+        alignment = if (cutout) Alignment.BottomCenter else Alignment.TopCenter,
+        contentScale = if (cutout) androidx.compose.ui.layout.ContentScale.Fit else androidx.compose.ui.layout.ContentScale.Crop,
         modifier = modifier
             .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
             .drawWithContent {
@@ -133,9 +134,11 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                 ) { id ->
                     val who = ui.disciples.firstOrNull { it.id == id } ?: d
                     Box(Modifier.fillMaxSize()) {
+                        val (heroKey, cut) = heroKey(who)
                         HeroArt(
-                            WuxiaAssetLoader.getSchoolAvatarKey(who.martialSchool),
-                            Modifier
+                            heroKey,
+                            cutout = cut,
+                            modifier = Modifier
                                 .align(Alignment.TopEnd)
                                 .padding(top = 44.dp)
                                 .offset(x = 36.dp)
@@ -179,35 +182,47 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         EdgeTag(d.martialSchool.polishName, schoolColor(d.martialSchool))
                         Text(
-                            "Talent ${d.talentGrade.code}",
+                            "Talent ${d.talentGrade.code} · moc ${d.combatPower}",
                             style = AaaType.Overline.copy(color = Aaa.Gold, fontSize = 9.sp)
                         )
                     }
                     SheetTitle(d.name.substringBefore(" ("), size = 28)
-                    SheetBody("${com.example.game.engine.Realms.label(d)} · ${d.role.polishName}", maxLines = 1, modifier = Modifier.offset(y = (-4).dp))
-                    StatTriplet(
+                    // Królestwo jako pieczęć z rombami etapów, zajęcie jako ikona.
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.offset(y = (-4).dp)) {
+                        GameIcon(realmKey(d.majorRealm), 34.dp)
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Text(com.example.game.engine.Realms.label(d), style = AaaType.Label.copy(fontSize = 12.sp, color = Aaa.TextHi, fontWeight = FontWeight.Bold), maxLines = 1)
+                            d.majorRealm?.let { StagePips(d.stage, it.stages) }
+                        }
+                        GameIcon(roleKey(d.role), 26.dp)
+                        Text(d.role.polishName.substringBefore(" "), style = AaaType.Label.copy(fontSize = 10.sp, color = Aaa.TextMid), maxLines = 1)
+                    }
+                    IconStatRow(
                         listOf(
-                            "Atak" to "${d.attack}",
-                            "Obrona" to "${d.defense}",
-                            "Moc" to "${d.combatPower}"
+                            Triple("ico_attack", "${d.attack}", "atak"),
+                            Triple("ico_defense", "${d.defense}", "obrona"),
+                            Triple("ico_hp", "${d.currentHp}", "HP"),
+                            Triple("ico_comprehension", "${d.comprehension}", "zrozum."),
+                            Triple("ico_luck", "${d.karmicLuck}", "szczęście"),
+                            Triple("ico_loyalty", "${d.loyalty}", "lojalność")
                         )
                     )
                     val isReady = d.realmProgress >= 100
-                    KvRow(
-                        label = "Qi meridianów ${d.realmProgress}%",
-                        value = if (isReady) "Gotowy do przełomu" else d.innateTechnique,
-                        valueColor = if (isReady) Aaa.Gold else Aaa.TextMid
-                    )
-                    ThinBar(d.realmProgress / 100f, schoolColor(d.martialSchool))
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        GameIcon("res_qi", 18.dp)
+                        Box(Modifier.weight(1f)) { ThinBar(d.realmProgress / 100f, schoolColor(d.martialSchool)) }
+                        Text(if (isReady) "gotowy" else "${d.realmProgress}%", style = AaaType.Label.copy(fontSize = 11.sp, color = if (isReady) Aaa.Gold else Aaa.TextHi, fontWeight = FontWeight.Bold))
+                    }
                     DiscipleLifeInfo(d)
                     DiscipleStateTags(d, ui)
                     if (ui.autonomy) DiscipleMindStrip(d, ui) { legacy = "mind" }
-                    // Rozwój ucznia: trzy panele (kultywacja, Dao, życie) – stałe miejsce, zawsze widoczne.
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        GhostButton("Kultywacja", onClick = { legacy = "cultivation" }, modifier = Modifier.weight(1.2f), height = 36.dp)
-                        GhostButton("Dao" + if (d.openedMeridians.isNotEmpty()) " ${d.openedMeridians.size}" else "", onClick = { legacy = "secrets" }, modifier = Modifier.weight(1f), height = 36.dp)
-                        GhostButton("Życie", onClick = { legacy = "life" }, modifier = Modifier.weight(1f), height = 36.dp)
-                        GhostButton("Techniki", onClick = { legacy = "disciples" }, modifier = Modifier.weight(1f), height = 36.dp)
+                    // Rozwój ucznia: zakładki z ikonami – stałe miejsce, zawsze widoczne.
+                    Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                        IconTab("ico_breakthrough", "Kultywacja", Modifier.weight(1.15f)) { legacy = "cultivation" }
+                        IconTab("res_dao", "Dao", Modifier.weight(1f), badge = d.openedMeridians.size.takeIf { it > 0 }?.toString()) { legacy = "secrets" }
+                        IconTab("res_morale", "Życie", Modifier.weight(1f)) { legacy = "life" }
+                        IconTab("nav_book", "Techniki", Modifier.weight(1f)) { legacy = "disciples" }
+                        IconTab("gear_storage_ring", "Ekwipunek", Modifier.weight(1.15f)) { legacy = "gear" }
                     }
                     // Dyscyplina: ranga, kara, łaska.
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -216,11 +231,10 @@ fun AdeptsModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
                             enabled = d.id in ui.promotableIds,
                             onClick = { viewModel.promote(d.id) },
                             modifier = Modifier.weight(1.45f),
-                            height = 32.dp
+                            height = 30.dp
                         )
-                        GhostButton("Kara", onClick = { viewModel.punish(d.id) }, danger = true, modifier = Modifier.weight(0.85f), height = 32.dp)
-                        GhostButton("Łaska", onClick = { viewModel.pardon(d.id) }, modifier = Modifier.weight(0.9f), height = 32.dp)
-                        GhostButton("Ekwipunek", onClick = { legacy = "gear" }, modifier = Modifier.weight(1.3f), height = 32.dp)
+                        GhostButton("Kara", onClick = { viewModel.punish(d.id) }, danger = true, modifier = Modifier.weight(1f), height = 30.dp)
+                        GhostButton("Łaska", onClick = { viewModel.pardon(d.id) }, modifier = Modifier.weight(1f), height = 30.dp)
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         GhostButton(
@@ -446,14 +460,7 @@ private fun PalaceTiles(
 //  OMEN NIEBIOS – zdarzenie losowe jako pełny kadr
 // ─────────────────────────────────────────────────────────────────────────────
 
-private fun eventArt(e: RandomEvent?): String = when {
-    e == null -> "bg_sect_sanctuary"
-    e.title.contains("Demoniczn", true) || e.title.contains("Krwi", true) -> "avatar_shadow_viper"
-    e.title.contains("Besti", true) || e.title.contains("Smok", true) -> "beast_azure_dragon"
-    e.title.contains("Mistrz", true) || e.title.contains("Uzdrowiciel", true) -> "avatar_elemental_taoist"
-    e.title.contains("Meteoryt", true) || e.title.contains("Grobowc", true) -> "bg_combat_arena"
-    else -> "bg_combat_arena"
-}
+private fun eventArt(e: RandomEvent?): String = e?.let { eventArtKey(it.title) } ?: "bg_sect_sanctuary"
 
 private fun isRuthless(c: RandomEventChoice) =
     listOf("Zabierz", "Siłą", "Zniszcz", "Atak", "opłat", "Odpraw").any { c.text.contains(it, ignoreCase = true) }

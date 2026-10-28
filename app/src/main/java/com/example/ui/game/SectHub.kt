@@ -424,12 +424,15 @@ private fun PlayerBlock(ui: WuxiaUiState, modifier: Modifier = Modifier) {
             Spacer(Modifier.height(5.dp))
             ThinBar((ui.sectReputation % 100) / 100f, Aaa.GoldHi, Modifier.width(100.dp), height = 3.dp)
             Spacer(Modifier.height(4.dp))
-            Text(
-                text = "Dzień ${ui.currentDay} · ${ui.timeOfDay.polishName}",
-                style = AaaType.Label.copy(fontSize = 9.sp, color = Aaa.TextMid, letterSpacing = 0.sp),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                GameIcon(timeKey(ui.timeOfDay), 14.dp)
+                Text(
+                    text = "Dzień ${ui.currentDay} · ${ui.timeOfDay.polishName}",
+                    style = AaaType.Label.copy(fontSize = 9.sp, color = Aaa.TextMid, letterSpacing = 0.sp),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }

@@ -74,8 +74,11 @@ fun BuildPanel(t: FacilityType, ui: WuxiaUiState, viewModel: WuxiaGameViewModel,
     val p = Buildings.PLANS[t] ?: return
     val f = ui.facilities.find { it.type == t }
     SimplePanel(title = t.polishName, onClose = onClose) {
-        Box(Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(Aaa.Gold.copy(alpha = 0.12f), Aaa.Ink2))).border(1.dp, Aaa.Hairline).padding(14.dp)) {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        val built = f == null || f.level > 0
+        Row(Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(Aaa.Gold.copy(alpha = 0.12f), Aaa.Ink2))).border(1.dp, Aaa.Hairline).padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            GameIcon(buildingKey(t), 112.dp, dim = !built && !(f?.buildDoneDay ?: 0).let { it > 0 })
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Overline("Co otwiera")
                 Text(p.unlocks, style = AaaType.Body.copy(fontSize = 13.sp, lineHeight = 18.sp, color = Aaa.TextHi))
             }
@@ -89,12 +92,7 @@ fun BuildPanel(t: FacilityType, ui: WuxiaUiState, viewModel: WuxiaGameViewModel,
             }
             else -> {
                 Section("Koszt")
-                KvRow("Kamienie Ducha", "${p.stones} (masz ${ui.spiritStones})", valueColor = if (ui.spiritStones >= p.stones) Aaa.Gold else Aaa.Cinnabar)
-                p.material?.let { m ->
-                    val have = ui.inventory[m] ?: 0
-                    KvRow(m, "${p.count} (masz $have)", valueColor = if (have >= p.count) Aaa.Gold else Aaa.Cinnabar)
-                }
-                KvRow("Czas budowy", "${p.days} dni gry (~${p.days * 48 / 60 + 1} min)", valueColor = Aaa.TextMid)
+                CostRow(p, ui, big = true)
                 val can = ui.spiritStones >= p.stones && (p.material == null || (ui.inventory[p.material] ?: 0) >= p.count)
                 GoldCta(if (can) "Buduj" else "Brakuje zasobów", enabled = can, onClick = { viewModel.build(t) }, modifier = Modifier.fillMaxWidth())
                 if (!can) SheetBody("Kamienie przynoszą uczniowie codziennie; minerały – uczniowie w kopalni (Adepci → Doradź: Wydobycie).", color = Aaa.TextLow, maxLines = 3)
@@ -112,7 +110,7 @@ fun LockedModule(m: GameModule, ui: WuxiaUiState, viewModel: WuxiaGameViewModel,
         return
     }
     SimplePanel(title = m.title, onClose = onBack) {
-        Text("🥚", fontSize = 48.sp)
+        GameIcon("bld_nest", 120.dp, fallback = "🥚")
         Text("Gniazdo jest puste", fontFamily = BrushFont, color = Aaa.GoldHi, fontSize = 26.sp)
         SheetBody("Bestie nie przychodzą same. Strażnicy krain pilnują swoich gniazd – pokonaj pierwszego strażnika na wyprawie (Świat), a w legowisku znajdziesz jajo. Wysiadywane wykluje się po ok. 20 minutach.", color = Aaa.TextHi, maxLines = 6)
         SheetBody("Bestia daje premię Qi całej sekcie, a później może nosić ucznia jako wierzchowiec.", color = Aaa.TextMid, maxLines = 3)
@@ -120,6 +118,7 @@ fun LockedModule(m: GameModule, ui: WuxiaUiState, viewModel: WuxiaGameViewModel,
 }
 
 /** Lista budowy w Pałacu. */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun BuildListPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: () -> Unit) {
     SimplePanel(title = "Budowa sekty", onClose = onClose) {
@@ -131,22 +130,42 @@ fun BuildListPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: () 
                 f.buildDoneDay > 0 -> "🏗 ${(f.buildDoneDay - ui.currentDay).coerceAtLeast(0)} d."
                 else -> null
             }
+            val can = ui.spiritStones >= p.stones && (p.material == null || (ui.inventory[p.material] ?: 0) >= p.count)
             InfoCard(accent = if (state == null) Aaa.Gold else null) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(t.polishName, style = AaaType.Label.copy(fontSize = 12.5.sp, color = Aaa.TextHi, fontWeight = FontWeight.Bold), modifier = Modifier.weight(1f))
-                    if (state != null) Text(state, style = AaaType.Label.copy(fontSize = 10.sp, color = if (state.startsWith("✓")) Aaa.Jade else Aaa.Ember))
-                }
-                SheetBody(p.unlocks, color = Aaa.TextMid, maxLines = 3)
-                if (state == null) {
-                    val can = ui.spiritStones >= p.stones && (p.material == null || (ui.inventory[p.material] ?: 0) >= p.count)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("${p.stones} kam." + (p.material?.let { " · ${p.count}× $it" } ?: "") + " · ${p.days} dni",
-                            style = AaaType.Label.copy(fontSize = 10.sp, color = Aaa.TextLow), modifier = Modifier.weight(1f), maxLines = 2)
-                        GhostButton("Buduj", enabled = can, onClick = { viewModel.build(t) }, height = 30.dp)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    GameIcon(buildingKey(t), 72.dp, dim = state == null && !can)
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(t.polishName, style = AaaType.Label.copy(fontSize = 12.5.sp, color = Aaa.TextHi, fontWeight = FontWeight.Bold), modifier = Modifier.weight(1f))
+                            if (state != null) Text(state, style = AaaType.Label.copy(fontSize = 10.sp, color = if (state.startsWith("✓")) Aaa.Jade else Aaa.Ember))
+                        }
+                        SheetBody(p.unlocks, color = Aaa.TextMid, maxLines = 3)
+                        if (state == null) Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(Modifier.weight(1f)) { CostRow(p, ui) }
+                            GhostButton("Buduj", enabled = can, onClick = { viewModel.build(t) }, height = 30.dp)
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+/** Koszt budowy ikonami: kamienie, materiał, czas. Czerwone = brakuje. */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun CostRow(p: Buildings.Plan, ui: WuxiaUiState, big: Boolean = false) {
+    val sz = if (big) 22.dp else 16.dp
+    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        IconValue("res_stones", "${p.stones}", if (ui.spiritStones >= p.stones) Aaa.TextHi else Aaa.Cinnabar, sz, "💎")
+        p.material?.let { m ->
+            val have = ui.inventory[m] ?: 0
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                ItemIcon(m, sz)
+                Text("${p.count}" + if (big) " · masz $have" else "", style = AaaType.Label.copy(fontSize = 12.sp, color = if (have >= p.count) Aaa.TextHi else Aaa.Cinnabar, fontWeight = FontWeight.Bold))
+            }
+        }
+        IconValue("ico_time", "${p.days} d." + if (big) " (~${p.days * 48 / 60 + 1} min)" else "", Aaa.TextMid, sz, "⏳")
     }
 }
 

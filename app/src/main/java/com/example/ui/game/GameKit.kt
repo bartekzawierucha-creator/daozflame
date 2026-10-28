@@ -138,14 +138,15 @@ fun ArtImage(
     assetKey: String,
     modifier: Modifier = Modifier,
     alignment: Alignment = Alignment.Center,
-    colorFilter: ColorFilter? = null
+    colorFilter: ColorFilter? = null,
+    contentScale: ContentScale = ContentScale.Crop
 ) {
     val bmp = rememberWuxiaGraphic(assetKey)
     if (bmp != null) {
         Image(
             bitmap = bmp,
             contentDescription = null,
-            contentScale = ContentScale.Crop,
+            contentScale = contentScale,
             alignment = alignment,
             colorFilter = colorFilter,
             modifier = modifier
@@ -192,7 +193,13 @@ fun CurrencyPill(glyph: AaaGlyph, value: Int, modifier: Modifier = Modifier, onP
             .padding(start = 4.dp, end = 3.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AaaGlyphIcon(glyph, Modifier.size(18.dp))
+        // Etap 16: malowana ikona zasobu; wektorowy znak tylko gdy grafiki brak.
+        val art = when (glyph) {
+            AaaGlyph.SPIRIT_STONE -> "res_stones"
+            AaaGlyph.REPUTATION -> "res_reputation"
+            AaaGlyph.CONTRIBUTION -> "res_contribution"
+        }
+        if (rememberWuxiaGraphic(art) != null) GameIcon(art, 20.dp) else AaaGlyphIcon(glyph, Modifier.size(18.dp))
         Spacer(Modifier.width(5.dp))
         Text(
             text = formatGameNumber(shown),

@@ -60,6 +60,9 @@ fun ExpeditionPanel(region: WorldRegion?, ui: WuxiaUiState, viewModel: WuxiaGame
     val runRegion = run?.let { r -> ui.regions.find { it.id == r.regionId } } ?: region
     SimplePanel(title = "Wyprawa · ${runRegion?.name ?: "—"}", onClose = onClose) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            runRegion?.let { r ->
+                NpcScene(biomeBgKey(r.biome), null, r.biome.polishName, r.name, height = 130.dp, overlineColor = Aaa.Ember)
+            }
             when {
                 run != null -> RunView(run, ui, viewModel)
                 runRegion != null -> PlanView(runRegion, ui, viewModel)
@@ -182,17 +185,23 @@ private fun NodeTile(node: ExpNode, enabled: Boolean, modifier: Modifier, danger
 fun TowerPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: () -> Unit) {
     SimplePanel(title = "Wieża Prób", onClose = onClose) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("Piętro ${ui.towerFloor}", fontFamily = BrushFont, color = Aaa.GoldHi, fontSize = 28.sp)
+            NpcScene("bg_tower", "foe_tower_guardian", "Strażnik piętra ${ui.towerFloor + 1}", "Piętro ${ui.towerFloor}", height = 190.dp, overlineColor = Aaa.Cinnabar)
             RuleHint("Każde piętro to strażnik silniejszy o 8%. Co dziesiąte piętro daje Pigułkę Przełomu. Próby odnawiają się co dzień gry.", maxLines = 3)
             KvRow("Próby dziś", "${ui.towerAttemptsLeft} / 3", valueColor = if (ui.towerAttemptsLeft == 0) Aaa.Cinnabar else Aaa.Jade)
             val (hp, atk, def) = ui.towerNext
-            KvRow("Strażnik piętra ${ui.towerFloor + 1}", "HP $hp · atak $atk · obrona $def", valueColor = Aaa.TextMid)
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                Overline("Strażnik")
+                IconValue("ico_hp", "$hp")
+                IconValue("ico_attack", "$atk")
+                IconValue("ico_defense", "$def")
+            }
             Section("Wyślij ucznia")
             ui.disciples.sortedByDescending { it.combatPower }.take(8).forEach { d ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PortraitChip(d, false, "", size = 40.dp)
                     Column(Modifier.weight(1f)) {
                         Text(d.name.substringBefore(" ("), style = AaaType.Label.copy(fontSize = 11.sp, color = Aaa.TextHi), maxLines = 1)
-                        Text("atak ${d.attack} · obrona ${d.defense} · HP ${d.maxHp}", style = AaaType.Label.copy(fontSize = 9.5.sp, color = Aaa.TextLow))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { IconValue("ico_attack", "${d.attack}", size = 14.dp); IconValue("ico_defense", "${d.defense}", size = 14.dp); IconValue("ico_hp", "${d.maxHp}", size = 14.dp) }
                     }
                     GhostButton("Próba", enabled = ui.towerAttemptsLeft > 0, onClick = { viewModel.climbTower(d.id) }, height = 32.dp)
                 }
@@ -217,6 +226,7 @@ fun SectsPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, sect: com.exampl
         onSelect = { tab = SectsTab.entries[it] },
         onClose = onClose,
         header = {
+            sect?.let { NpcScene("bg_sect_sanctuary", sectLeaderKey(it.name, it.alignment), "Przywódca: ${it.leaderName}", it.name, height = 150.dp, overlineColor = statusColor(it.status)) }
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 ui.raid?.let { StateTag("⚠ Najazd za ${(it.arriveDay - ui.currentDay).coerceAtLeast(0)} d.", Aaa.Cinnabar) }
                 StateTag("Formacja ${ui.formationNodes.size}/7", Aaa.Gold)

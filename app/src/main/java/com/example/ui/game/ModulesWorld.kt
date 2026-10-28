@@ -476,6 +476,11 @@ fun ClansModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
             },
             topRight = { CurrencyPill(AaaGlyph.REPUTATION, ui.sectReputation) }
         ) {
+            // Etap 16: przywódca wybranej sekty jako postać w kadrze.
+            if (s != null) HeroArt(
+                sectLeaderKey(s.name, s.alignment),
+                Modifier.align(Alignment.TopEnd).padding(top = 56.dp).fillMaxHeight(0.52f).fillMaxWidth(0.62f)
+            )
             Column(
                 modifier = Modifier
                     .safeTop()
@@ -898,6 +903,14 @@ private fun itemColor(name: String, kind: ItemKind): Color {
 fun ItemIcon(name: String, size: androidx.compose.ui.unit.Dp = 26.dp) {
     val kind = kindOf(name)
     val c = itemColor(name, kind)
+    // Etap 16: malowana grafika, gdy jest (zwoje wg stopnia, zioła, rudy, pigułki, talizmany, jaja).
+    val art = itemArtKey(name)
+    if (art != null && com.example.ui.graphics.rememberWuxiaGraphic(art) != null) {
+        Box(Modifier.size(size).background(Brush.radialGradient(listOf(c.copy(alpha = 0.22f), Color.Transparent))), contentAlignment = Alignment.Center) {
+            GameIcon(art, size * 0.92f)
+        }
+        return
+    }
     Box(
         Modifier
             .size(size)

@@ -3,6 +3,8 @@ package com.example.ui.game
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -64,13 +66,28 @@ fun CultivationPanel(d: Disciple, ui: WuxiaUiState, viewModel: WuxiaGameViewMode
     SimplePanel(title = "Kultywacja · ${d.name.substringBefore(" (")}", onClose = onClose) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             val major = d.majorRealm
-            Text(Realms.label(d), fontFamily = BrushFont, color = Aaa.GoldHi, fontSize = 26.sp)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                GameIcon(realmKey(major), 52.dp)
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(Realms.label(d), fontFamily = BrushFont, color = Aaa.GoldHi, fontSize = 26.sp)
+                    if (major != null) StagePips(d.stage, major.stages, pip = 8.dp)
+                }
+            }
             if (major != null) {
                 KvRow("Qi etapu", "${qi(d.stageQi)} / ${qi(Realms.required(d))}")
                 ThinBar(d.realmProgress / 100f, Aaa.Gold)
                 val method = Realms.method(d.methodId)
-                KvRow("Metoda", "${method.name} (${method.grade.polishName})")
-                KvRow("Sufit metody", Realms.ceiling(d).polishName, valueColor = Aaa.TextMid)
+                // Metoda jako zwój w kolorze stopnia; czerwona kłódka, gdy sufit blokuje następne królestwo.
+                val capped = major.next != null && major.next!!.ordinal > Realms.ceiling(d).ordinal
+                Row(Modifier.fillMaxWidth().background(Aaa.Ink0.copy(alpha = 0.5f)).border(1.dp, gradeColor(method.grade).copy(alpha = 0.45f)).padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    GameIcon(scrollKey(method.grade), 40.dp)
+                    Column(Modifier.weight(1f)) {
+                        Text(method.name, style = AaaType.Label.copy(fontSize = 12.sp, color = Aaa.TextHi, fontWeight = FontWeight.Bold), maxLines = 2)
+                        Text("${method.grade.polishName} · sufit: ${Realms.ceiling(d).polishName}", style = AaaType.Label.copy(fontSize = 10.sp, color = gradeColor(method.grade)))
+                    }
+                    if (capped) GameIcon("ico_lock", 26.dp)
+                }
                 d.foundationQuality?.let { KvRow("Fundament", it.polishName) }
                 if (d.coreGrade > 0) KvRow("Złoty Rdzeń", "grad ${d.coreGrade}")
                 d.soulShape?.let { KvRow("Kształt duszy", it) }
@@ -97,7 +114,8 @@ fun CultivationPanel(d: Disciple, ui: WuxiaUiState, viewModel: WuxiaGameViewMode
             if (ui.scrolls.isNotEmpty()) {
                 Overline("Zwoje w magazynie")
                 ui.scrolls.forEach { scroll ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        ItemIcon(scroll, 30.dp)
                         Text(scroll.removePrefix("Zwój: "), style = AaaType.Label.copy(fontSize = 11.sp, color = Aaa.TextHi), modifier = Modifier.weight(1f))
                         GhostButton("Naucz", onClick = { viewModel.learnMethod(d.id, scroll) }, height = 32.dp)
                         com.example.game.engine.Realms.methodForScroll(scroll)?.let { m ->
@@ -165,7 +183,10 @@ fun CultivationPanel(d: Disciple, ui: WuxiaUiState, viewModel: WuxiaGameViewMode
                         maxLines = 6
                     )
                     ui.majorOdds[d.id]?.let { (bare, pill) ->
-                        KvRow("Przeżycie", "~$bare% · z pigułką ~$pill%", valueColor = obedienceColor(bare))
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                            OddsRing(pill, listOf(OddsPart("", bare, Aaa.Azure), OddsPart("", pill - bare, Aaa.Jade)), 110.dp, "przeżycie z pigułką")
+                            OddsLegend(listOf(OddsPart("Bez osłon", bare, Aaa.Azure, "ico_tribulation"), OddsPart("Pigułka i talizman", pill - bare, Aaa.Jade, "pill_lightning")))
+                        }
                     }
                     if (!confirmTribulation) {
                         GoldCta("Przygotuj tribulację", onClick = { confirmTribulation = true }, modifier = Modifier.fillMaxWidth())
@@ -178,7 +199,7 @@ fun CultivationPanel(d: Disciple, ui: WuxiaUiState, viewModel: WuxiaGameViewMode
                     }
                 }
                 else -> {
-                    if (atPeak) ui.majorOdds[d.id]?.let { (bare, pill) -> KvRow("Szansa", "$bare% · z pigułką $pill%", valueColor = obedienceColor(bare)) }
+                    if (atPeak) ui.majorOdds[d.id]?.let { (bare, pill) -> BreakthroughOdds(d, ui, bare, pill) }
                     GoldCta(
                     if (atPeak) "Wielki przełom" else "Przełom etapu",
                     onClick = { viewModel.attemptBreakthrough(d.id, usePill = ui.autoUsePillsForBreakthrough) },
@@ -241,5 +262,27 @@ fun TribulationOverlay(t: TribulationUi, onDone: () -> Unit) {
                 GoldCta("Dalej", onClick = onDone, modifier = Modifier.fillMaxWidth())
             }
         }
+    }
+}
+
+
+/** Pierścień szansy wielkiego przełomu: podstawa, szczęście, pełnia, krew śmiertelnika, inne premie, pigułka. */
+@Composable
+private fun BreakthroughOdds(d: Disciple, ui: WuxiaUiState, bare: Int, pill: Int) {
+    val luck = (d.karmicLuck - 50) / 4
+    val moon = if (ui.timeOfDay == com.example.model.TimeOfDay.FULL_MOON) com.example.game.engine.CultivationRules.FULL_MOON_BONUS else 0
+    val mortal = if (d.bloodline == com.example.model.BloodlineType.PURE_MORTAL) 10 else 0
+    val other = bare - 35 - luck - moon - mortal
+    val parts = buildList {
+        add(OddsPart("Podstawa", 35, Aaa.TextLow, "ico_time"))
+        if (luck != 0) add(OddsPart("Szczęście ${d.karmicLuck}", luck, Aaa.Gold, "ico_luck"))
+        if (moon != 0) add(OddsPart("Pełnia księżyca", moon, Aaa.Azure, "time_night"))
+        if (mortal != 0) add(OddsPart("Krew śmiertelnika", mortal, Aaa.Ember, "ico_hp"))
+        if (other != 0) add(OddsPart(if (other > 0) "Budynki, przygotowanie" else "Bez pigułki / kary", other, if (other > 0) Aaa.Violet else Aaa.Cinnabar, "res_dao"))
+        if (pill > bare) add(OddsPart("Pigułka Przełomu", pill - bare, Aaa.Jade, "pill_phoenix"))
+    }
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        OddsRing(pill, parts, 120.dp, if (pill > bare) "z pigułką · bez $bare%" else "szansa")
+        Box(Modifier.weight(1f)) { OddsLegend(parts) }
     }
 }

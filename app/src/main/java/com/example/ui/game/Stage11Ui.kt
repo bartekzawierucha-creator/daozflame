@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -196,6 +197,7 @@ fun WeeklyGoalPanel(ui: WuxiaUiState, onClose: () -> Unit) {
             // Kadr wyzwania: grafika, tytuł pędzlem, pierścień postępu i pieczęć terminu.
             Box(Modifier.fillMaxWidth().height(190.dp).clip(cutCornerTicket())) {
                 ArtImage(art, Modifier.matchParentSize(), colorFilter = dimFilter(0.42f, 0.75f))
+                ArtImage("npc_messenger", Modifier.align(Alignment.BottomEnd).fillMaxHeight().fillMaxWidth(0.4f), alignment = Alignment.TopCenter, colorFilter = dimFilter(0.55f, 0.8f))
                 Box(Modifier.matchParentSize().background(Brush.horizontalGradient(listOf(Aaa.Ink0.copy(alpha = 0.92f), Aaa.Ink0.copy(alpha = 0.2f)))))
                 Column(Modifier.align(Alignment.CenterStart).padding(start = 14.dp, end = 120.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Overline("Wyzwanie tygodnia", color = Aaa.Cinnabar)
@@ -218,10 +220,10 @@ fun WeeklyGoalPanel(ui: WuxiaUiState, onClose: () -> Unit) {
             ThinBar(frac, if (done) Aaa.Jade else Aaa.Gold, height = 7.dp)
             Section("Nagroda", "rozdana o świcie po spełnieniu")
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                RewardTile({ Text("💎", fontSize = 20.sp) }, "+${g.rewardStones}", "kamienie", Aaa.Azure, Modifier.weight(1f))
-                RewardTile({ Text("☯", fontSize = 20.sp, color = Aaa.GoldHi) }, "+${g.rewardReputation}", "reputacja", Aaa.GoldHi, Modifier.weight(1f))
+                RewardTile({ GameIcon("res_stones", 28.dp, fallback = "💎") }, "+${g.rewardStones}", "kamienie", Aaa.Azure, Modifier.weight(1f))
+                RewardTile({ GameIcon("res_reputation", 28.dp, fallback = "☯") }, "+${g.rewardReputation}", "reputacja", Aaa.GoldHi, Modifier.weight(1f))
                 g.rewardItem?.let { RewardTile({ ItemIcon(it, 28.dp) }, "+1", it, Aaa.Jade, Modifier.weight(1f)) }
-                RewardTile({ Text("🏮", fontSize = 20.sp) }, "+5", "morale", Aaa.Ember, Modifier.weight(1f))
+                RewardTile({ GameIcon("res_morale", 28.dp, fallback = "🏮") }, "+5", "morale", Aaa.Ember, Modifier.weight(1f))
             }
             InfoCard(accent = Aaa.Cinnabar) {
                 Overline("Cena porażki", color = Aaa.Cinnabar)
@@ -230,7 +232,7 @@ fun WeeklyGoalPanel(ui: WuxiaUiState, onClose: () -> Unit) {
         }
         Section("Kronika wyzwań", "${ui.goalsWon} wygranych · ${ui.goalsLost} przegranych")
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            repeat(ui.goalsWon.coerceAtMost(12)) { Text("🏆", fontSize = 14.sp) }
+            repeat(ui.goalsWon.coerceAtMost(12)) { GameIcon("ico_goal", 18.dp, fallback = "🏆") }
             repeat(ui.goalsLost.coerceAtMost(6)) { Text("🥀", fontSize = 14.sp) }
             if (ui.goalsWon + ui.goalsLost == 0) SheetBody("Pierwsze wyzwanie przed sektą.", color = Aaa.TextLow, maxLines = 1)
         }
@@ -239,14 +241,6 @@ fun WeeklyGoalPanel(ui: WuxiaUiState, onClose: () -> Unit) {
 }
 
 // ─── Okazje ──────────────────────────────────────────────────────────────────
-
-private fun opportunityArt(k: com.example.model.OpportunityKind) = when (k) {
-    com.example.model.OpportunityKind.WANDERING_MASTER -> "avatar_sword_immortal"
-    com.example.model.OpportunityKind.RARE_MERCHANT -> "bg_forge_hall"
-    com.example.model.OpportunityKind.IMPERIAL_EXAM -> "bg_sect_sanctuary"
-    com.example.model.OpportunityKind.HIDDEN_CAVE -> "bg_combat_arena"
-    com.example.model.OpportunityKind.REFUGEES -> "bg_sect_sanctuary"
-}
 
 @Composable
 fun OpportunityPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: () -> Unit) {
@@ -257,20 +251,14 @@ fun OpportunityPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: (
             return@SimplePanel
         }
         val left = (o.untilDay - ui.currentDay).coerceAtLeast(0)
-        // Kadr okazji jak scena z manhwy.
-        Box(Modifier.fillMaxWidth().height(210.dp).clip(cutCornerTicket())) {
-            ArtImage(opportunityArt(o.kind), Modifier.matchParentSize(), alignment = androidx.compose.ui.BiasAlignment(0f, -0.5f), colorFilter = dimFilter(0.55f, 0.8f))
-            Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Transparent, Aaa.Ink0.copy(alpha = 0.95f)))))
+        // Kadr okazji: scena i postać, która przyszła do bram.
+        NpcScene(opportunityBgKey(o.kind), opportunityNpcKey(o.kind), "Okazja", Opportunities.title(o), height = 220.dp, badge = {
             Text(
                 if (left == 0) "OSTATNI DZIEŃ" else "JESZCZE $left D.",
                 style = AaaType.Overline.copy(fontSize = 10.sp, color = if (left == 0) Aaa.Cinnabar else Aaa.GoldHi, letterSpacing = 2.sp),
-                modifier = Modifier.align(Alignment.TopEnd).padding(10.dp).background(Aaa.Ink0.copy(alpha = 0.75f)).border(1.dp, Aaa.Hairline).padding(horizontal = 8.dp, vertical = 3.dp)
+                modifier = Modifier.background(Aaa.Ink0.copy(alpha = 0.75f)).border(1.dp, Aaa.Hairline).padding(horizontal = 8.dp, vertical = 3.dp)
             )
-            Column(Modifier.align(Alignment.BottomStart).padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Overline("${o.kind.glyph} Okazja", color = Aaa.Violet)
-                Text(Opportunities.title(o), fontFamily = BrushFont, color = Aaa.GoldHi, fontSize = 30.sp)
-            }
-        }
+        })
         Text(Opportunities.description(o), style = AaaType.Body.copy(fontSize = 12.sp, lineHeight = 17.sp, color = Aaa.TextHi))
         o.artifact?.let { a ->
             Row(Modifier.fillMaxWidth().background(Aaa.Ink3.copy(alpha = 0.85f)).border(1.dp, gearRarityColor(a.rarity).copy(alpha = 0.5f)).padding(8.dp),
@@ -335,6 +323,7 @@ fun StewardPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: () ->
     fun set(x: StewardPolicy) = viewModel.setSteward(x)
     val who = ui.disciples.find { it.id == p.stewardId }
     SimplePanel(title = "Zarządca skarbca", onClose = onClose) {
+        NpcScene("bg_sect_sanctuary", "npc_steward", "Skarbiec sekty", "Księgi i liczydło", height = 150.dp, overlineColor = Aaa.Jade)
         // Biurko zarządcy: kto prowadzi księgi i co robi codziennie.
         Row(
             Modifier.fillMaxWidth().background(Brush.horizontalGradient(listOf(Aaa.Jade.copy(alpha = 0.14f), Aaa.Ink3.copy(alpha = 0.9f)))).border(1.dp, Aaa.Hairline).padding(10.dp),
@@ -390,16 +379,11 @@ fun StewardPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: () ->
 @Composable
 fun AuctionPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: () -> Unit) {
     SimplePanel(title = "Dom Aukcyjny", onClose = onClose) {
-        Row(
-            Modifier.fillMaxWidth().background(Brush.horizontalGradient(listOf(Aaa.Gold.copy(alpha = 0.14f), Aaa.Ink3.copy(alpha = 0.9f)))).border(1.dp, Aaa.Hairline).padding(10.dp),
-            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text("拍", fontFamily = BrushFont, fontSize = 40.sp, color = Aaa.GoldHi)
-            Column(Modifier.weight(1f)) {
-                Text("Licytacja Pawilonu Tysiąca Skarbów", style = AaaType.Label.copy(fontSize = 12.5.sp, color = Aaa.TextHi, fontWeight = FontWeight.Bold))
-                SheetBody("Nowe przedmioty za ${ui.auctionRefreshIn} dni. Oferty rosną z królestwem twoich najlepszych uczniów.", color = Aaa.TextMid, maxLines = 2)
-            }
-            CurrencyPill(com.example.ui.aaa.AaaGlyph.SPIRIT_STONE, ui.spiritStones)
+        NpcScene("bg_auction", "npc_auctioneer", "Pawilon Tysiąca Skarbów", "Licytacja", height = 180.dp, overlineColor = Aaa.Gold,
+            badge = { CurrencyPill(com.example.ui.aaa.AaaGlyph.SPIRIT_STONE, ui.spiritStones) })
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            GameIcon("ico_time", 18.dp)
+            SheetBody("Nowe przedmioty za ${ui.auctionRefreshIn} dni. Oferty rosną z królestwem twoich najlepszych uczniów.", color = Aaa.TextMid, maxLines = 2)
         }
         if (ui.auction.isEmpty()) SheetBody("Licytatorzy jeszcze się zbierają – pierwsza aukcja wkrótce.", color = Aaa.TextLow)
         ui.auction.forEachIndexed { i, lot ->
@@ -410,7 +394,7 @@ fun AuctionPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: () ->
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 if (a != null) GearTile(a, com.example.game.engine.Gear.slotOf(a), 60.dp) {}
-                else Box(Modifier.size(60.dp), contentAlignment = Alignment.Center) { ItemIcon(lot.item?.substringBefore("×") ?: lot.name, 40.dp) }
+                else Box(Modifier.size(60.dp), contentAlignment = Alignment.Center) { ItemIcon(lot.item?.substringBefore("×") ?: lot.name, 48.dp) }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(lot.name, style = AaaType.Label.copy(fontSize = 12.sp, color = if (lot.sold) Aaa.TextLow else c, fontWeight = FontWeight.Bold), maxLines = 2, overflow = TextOverflow.Ellipsis)
                     val sub = when {
