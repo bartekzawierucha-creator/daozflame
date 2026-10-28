@@ -94,17 +94,35 @@ fun portraitKey(d: Disciple): String {
 /** Ikona artefaktu z grafik gry; null = rysujemy znak miejsca. */
 fun gearIconKey(a: Artifact): String? {
     val n = a.name.lowercase()
-    return when {
-        "pierścień" in n -> if ("płom" in n || "piekiel" in n || "ogn" in n) "gear_hellfire_ring" else "gear_storage_ring"
-        "wachlarz" in n -> "gear_flame_fan"
-        "młot" in n -> "gear_forge_hammer"
-        "dzwon" in n -> "gear_golden_bell"
-        "zwierciadł" in n || "lustr" in n -> "gear_bagua_mirror"
-        "włóczni" in n || "halabard" in n -> "gear_red_spear"
-        "miecz" in n || "ostrz" in n || "szabl" in n -> "gear_jade_sword"
-        "pancerz" in n || "zbroj" in n -> "gear_star_armor"
-        "talizman" in n -> if ("ogn" in n) "gear_talisman_fire" else if ("lecz" in n) "gear_talisman_heal" else "gear_talisman_guard"
-        else -> null
+    fun has(vararg w: String) = w.any { it in n }
+    return "gear_" + when {
+        has("pierścień", "sygnet") -> if (has("płom", "piekiel", "ogn")) "hellfire_ring" else "storage_ring"
+        has("hełm", "kaptur") -> "qilin_helmet"
+        has("diadem", "opask", "spink") -> "pearl_diadem"
+        has("koron") -> "void_crown"
+        has("karwasz", "bransolet", "naramienn") -> "sun_bracers"
+        has("rękawic") -> "dragon_gauntlets"
+        has("wachlarz") -> "flame_fan"
+        has("młot") -> "forge_hammer"
+        has("łuk") -> "roc_bow"
+        has("bicz") -> "snake_whip"
+        has("laska") -> if (has("złot", "mędrc", "małp")) "monkey_staff" else "star_staff"
+        has("kieł", "bazylisz", "trucizn") -> "basilisk_fang"
+        has("sztylet", "nóż") -> "obsidian_daggers"
+        has("włóczni", "halabard") -> "red_spear"
+        has("miecz", "ostrz", "szabl") -> "jade_sword"
+        has("tarcz") -> "kraken_shield"
+        has("płaszcz") -> "void_cloak"
+        has("szat") -> "phoenix_robe"
+        has("kości", "lisz") && has("zbroj", "pancerz") -> "lich_armor"
+        has("pancerz", "zbroj", "kamizel") -> "star_armor"
+        has("dzwon") -> "golden_bell"
+        has("zwierciadł", "lustr") -> "bagua_mirror"
+        has("kocioł") -> "chaos_cauldron"
+        has("wisior", "amulet", "nefryt") -> "jade_pendant"
+        has("gwiazdozbiór", "konstelac", "perł") -> "constellation"
+        has("talizman") -> if (has("ogn")) "talisman_fire" else if (has("lecz")) "talisman_heal" else "talisman_guard"
+        else -> return null
     }
 }
 
