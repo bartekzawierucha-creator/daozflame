@@ -356,13 +356,17 @@ object Expeditions {
         var paid = payout(s, finalRun.copy(stones = finalRun.stones + boss.spiritStoneReward), AUTO_LOOT)
         val inv = paid.inventory.toMutableMap()
         inv[boss.dropItemName] = (inv[boss.dropItemName] ?: 0) + 1
+        // Etap 13: bossowie zostawiają artefakty (także w trybie Auto).
+        val lootRng = ctx.rng("boss-loot")
+        val dropped = if (lootRng.nextInt(100) < Loot.BOSS_ARTIFACT_CHANCE) Loot.artifactFor(s.regions.indexOfFirst { it.id == region.id }, lootRng) else null
+        if (dropped != null) paid = paid.copy(vaultArtifacts = paid.vaultArtifacts + dropped)
         paid = paid.copy(
             inventory = inv.toMap(),
             expedition = null,
             sectReputation = paid.sectReputation + 25,
             regions = paid.regions.map { if (it.id == region.id) it.copy(explorationProgress = (it.explorationProgress + 25).coerceAtMost(100)) else it }
         )
-        val notes = mutableListOf("Wyprawa (auto): pokonano ${boss.name}.")
+        val notes = mutableListOf("Wyprawa (auto): pokonano ${boss.name}." + (dropped?.let { " Łup: ${it.name}." } ?: ""))
         if (paid.regions.first { it.id == region.id }.explorationProgress >= 100) {
             val (withTrail, msg) = FlameSources.onRegionExplored(paid, region.id)
             paid = withTrail
@@ -413,11 +417,13 @@ object Tower {
         val base = s.copy(towerDay = s.currentDay, towerAttempts = used)
         if (!res.win) return ok(base, "Wieża Prób: strażnik piętra $floor okazał się silniejszy.")
         val reward = 50 * floor
-        val bonus = if (floor % 10 == 0) GameContent.BREAKTHROUGH_PILL else null
+        // Etap 13: kamienie milowe – co 5 pięter pigułka, co 10 artefakt.
+        val bonus = if (floor % 5 == 0) GameContent.BREAKTHROUGH_PILL else null
         val inv = bonus?.let { base.inventory + (it to (base.inventory[it] ?: 0) + 1) } ?: base.inventory
+        val art = if (floor % 10 == 0) Loot.artifactFor(floor / 6, ctx.rng("tower-loot")) else null
         return ok(
-            base.copy(towerFloor = floor, spiritStones = base.spiritStones + reward, inventory = inv),
-            "Wieża Prób: ${d.name} zdobywa piętro $floor! +$reward kamieni" + (bonus?.let { ", nagroda: $it" } ?: "") + "."
+            base.copy(towerFloor = floor, spiritStones = base.spiritStones + reward, inventory = inv, vaultArtifacts = base.vaultArtifacts + listOfNotNull(art)),
+            "Wieża Prób: ${d.name} zdobywa piętro $floor! +$reward kamieni" + (bonus?.let { ", nagroda: $it" } ?: "") + (art?.let { ", artefakt: ${it.name}" } ?: "") + "."
         )
     }
 }

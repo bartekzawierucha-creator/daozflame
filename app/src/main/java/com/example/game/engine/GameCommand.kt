@@ -138,6 +138,8 @@ sealed interface GameCommand {
     data class AcceptOpportunity(val discipleId: String? = null) : GameCommand
     data object DeclineOpportunity : GameCommand
     data class SetSteward(val policy: com.example.model.StewardPolicy) : GameCommand
+    /** Etap 13: zakup w Domu Aukcyjnym. */
+    data class BuyLot(val index: Int) : GameCommand
     data class SelectFlame(val flameId: String) : GameCommand
     data class RefineFlame(val flameId: String) : GameCommand
     data class UpgradeFacility(val type: FacilityType) : GameCommand

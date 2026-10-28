@@ -7,19 +7,24 @@ import com.example.game.engine.DiscipleRules.has
  * pensje → jedzenie → lojalność i jej skutki → morale → egzamin wstępny → turniej.
  */
 object SectLifePhase : TickPhase {
+    const val UNPAID_FLOOR = 30
 
     override fun run(frame: TickFrame) {
         val s = frame.before
         if (!s.e2Initialized || frame.day == s.currentDay) return
         val day = frame.day
         val rng = frame.ctx.rng("sect-life")
-        var morale = s.morale
+        var morale = frame.morale
         val notices = mutableListOf<String>()
 
         // 1. Pensje
+        // Etap 13: pensje płacone częściowo, gdy brakuje kamieni; zaległości bolą proporcjonalnie.
         val salaries = frame.disciples.sumOf { DiscipleRules.salary(it) }
-        val canPay = s.spiritStones - frame.upkeepPaid >= salaries
-        if (canPay) frame.upkeepPaid += salaries else notices += "Skarbiec nie wystarcza na pensje – uczniowie tracą zaufanie."
+        val payable = salaries.coerceAtMost((s.spiritStones - frame.upkeepPaid).coerceAtLeast(0))
+        frame.upkeepPaid += payable
+        val unpaid = if (salaries > 0) 1.0 - payable.toDouble() / salaries else 0.0
+        val canPay = unpaid <= 0.0
+        if (!canPay) notices += "Skarbiec nie wystarcza na pełne pensje (${(unpaid * 100).toInt()}% zaległości) – uczniowie tracą zaufanie."
 
         // 2. Jedzenie
         val ration = frame.disciples.size
@@ -39,7 +44,8 @@ object SectLifePhase : TickPhase {
         frame.disciples = frame.disciples.mapNotNull { d0 ->
             var d = d0
             var loyalty = d.loyalty
-            if (!canPay) loyalty -= 5
+            // Same zaległości nie wypędzą ucznia (dno 30) – do dezercji trzeba też głodu, niskiego morale albo charakteru.
+            if (!canPay && loyalty > UNPAID_FLOOR) loyalty = (loyalty - Math.round(5 * unpaid).toInt().coerceAtLeast(1)).coerceAtLeast(UNPAID_FLOOR)
             if (hungry) loyalty -= 1
             if (morale < 30) loyalty -= 1
             if (d.has("hotheaded") && day % 5 == 0) loyalty -= 1
@@ -84,12 +90,14 @@ object SectLifePhase : TickPhase {
         }
 
         // 4. Morale dąży do 50; charyzmatyczni podnoszą je codziennie.
+        // Etap 13: wysokie morale trzeba podtrzymywać (uczty, zwycięstwa, cele) – samo się nie trzyma.
         morale += when {
+            morale > 70 -> -2
             morale > 50 -> -1
             morale < 50 -> 1
             else -> 0
         }
-        morale += frame.disciples.count { it.has("charismatic") }.coerceAtMost(3)
+        if (morale < 70) morale += frame.disciples.count { it.has("charismatic") }.coerceAtMost(2)
         frame.morale = morale.coerceIn(0, 100)
         if (hungry) frame.hungryOnDay = day
 

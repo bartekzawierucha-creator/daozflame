@@ -95,10 +95,13 @@ object BalanceSimulator {
             t++
             s = GameEngine.apply(s, GameCommand.Tick).state
             if (t % Profile.ACTIVE.actEveryTicks == 0L) s = act(s, Profile.ACTIVE).first
-            if (com.example.game.engine.Rebirth.power(s) >= target) return t * SECONDS_PER_TICK / 3600
+            if (paceMetric(s) >= target) return t * SECONDS_PER_TICK / 3600
         }
         return null
     }
+
+    /** Siła sekty do pomiaru tempa: reputacja i Moc uczniów (bez kamieni – te od Etapu 13 zamieniają się w ekwipunek). */
+    fun paceMetric(s: GameState): Long = 50L * s.sectReputation + 50L * s.disciples.sumOf { it.combatPower.toLong() }
 
     /** Miara tempa ery: godziny do siły sekty, jaką pierwsza era miała w dniu 360. */
     const val PACE_DAY = 360
@@ -118,9 +121,9 @@ object BalanceSimulator {
                 s = GameEngine.apply(s, GameCommand.Tick).state
                 if (t % Profile.ACTIVE.actEveryTicks == 0L) s = act(s, Profile.ACTIVE).first
                 if (core == null && s.disciples.any { (it.majorRealm?.ordinal ?: 0) >= coreOrdinal }) core = t * SECONDS_PER_TICK / 3600
-                if (target == null && s.currentDay >= PACE_DAY) target = com.example.game.engine.Rebirth.power(s)
+                if (target == null && s.currentDay >= PACE_DAY) target = paceMetric(s)
                 val tg = target
-                if (reachedPower == null && tg != null && com.example.game.engine.Rebirth.power(s) >= tg) reachedPower = t * SECONDS_PER_TICK / 3600
+                if (reachedPower == null && tg != null && paceMetric(s) >= tg) reachedPower = t * SECONDS_PER_TICK / 3600
                 if (t > 200_000) break
             }
             val essence = com.example.game.engine.Rebirth.essence(s)
@@ -224,6 +227,29 @@ object BalanceSimulator {
             s.inventory.filter { (k, v) -> v > 60 && (com.example.game.engine.Market.basePrice(k) ?: 0) > 0 && k != com.example.game.engine.DiscipleRules.FOOD }
                 .forEach { (k, v) -> s = apply(s, GameCommand.Sell(k, v - 40)) }
         }
+
+        // Etap 13: aukcja (artefakty i zwoje, gdy stać z zapasem), ekwipunek dla najsilniejszych, uczta przy niskim morale.
+        s.auction.forEachIndexed { i, lot ->
+            if (!lot.sold && s.spiritStones > lot.price * 3 && canSpend(lot.price)) s = apply(s, GameCommand.BuyLot(i))
+        }
+        run {
+            var guard = 0
+            while (guard++ < 12) {
+                var best: Pair<Int, String>? = null
+                var gain = 0
+                s.vaultArtifacts.forEachIndexed { i, a ->
+                    val slot = com.example.game.engine.Gear.slotOf(a)
+                    s.disciples.sortedByDescending { it.combatPower }.take(6).forEach { d ->
+                        val cur = com.example.game.engine.Gear.inSlot(d, slot)
+                        val g = a.attackBonus + a.defenseBonus - (cur?.let { it.attackBonus + it.defenseBonus } ?: 0)
+                        if (g > gain) { gain = g; best = i to d.id }
+                    }
+                }
+                val pick = best ?: break
+                s = apply(s, GameCommand.Equip(pick.second, pick.first))
+            }
+        }
+        if (s.e2Initialized && s.morale < 55) s = apply(s, GameCommand.HoldFeast)
 
         // Etap 5b: trzech najsilniejszych na bramach.
         if (s.e5Initialized && s.gates.size < 3) {

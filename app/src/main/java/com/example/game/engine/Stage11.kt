@@ -17,6 +17,10 @@ object Stage11 {
         run { SectGoals.daily(it, ctx) }
         run { Opportunities.daily(it, ctx) }
         run { Steward.daily(it) }
+        // Etap 13
+        run { Auction.daily(it, ctx) }
+        run { SelfStudy.daily(it) }
+        run { Elders.daily(it) }
         return s to notes
     }
 }

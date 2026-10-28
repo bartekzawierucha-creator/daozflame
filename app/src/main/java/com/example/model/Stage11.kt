@@ -98,3 +98,13 @@ data class StewardPolicy(
     val autoContracts: Boolean = false,
     val autoFood: Boolean = false
 )
+
+/** Etap 13: oferta Domu Aukcyjnego – artefakt, zwój metody albo rzadka pigułka za kamienie. */
+data class AuctionLot(
+    val name: String = "",
+    val price: Int = 0,
+    val artifact: Artifact? = null,
+    /** Przedmiot do magazynu (gdy [artifact] == null). */
+    val item: String? = null,
+    val sold: Boolean = false
+)

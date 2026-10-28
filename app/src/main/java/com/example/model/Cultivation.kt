@@ -47,7 +47,7 @@ enum class FoundationQuality(val polishName: String, val qiMultiplier: Double) {
 /** Ścieżka kultywacji – skąd uczeń bierze siłę (wybór przy wejściu w Fundamenty). */
 enum class CultivationPath(val polishName: String, val description: String, val school: MartialSchool?) {
     ORTHODOX("Ortodoksyjna", "Medytacja przy żyle: +15% Qi, stabilne przełomy.", null),
-    BODY("Ciała", "Siła z walki i treningu: HP ×2, tribulacja −30% obrażeń, medytacja ×0,6, życie −20%.", MartialSchool.BODY_ASURA),
+    BODY("Ciała", "Siła z walki i treningu: HP ×2, tribulacja −20% obrażeń, medytacja ×0,85, życie −20%.", MartialSchool.BODY_ASURA),
     SWORD("Miecza", "Intencja miecza: +20% obrażeń, Qi z wygranych walk.", MartialSchool.SWORD_IMMORTAL),
     PILLS("Pigułek", "Pigułki działają ×2, ale toksyczność ×1,5 i −15% obrażeń.", MartialSchool.ELEMENTAL_TAOIST),
     DEMONIC("Demoniczna", "Pochłania Qi pokonanych: +3% postępu za zwycięstwo, karma −2 za walkę.", MartialSchool.SHADOW_VIPER),

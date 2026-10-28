@@ -15,7 +15,9 @@ object DiscipleRules {
     const val ADMISSION_STEP_COST = 300
     const val ROOT_TEST_COST = 50
     const val TOURNAMENT_EVERY_DAYS = 60
-    const val FEAST_COOLDOWN_DAYS = 10
+    const val FEAST_COOLDOWN_DAYS = 40
+    /** Etap 13: uczta kosztuje też kamienie (na ucznia). */
+    const val FEAST_STONES = 120
     const val DIRECT_LIMIT = 3
     const val GRAND_ELDER_LIMIT = 1
     const val HUNGER_MORALE = 10
@@ -121,7 +123,8 @@ object DiscipleRules {
         return s.disciples.count { it.rank == next } < rankLimit(s, next)
     }
 
-    fun salary(d: Disciple): Int = if (d.has("humble")) d.rank.salaryPerDay / 2 else d.rank.salaryPerDay
+    /** Etap 13: silniejszy uczeń kosztuje więcej (×1,5 na każde królestwo powyżej Kondensacji Qi… liniowo). */
+    fun salary(d: Disciple): Int = ((if (d.has("humble")) d.rank.salaryPerDay / 2 else d.rank.salaryPerDay) * Upkeep.realmFactor(d)).toInt()
 
     // --- Modyfikatory z rang, cech i korzeni ---
 

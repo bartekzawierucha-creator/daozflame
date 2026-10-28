@@ -396,6 +396,7 @@ fun PalaceModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> 
         "goal" -> WeeklyGoalPanel(ui, onClose = { e11 = null })
         "opportunity" -> OpportunityPanel(ui, viewModel, onClose = { e11 = null })
         "steward" -> StewardPanel(ui, viewModel, onClose = { e11 = null })
+        "auction" -> AuctionPanel(ui, viewModel, onClose = { e11 = null })
     }
 }
 

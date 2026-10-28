@@ -169,6 +169,9 @@ data class GameState(
     val masterFocus: Int = Mentor.MAX_FOCUS,
     val focusDay: Int = 0,
     val steward: com.example.model.StewardPolicy = com.example.model.StewardPolicy(),
+    /** Etap 13: Dom Aukcyjny – oferty i dzień kolejnego odświeżenia. */
+    val auction: List<com.example.model.AuctionLot> = emptyList(),
+    val auctionRefreshDay: Int = 0,
 
     /** Krok samouczka; brak pola w starym zapisie = samouczek ukończony. */
     val tutorialStep: Int = Tutorial.DONE,

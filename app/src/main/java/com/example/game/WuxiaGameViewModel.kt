@@ -144,7 +144,12 @@ data class WuxiaUiState(
     val steward: com.example.model.StewardPolicy = com.example.model.StewardPolicy(),
     // Etap 12: szanse wielkiego przełomu (bez pigułki, z pigułką) – tribulacja: przeżycie
     val majorOdds: Map<String, Pair<Int, Int>> = emptyMap(),
-    val focusNextIn: Int = 0
+    val focusNextIn: Int = 0,
+    // Etap 13
+    val auction: List<com.example.model.AuctionLot> = emptyList(),
+    val auctionRefreshIn: Int = 0,
+    /** Bilans dnia bez handlu: (dochód, koszty). */
+    val dailyBalance: Pair<Int, Int> = 0 to 0
 )
 
 data class ArenaUi(
@@ -495,6 +500,7 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
     fun acceptOpportunity(discipleId: String?) = dispatch(GameCommand.AcceptOpportunity(discipleId))
     fun declineOpportunity() = dispatch(GameCommand.DeclineOpportunity)
     fun setSteward(policy: com.example.model.StewardPolicy) = dispatch(GameCommand.SetSteward(policy))
+    fun buyLot(index: Int) = dispatch(GameCommand.BuyLot(index))
     fun attemptBreakthrough(discipleId: String, usePill: Boolean) = dispatch(GameCommand.AttemptBreakthrough(discipleId, usePill))
     fun unlockSkill(discipleId: String, skillId: String) = dispatch(GameCommand.UnlockSkill(discipleId, skillId))
     fun usePill(discipleId: String, pillName: String) = dispatch(GameCommand.UsePill(discipleId, pillName))
@@ -945,6 +951,9 @@ class WuxiaGameViewModel(application: Application) : AndroidViewModel(applicatio
             else com.example.game.engine.CultivationSystem.majorOdds(game, d, false)?.let { d.id to (it to (com.example.game.engine.CultivationSystem.majorOdds(game, d, true) ?: it)) }
         }.toMap(),
         focusNextIn = com.example.game.engine.Mentor.nextFocusIn(game),
+        auction = game.auction,
+        auctionRefreshIn = (game.auctionRefreshDay - game.currentDay).coerceAtLeast(0),
+        dailyBalance = com.example.game.engine.Upkeep.daily(game),
         rebirthAvailable = com.example.game.engine.Rebirth.available(game),
         essenceOnRebirth = com.example.game.engine.Rebirth.essence(game),
         arena = arena.copy(rating = game.pvpRating, wins = game.pvpWins, losses = game.pvpLosses, online = net.enabled),

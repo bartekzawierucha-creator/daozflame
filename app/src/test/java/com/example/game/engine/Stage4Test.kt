@@ -121,7 +121,7 @@ class Stage4Test {
     fun pricesRecoverOverTime() {
         val s = fresh(9L).copy(marketMultipliers = mapOf("Duchowy Nefryt" to 0.6))
         var st = s
-        repeat(20) { st = dawn(st).state }
+        repeat(60) { st = dawn(st).state }
         assertTrue(Market.multiplier(st, "Duchowy Nefryt") > 0.7)
     }
 

@@ -137,7 +137,7 @@ class Stage2Test {
         val upkeep = EdictCatalog.dailyUpkeep(s)
         val r = dawn(s).state
         assertEquals((s.inventory[DiscipleRules.FOOD] ?: 0) + DiscipleRules.dailyFoodProduction(n) - n, r.inventory[DiscipleRules.FOOD])
-        assertEquals(s.spiritStones + 2 * n - upkeep - salaries, r.spiritStones)
+        assertEquals(s.spiritStones + 2 * n - upkeep - salaries - Upkeep.facilities(s), r.spiritStones)
     }
 
     @Test
@@ -173,7 +173,7 @@ class Stage2Test {
     @Test
     fun moraleDriftsTowardFifty() {
         val s = fresh(12L).copy(morale = 90, disciples = fresh(12L).disciples.map { it.copy(traitIds = listOf("lazy")) })
-        assertEquals(89, dawn(s).state.morale)
+        assertEquals(88, dawn(s).state.morale)
     }
 
     // --- Egzamin i rekrutacja ---

@@ -13,7 +13,7 @@ object HeavenTree {
         val cost: Int get() = tier
     }
 
-    val BRANCHES = listOf("Qi" to (Stat.QI_GAIN to 10.0), "Bogactwo" to (Stat.STONE_INCOME to 10.0), "Wojna" to (Stat.COMBAT_DAMAGE to 8.0))
+    val BRANCHES = listOf("Qi" to (Stat.QI_GAIN to 18.0), "Bogactwo" to (Stat.STONE_INCOME to 10.0), "Wojna" to (Stat.COMBAT_DAMAGE to 8.0))
 
     val NODES: List<Node> = BRANCHES.flatMap { (branch, sp) -> (1..10).map { t -> Node("${branch.lowercase()}_$t", branch, t, sp.first, sp.second) } }
 

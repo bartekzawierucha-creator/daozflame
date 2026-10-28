@@ -257,6 +257,15 @@ object CombatSystem {
         )
         var result = state
         val notes = mutableListOf<String>()
+        // Etap 13: bossowie zostawiają artefakty.
+        if (victory && region != null) {
+            val rng = GameRng.stream(s.worldSeed, s.step, "boss-loot")
+            if (rng.nextInt(100) < Loot.BOSS_ARTIFACT_CHANCE) {
+                val a = Loot.artifactFor(s.regions.indexOfFirst { it.id == region.id }, rng)
+                result = result.copy(vaultArtifacts = result.vaultArtifacts + a)
+                notes += "⚔ Z legowiska: ${a.name} (${a.quality.polishName}) trafia do skarbca."
+            }
+        }
         // Etap 5a: koniec wyprawy – łupy z węzłów (porażka: połowa).
         val run = s.expedition
         if (run != null && run.atBoss && run.regionId == c.regionId) {

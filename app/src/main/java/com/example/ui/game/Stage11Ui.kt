@@ -385,6 +385,53 @@ fun StewardPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: () ->
     }
 }
 
+// ─── Dom Aukcyjny (Etap 13) ─────────────────────────────────────────────────
+
+@Composable
+fun AuctionPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: () -> Unit) {
+    SimplePanel(title = "Dom Aukcyjny", onClose = onClose) {
+        Row(
+            Modifier.fillMaxWidth().background(Brush.horizontalGradient(listOf(Aaa.Gold.copy(alpha = 0.14f), Aaa.Ink3.copy(alpha = 0.9f)))).border(1.dp, Aaa.Hairline).padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text("拍", fontFamily = BrushFont, fontSize = 40.sp, color = Aaa.GoldHi)
+            Column(Modifier.weight(1f)) {
+                Text("Licytacja Pawilonu Tysiąca Skarbów", style = AaaType.Label.copy(fontSize = 12.5.sp, color = Aaa.TextHi, fontWeight = FontWeight.Bold))
+                SheetBody("Nowe przedmioty za ${ui.auctionRefreshIn} dni. Oferty rosną z królestwem twoich najlepszych uczniów.", color = Aaa.TextMid, maxLines = 2)
+            }
+            CurrencyPill(com.example.ui.aaa.AaaGlyph.SPIRIT_STONE, ui.spiritStones)
+        }
+        if (ui.auction.isEmpty()) SheetBody("Licytatorzy jeszcze się zbierają – pierwsza aukcja wkrótce.", color = Aaa.TextLow)
+        ui.auction.forEachIndexed { i, lot ->
+            val a = lot.artifact
+            val c = a?.let { gearRarityColor(it.rarity) } ?: Aaa.Azure
+            Row(
+                Modifier.fillMaxWidth().background(Aaa.Ink3.copy(alpha = if (lot.sold) 0.4f else 0.88f)).border(1.dp, if (lot.sold) Aaa.Hairline else c.copy(alpha = 0.5f)).padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                if (a != null) GearTile(a, com.example.game.engine.Gear.slotOf(a), 60.dp) {}
+                else Box(Modifier.size(60.dp), contentAlignment = Alignment.Center) { ItemIcon(lot.item?.substringBefore("×") ?: lot.name, 40.dp) }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(lot.name, style = AaaType.Label.copy(fontSize = 12.sp, color = if (lot.sold) Aaa.TextLow else c, fontWeight = FontWeight.Bold), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    val sub = when {
+                        a != null -> "${a.rarity} · ${a.quality.polishName} · atak +${a.attackBonus} · obrona +${a.defenseBonus}"
+                        lot.item?.startsWith("Zwój") == true -> "Metoda kultywacji – przełamuje wąskie gardło królestwa."
+                        else -> "Do przełomów i tribulacji."
+                    }
+                    Text(sub, style = AaaType.Label.copy(fontSize = 9.5.sp, color = Aaa.TextMid), maxLines = 2)
+                }
+                if (lot.sold) Text("SPRZEDANE", style = AaaType.Overline.copy(fontSize = 9.sp, color = Aaa.TextLow))
+                else GhostButton("${lot.price}", enabled = ui.spiritStones >= lot.price, onClick = { viewModel.buyLot(i) }, height = 34.dp)
+            }
+        }
+        val (inc, cost) = ui.dailyBalance
+        Section("Bilans dnia sekty", "bez handlu")
+        KvRow("Dochód (uczniowie, terytoria)", "+$inc", valueColor = Aaa.Jade)
+        KvRow("Pensje, budynki, edykty", "−$cost", valueColor = Aaa.Cinnabar)
+        RuleHint("Silniejsi uczniowie zarabiają i kosztują więcej, rozbudowane pawilony wymagają utrzymania. Nadwyżkę zamień na ekwipunek i zwoje, zanim przeleży w skarbcu.", maxLines = 3)
+    }
+}
+
 /** Kafle Etapu 11 w Pałacu: cel tygodnia, okazja, zarządca. */
 @Composable
 fun Stage11Tiles(ui: WuxiaUiState, onOpen: (String) -> Unit) {
@@ -396,6 +443,8 @@ fun Stage11Tiles(ui: WuxiaUiState, onOpen: (String) -> Unit) {
             Modifier.weight(1f), accent = Aaa.Cinnabar, badge = g?.takeIf { it.deadline - ui.currentDay <= 1 }?.let { "!" }) { onOpen("goal") }
         ActionTile("机", "Okazja", o?.let { Opportunities.title(it) } ?: "brak", Modifier.weight(1f), accent = Aaa.Violet,
             badge = o?.let { "!" }) { onOpen("opportunity") }
+        ActionTile("拍", "Aukcja", ui.auction.count { !it.sold }.let { if (it > 0) "$it oferty · ${ui.auctionRefreshIn} d." else "za ${ui.auctionRefreshIn} d." },
+            Modifier.weight(1f), accent = Aaa.Gold, badge = ui.auction.count { !it.sold && ui.spiritStones >= it.price }.takeIf { it > 0 }?.toString()) { onOpen("auction") }
         ActionTile("管", "Zarządca", ui.disciples.find { it.id == ui.steward.stewardId }?.let { short(it).substringBefore(" ") } ?: "brak",
             Modifier.weight(1f), accent = Aaa.Jade) { onOpen("steward") }
     }

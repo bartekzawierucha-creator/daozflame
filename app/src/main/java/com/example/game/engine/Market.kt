@@ -20,7 +20,8 @@ object Market {
     const val MIN_MULT = 0.1
     const val MAX_MULT = 1.4
     const val SELL_PRESSURE = 0.02
-    const val RECOVERY = 0.05
+    // Etap 13: dzień gry ~48 s – ceny wracają wolniej (połowa w ~55 min), targ nie jest bezdenny.
+    const val RECOVERY = 0.01
     const val BUY_MARKUP = 1.5
     const val CARAVAN_ROBBERY = 10
     const val CARAVAN_ROBBERY_GUARDED = 5

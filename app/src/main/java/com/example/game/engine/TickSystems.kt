@@ -125,6 +125,12 @@ object TimePhase : TickPhase {
 object UpkeepPhase : TickPhase {
     override fun run(frame: TickFrame) {
         if (frame.day == frame.before.currentDay) return
+        // Etap 13: budynki wymagają utrzymania; brak kamieni = niszczejące pawilony i spadek morale.
+        val buildings = Upkeep.facilities(frame.before)
+        if (buildings > 0) {
+            if (frame.before.spiritStones - frame.upkeepPaid >= buildings) frame.upkeepPaid += buildings
+            else { frame.morale = (frame.morale - 3).coerceAtLeast(0); frame.notice = "Brak kamieni na utrzymanie budynków – pawilony niszczeją (morale −3)." }
+        }
         val upkeep = EdictCatalog.dailyUpkeep(frame.before)
         if (upkeep <= 0) return
         if (frame.before.spiritStones >= upkeep) {
@@ -140,7 +146,8 @@ object UpkeepPhase : TickPhase {
 object IncomePhase : TickPhase {
     override fun run(frame: TickFrame) {
         val s = frame.before
-        frame.stonesGained += 2 * s.disciples.size
+        // Etap 13: wyżsi uczniowie przynoszą więcej (sława, zlecenia) – dochód rośnie razem z pensjami.
+        frame.stonesGained += s.disciples.sumOf { (2 * (1.0 + 0.25 * ((it.majorRealm?.ordinal ?: 1) - 1).coerceAtLeast(0))).toInt() }
         s.territories.filter { it.controllingSectId == "player" }.forEach { terr ->
             when {
                 terr.resourceType.contains("Kamienie") -> frame.stonesGained += terr.yieldAmountPerCycle

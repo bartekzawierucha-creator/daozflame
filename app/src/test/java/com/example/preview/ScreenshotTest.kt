@@ -189,6 +189,7 @@ class ScreenshotTest {
                 e = com.example.game.engine.Bonds.shift(e, calm.chosenId ?: ids[0], ids.first { it != calm.chosenId }, 60)
                 e = com.example.game.engine.Bonds.shift(e, calm.chosenId ?: ids[0], ids.last { it != calm.chosenId }, -55)
             }
+            e = e.copy(auction = com.example.game.engine.Auction.generate(e, com.example.game.engine.EngineContext(e.worldSeed, 77L)), auctionRefreshDay = e.currentDay + 12)
             val cid = calm.chosenId ?: ids[0]
             e = com.example.game.engine.Gear.equip(e, cid, e.vaultArtifacts.indexOfFirst { com.example.game.engine.Gear.slotOf(it) == com.example.model.EquipSlot.ARMOR }.coerceAtLeast(0)).state
             val ue = ui(e)
@@ -200,6 +201,7 @@ class ScreenshotTest {
             shot("5b_opportunity", "Okazja") { OpportunityPanel(ue, vm, noop) }
             shot("5c_steward", "Zarządca skarbca") { StewardPanel(ue, vm, noop) }
             shot("5d_hub_e11", "Hub – alerty celu i okazji") { SectHub(ue, vm, onOpen = { _, _ -> }) }
+            shot("5e_auction", "Dom Aukcyjny i bilans dnia") { AuctionPanel(ue, vm, noop) }
             ui(calm)
         }
 

@@ -84,8 +84,11 @@ object LifeCommands {
         val need = s.disciples.size * 3
         val have = s.inventory[DiscipleRules.FOOD] ?: 0
         if (have < need) return fail(s, "Uczta wymaga $need racji ryżu (masz $have).")
+        val stones = s.disciples.size * DiscipleRules.FEAST_STONES
+        if (s.spiritStones < stones) return fail(s, "Uczta kosztuje $stones kamieni.")
         return ok(
             s.copy(
+                spiritStones = s.spiritStones - stones,
                 inventory = s.inventory + (DiscipleRules.FOOD to have - need),
                 morale = (s.morale + 30).coerceAtMost(100),
                 nextFeastDay = s.currentDay + DiscipleRules.FEAST_COOLDOWN_DAYS
