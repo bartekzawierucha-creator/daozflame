@@ -317,9 +317,9 @@ private fun RosterTile(disciple: Disciple, selected: Boolean, onClick: () -> Uni
                 .testTag("adept_tile_${disciple.id}")
         ) {
             ArtImage(
-                WuxiaAssetLoader.getSchoolAvatarKey(disciple.martialSchool),
+                portraitKey(disciple),
                 Modifier.matchParentSize(),
-                alignment = BiasAlignment(0f, -0.62f),
+                alignment = BiasAlignment(0f, -1f),
                 colorFilter = if (selected) null else dimFilter(0.62f, 0.55f)
             )
             Text(

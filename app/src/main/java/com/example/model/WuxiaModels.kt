@@ -319,9 +319,12 @@ data class Disciple(
     /** Dziennik ucznia: ostatnie decyzje (najnowsze na końcu). */
     val diary: List<String> = emptyList(),
     // --- Etap 11 ---
-    /** Szata i skarb ([equippedArtifact] to broń). */
+    /** Ekwipunek ([equippedArtifact] to broń; [treasure] to relikwia). */
     val armor: Artifact? = null,
     val treasure: Artifact? = null,
+    val head: Artifact? = null,
+    val hands: Artifact? = null,
+    val ring: Artifact? = null,
     /** Blizny po zagojonych ciężkich ranach – każda hartuje (+obrona). */
     val scars: Int = 0,
     /** Dzień końca rany, za którą blizna już jest policzona. */

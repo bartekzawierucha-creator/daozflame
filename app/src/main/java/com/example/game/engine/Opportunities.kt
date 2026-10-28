@@ -20,6 +20,9 @@ object Opportunities {
 
     fun title(o: Opportunity): String = o.kind.polishName
 
+    fun examChance(d: com.example.model.Disciple): Int = (30 + d.comprehension).coerceIn(10, 90)
+    fun caveChance(d: com.example.model.Disciple): Int = (d.combatPower / 40 + 40).coerceIn(30, 85)
+
     fun description(o: Opportunity): String = when (o.kind) {
         OpportunityKind.WANDERING_MASTER -> "Wędrowny mistrz miecza zatrzymał się u bram. Za ${o.cost} kamieni nauczy jednego ucznia (+$MASTER_COMPREHENSION zrozumienia, +$MASTER_ATTACK_PERCENT% ataku)."
         OpportunityKind.RARE_MERCHANT -> "Kupiec z Zachodnich Pustyń oferuje ${o.artifact?.name ?: "artefakt"} (${o.artifact?.quality?.polishName ?: ""}) za ${o.cost} kamieni."
@@ -83,7 +86,7 @@ object Opportunities {
             OpportunityKind.RARE_MERCHANT -> ok(paid.copy(vaultArtifacts = paid.vaultArtifacts + listOfNotNull(o.artifact)),
                 "🐫 Kupiec zostawia ${o.artifact?.name}. Załóż go uczniowi w ekwipunku.")
             OpportunityKind.IMPERIAL_EXAM -> {
-                val chance = (30 + d!!.comprehension).coerceIn(10, 90)
+                val chance = examChance(d!!)
                 if (rng.nextInt(100) < chance) {
                     ok(upd { it.copy(loyalty = (it.loyalty + 5).coerceAtMost(100)) }.let { st -> st.copy(sectReputation = st.sectReputation + 120 + 10 * (s.currentDay / 30)) },
                         "📜 ${Autonomy.short(d)} zdaje egzamin cesarski z wyróżnieniem! Sława sekty rośnie (szansa była $chance%).")
@@ -93,7 +96,7 @@ object Opportunities {
                 }
             }
             OpportunityKind.HIDDEN_CAVE -> {
-                val brave = (d!!.combatPower / 40 + 40).coerceIn(30, 85)
+                val brave = caveChance(d!!)
                 if (rng.nextInt(100) < brave) {
                     val loot = GameContent.forgingRecipes.random(rng).artifactResult
                     var st = upd { if (s.e3Initialized) CultivationSystem.gainQi(it, CultivationSystem.ticksWorth(s, it, CAVE_QI_TICKS)) else it.copy(realmProgress = (it.realmProgress + 25).coerceAtMost(100)) }

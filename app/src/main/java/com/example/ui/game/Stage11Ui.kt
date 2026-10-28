@@ -1,5 +1,22 @@
 package com.example.ui.game
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -25,7 +42,6 @@ import com.example.game.engine.Mentor
 import com.example.game.engine.Opportunities
 import com.example.model.BondKind
 import com.example.model.Disciple
-import com.example.model.EquipSlot
 import com.example.model.StewardPolicy
 import com.example.ui.aaa.Aaa
 import com.example.ui.aaa.AaaType
@@ -42,51 +58,6 @@ fun bondColor(k: BondKind) = when (k) {
     BondKind.NEUTRAL -> Aaa.TextLow
     BondKind.RIVAL -> Aaa.Ember
     BondKind.ENEMY -> Aaa.Cinnabar
-}
-
-// ─── Ekwipunek ───────────────────────────────────────────────────────────────
-
-/** Trzy miejsca ekwipunku i skarbiec z porównaniem: ile ataku i obrony da zmiana. */
-@Composable
-fun GearPanel(d: Disciple, ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: () -> Unit) {
-    SimplePanel(title = "Ekwipunek · ${short(d)}", onClose = onClose) {
-        val set = Gear.fullSet(d)
-        InfoCard(accent = if (set) Aaa.GoldHi else null) {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                KvRow("Atak", "${d.attack}", Modifier.weight(1f))
-                KvRow("Obrona", "${d.defense}", Modifier.weight(1f))
-            }
-            SheetBody(
-                if (set) "Pełny komplet: +${Gear.SET_BONUS_PERCENT}% premii wszystkich przedmiotów."
-                else "Załóż broń, szatę i skarb – pełny komplet daje +${Gear.SET_BONUS_PERCENT}% premii.",
-                color = if (set) Aaa.GoldHi else Aaa.TextLow, maxLines = 2
-            )
-            if (d.scars > 0) SheetBody("Blizny: ${d.scars} (+${d.scars * com.example.game.engine.Legacy.SCAR_DEFENSE} obrony z hartu).", color = Aaa.Ember, maxLines = 1)
-        }
-        EquipSlot.entries.forEach { slot ->
-            val a = Gear.inSlot(d, slot)
-            Section("${slot.glyph} ${slot.polishName}")
-            if (a == null) SheetBody("Puste miejsce.", color = Aaa.TextLow, maxLines = 1)
-            else ActionRow(
-                title = a.name + if (a.plus > 0) " +${a.plus}" else "",
-                subtitle = "${a.quality.polishName} · atak +${a.attackBonus} · obrona +${a.defenseBonus}. ${a.specialEffect}"
-            ) { GhostButton("Zdejmij", onClick = { viewModel.unequip(d.id, slot) }, height = 30.dp) }
-        }
-        Section("Skarbiec sekty", "${ui.vaultArtifacts.size}")
-        if (ui.vaultArtifacts.isEmpty()) SheetBody("Skarbiec jest pusty. Artefakty wykuwa Boska Kuźnia, przynoszą okazje i groty.", color = Aaa.TextLow)
-        ui.vaultArtifacts.withIndex().sortedByDescending { it.value.attackBonus + it.value.defenseBonus }.forEach { (i, a) ->
-            val slot = Gear.slotOf(a)
-            val cur = Gear.inSlot(d, slot)
-            val dAtk = a.attackBonus - (cur?.attackBonus ?: 0)
-            val dDef = a.defenseBonus - (cur?.defenseBonus ?: 0)
-            fun sign(v: Int) = if (v >= 0) "+$v" else "$v"
-            ActionRow(
-                title = "${slot.glyph} ${a.name}" + if (a.plus > 0) " +${a.plus}" else "",
-                subtitle = "${a.quality.polishName} · atak ${sign(dAtk)} · obrona ${sign(dDef)}" + (cur?.let { " (zamiast: ${it.name})" } ?: ""),
-                titleColor = if (dAtk + dDef > 0) Aaa.TextHi else Aaa.TextMid
-            ) { GhostButton("Załóż", onClick = { viewModel.equip(d.id, i) }, height = 30.dp) }
-        }
-    }
 }
 
 // ─── Mentor i więzi (w panelu Umysłu) ───────────────────────────────────────
@@ -134,89 +105,205 @@ fun MentorSection(d: Disciple, ui: WuxiaUiState, viewModel: WuxiaGameViewModel) 
     if (tired) SheetBody("Mistrz jest dziś wyczerpany. Skupienie wróci jutro.", color = Aaa.TextLow, maxLines = 1)
 }
 
-/** Więzi ucznia z innymi: przyjaźnie, rywalizacje, braterstwo krwi. */
+/** Mały portret ucznia w ramce szkoły z podpisem – do wyboru i list więzi. */
 @Composable
-fun BondsSection(d: Disciple, ui: WuxiaUiState) {
-    val mine = ui.bonds.filter { it.has(d.id) }.sortedByDescending { kotlin.math.abs(it.value) }
-    Section("Więzi w sekcie", "${mine.count { it.kind != BondKind.NEUTRAL }}")
-    RuleHint("Wspólna praca i ta sama szkoła zbliżają, dwóch ambitnych lub porywczych się ściera. Przyjaciele chętniej pracują razem i lepiej walczą w drużynie. Przełom rywala dodaje Qi.", maxLines = 4)
-    if (mine.isEmpty()) SheetBody("Jeszcze nikogo dobrze nie zna.", color = Aaa.TextLow, maxLines = 1)
-    mine.take(6).forEach { b ->
-        val other = ui.disciples.find { it.id == b.other(d.id) } ?: return@forEach
-        val k = b.kind
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(k.glyph, fontSize = 12.sp)
-            Text(short(other), style = AaaType.Label.copy(fontSize = 11.sp, color = Aaa.TextHi), modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(k.polishName, style = AaaType.Label.copy(fontSize = 10.sp, color = bondColor(k)), maxLines = 1)
-            Text(if (b.value > 0) "+${b.value}" else "${b.value}", style = AaaType.Numeric.copy(fontSize = 10.sp, color = bondColor(k)), modifier = Modifier.width(32.dp))
+fun PortraitChip(d: Disciple, selected: Boolean, caption: String, captionColor: Color = Aaa.TextMid, badge: String? = null, size: Dp = 58.dp, onClick: (() -> Unit)? = null) {
+    val c = schoolColor(d.martialSchool)
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(size + 8.dp)) {
+        Box(
+            Modifier
+                .size(size)
+                .drawBehind { if (selected) drawCircle(Brush.radialGradient(listOf(Aaa.GoldHi.copy(alpha = 0.55f), Color.Transparent)), radius = this.size.minDimension * 0.75f) }
+                .clip(cutCornerTicket())
+                .background(if (selected) Aaa.GoldHi else c.copy(alpha = 0.45f))
+                .padding(if (selected) 2.dp else 1.dp)
+                .clip(cutCornerTicket())
+                .background(Aaa.Ink2)
+                .let { m -> if (onClick != null) m.clickable(role = Role.Button, onClick = onClick) else m }
+        ) {
+            ArtImage(portraitKey(d), Modifier.matchParentSize(), alignment = androidx.compose.ui.BiasAlignment(0f, -1f),
+                colorFilter = if (selected || onClick == null) null else dimFilter(0.75f, 0.85f))
+            if (badge != null) Text(badge, fontSize = 11.sp, modifier = Modifier.align(Alignment.TopEnd).padding(2.dp))
         }
+        Text(short(d).substringBefore(" "), style = AaaType.Label.copy(fontSize = 9.5.sp, color = if (selected) Aaa.GoldHi else Aaa.TextHi), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(caption, style = AaaType.Numeric.copy(fontSize = 9.sp, color = captionColor), maxLines = 1)
     }
 }
 
+/** Więzi ucznia z innymi: portrety z rodzajem i siłą więzi. */
+@Composable
+fun BondsSection(d: Disciple, ui: WuxiaUiState) {
+    val mine = ui.bonds.filter { it.has(d.id) }.sortedByDescending { it.value }
+    Section("Więzi w sekcie", "${mine.count { it.kind != BondKind.NEUTRAL }}")
+    if (mine.isEmpty()) {
+        SheetBody("Jeszcze nikogo dobrze nie zna. Wspólna praca i wyprawy zbliżają.", color = Aaa.TextLow, maxLines = 2)
+        return
+    }
+    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        mine.forEach { b ->
+            val other = ui.disciples.find { it.id == b.other(d.id) } ?: return@forEach
+            val k = b.kind
+            PortraitChip(other, false, "${k.polishName.substringBefore(" ")} ${if (b.value > 0) "+" else ""}${b.value}", bondColor(k), badge = k.glyph.takeIf { k != BondKind.NEUTRAL })
+        }
+    }
+    RuleHint("Przyjaciele pracują chętniej razem i walczą lepiej w drużynie (60%, przysięgli 75%). Przełom rywala dodaje Qi. Wspólna szkoła i praca zbliżają, dwóch ambitnych lub porywczych się ściera.", maxLines = 4)
+}
+
 // ─── Cel tygodnia ────────────────────────────────────────────────────────────
+
+/** Pierścień postępu z procentem w środku. */
+@Composable
+private fun ProgressRing(fraction: Float, color: Color, size: Dp, center: @Composable () -> Unit) {
+    Box(
+        Modifier.size(size).drawBehind {
+            val w = 6.dp.toPx()
+            val r = androidx.compose.ui.geometry.Size(this.size.width - w, this.size.height - w)
+            val o = Offset(w / 2, w / 2)
+            drawArc(Aaa.Ink4, 0f, 360f, false, o, r, style = androidx.compose.ui.graphics.drawscope.Stroke(w))
+            drawArc(color, -90f, 360f * fraction.coerceIn(0f, 1f), false, o, r, style = androidx.compose.ui.graphics.drawscope.Stroke(w, cap = androidx.compose.ui.graphics.StrokeCap.Round))
+        },
+        contentAlignment = Alignment.Center
+    ) { center() }
+}
+
+@Composable
+private fun RewardTile(glyph: @Composable () -> Unit, value: String, label: String, color: Color, modifier: Modifier) {
+    Column(
+        modifier.background(Aaa.Ink3.copy(alpha = 0.85f)).border(1.dp, color.copy(alpha = 0.4f)).padding(vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Box(Modifier.size(30.dp), contentAlignment = Alignment.Center) { glyph() }
+        Text(value, style = AaaType.Numeric.copy(fontSize = 13.sp, color = color, fontWeight = FontWeight.Bold), maxLines = 1)
+        Text(label, style = AaaType.Label.copy(fontSize = 9.sp, color = Aaa.TextLow), maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
 
 @Composable
 fun WeeklyGoalPanel(ui: WuxiaUiState, onClose: () -> Unit) {
     SimplePanel(title = "Cel tygodnia", onClose = onClose) {
         val g = ui.weeklyGoal
         if (g == null) {
-            SheetBody("Świat milczy – nowe wyzwanie zostanie ogłoszone wkrótce.", color = Aaa.TextLow)
+            InfoCard { SheetBody("Świat milczy – nowe wyzwanie zostanie ogłoszone wkrótce.", color = Aaa.TextMid) }
         } else {
             val left = (g.deadline - ui.currentDay).coerceAtLeast(0)
-            Text(g.title, fontFamily = BrushFont, color = Aaa.GoldHi, fontSize = 26.sp)
-            SheetBody(g.description, color = Aaa.TextHi, maxLines = 4)
-            val shown = if (g.kind == com.example.model.GoalKind.TOURNAMENT) "${ui.weeklyProgress} / ${g.target} mocy" else "${ui.weeklyProgress.coerceAtMost(g.target)} / ${g.target}"
-            KvRow("Postęp", shown, valueColor = if (ui.weeklyProgress >= g.target) Aaa.Jade else Aaa.Gold)
-            ThinBar(ui.weeklyProgress.toFloat() / g.target.coerceAtLeast(1), Aaa.Gold)
-            KvRow("Termin", if (left == 0) "dziś" else "za $left d. (dzień ${g.deadline})", valueColor = if (left <= 1) Aaa.Cinnabar else Aaa.TextMid)
-            Section("Nagroda")
-            SheetBody("+${g.rewardStones} kamieni · +${g.rewardReputation} reputacji" + (g.rewardItem?.let { " · $it" } ?: "") + " · morale +5", color = Aaa.Jade)
-            Section("Cena porażki")
-            SheetBody("Morale −${com.example.game.engine.SectGoals.FAIL_MORALE} · reputacja −${g.rewardReputation / 2}", color = Aaa.Cinnabar)
+            val frac = ui.weeklyProgress.toFloat() / g.target.coerceAtLeast(1)
+            val done = frac >= 1f
+            val art = when (g.kind) {
+                com.example.model.GoalKind.TOURNAMENT, com.example.model.GoalKind.WINS, com.example.model.GoalKind.TOWER -> "bg_combat_arena"
+                com.example.model.GoalKind.BREAKTHROUGHS -> "bg_alchemy_hall"
+                else -> "bg_sect_sanctuary"
+            }
+            // Kadr wyzwania: grafika, tytuł pędzlem, pierścień postępu i pieczęć terminu.
+            Box(Modifier.fillMaxWidth().height(190.dp).clip(cutCornerTicket())) {
+                ArtImage(art, Modifier.matchParentSize(), colorFilter = dimFilter(0.42f, 0.75f))
+                Box(Modifier.matchParentSize().background(Brush.horizontalGradient(listOf(Aaa.Ink0.copy(alpha = 0.92f), Aaa.Ink0.copy(alpha = 0.2f)))))
+                Column(Modifier.align(Alignment.CenterStart).padding(start = 14.dp, end = 120.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Overline("Wyzwanie tygodnia", color = Aaa.Cinnabar)
+                    Text(g.title, fontFamily = BrushFont, color = Aaa.GoldHi, fontSize = 28.sp, lineHeight = 30.sp)
+                    Text(g.description, style = AaaType.Body.copy(fontSize = 11.sp, lineHeight = 15.sp, color = Aaa.TextHi), maxLines = 4)
+                }
+                Column(Modifier.align(Alignment.CenterEnd).padding(end = 14.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    ProgressRing(frac, if (done) Aaa.Jade else Aaa.Gold, 84.dp) {
+                        Text("${(frac * 100).toInt().coerceAtMost(100)}%", style = AaaType.Numeric.copy(fontSize = 18.sp, color = Aaa.TextHi, fontWeight = FontWeight.Bold))
+                    }
+                    Text(
+                        if (done) "GOTOWE" else if (left == 0) "DZIŚ" else "$left DNI",
+                        style = AaaType.Overline.copy(fontSize = 11.sp, color = if (done) Aaa.Jade else if (left <= 1) Aaa.Cinnabar else Aaa.GoldHi, letterSpacing = 2.sp),
+                        modifier = Modifier.background(Aaa.Ink0.copy(alpha = 0.7f)).border(1.dp, if (left <= 1 && !done) Aaa.Cinnabar else Aaa.Hairline).padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
+            }
+            val shown = if (g.kind == com.example.model.GoalKind.TOURNAMENT) "${ui.weeklyProgress} / ${g.target} mocy trzech najlepszych" else "${ui.weeklyProgress.coerceAtMost(g.target)} / ${g.target}"
+            KvRow("Postęp", shown, valueColor = if (done) Aaa.Jade else Aaa.Gold)
+            ThinBar(frac, if (done) Aaa.Jade else Aaa.Gold, height = 7.dp)
+            Section("Nagroda", "rozdana o świcie po spełnieniu")
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                RewardTile({ Text("💎", fontSize = 20.sp) }, "+${g.rewardStones}", "kamienie", Aaa.Azure, Modifier.weight(1f))
+                RewardTile({ Text("☯", fontSize = 20.sp, color = Aaa.GoldHi) }, "+${g.rewardReputation}", "reputacja", Aaa.GoldHi, Modifier.weight(1f))
+                g.rewardItem?.let { RewardTile({ ItemIcon(it, 28.dp) }, "+1", it, Aaa.Jade, Modifier.weight(1f)) }
+                RewardTile({ Text("🏮", fontSize = 20.sp) }, "+5", "morale", Aaa.Ember, Modifier.weight(1f))
+            }
+            InfoCard(accent = Aaa.Cinnabar) {
+                Overline("Cena porażki", color = Aaa.Cinnabar)
+                SheetBody("Morale −${com.example.game.engine.SectGoals.FAIL_MORALE} · reputacja −${g.rewardReputation / 2}", color = Aaa.TextHi, maxLines = 1)
+            }
         }
-        Section("Kronika wyzwań")
-        KvRow("Wygrane / przegrane", "${ui.goalsWon} / ${ui.goalsLost}", valueColor = Aaa.TextMid)
-        RuleHint("Co tydzień gry świat stawia sekcie jedno wyzwanie. Każde kolejne zwycięstwo podnosi poprzeczkę i nagrody.", maxLines = 3)
+        Section("Kronika wyzwań", "${ui.goalsWon} wygranych · ${ui.goalsLost} przegranych")
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            repeat(ui.goalsWon.coerceAtMost(12)) { Text("🏆", fontSize = 14.sp) }
+            repeat(ui.goalsLost.coerceAtMost(6)) { Text("🥀", fontSize = 14.sp) }
+            if (ui.goalsWon + ui.goalsLost == 0) SheetBody("Pierwsze wyzwanie przed sektą.", color = Aaa.TextLow, maxLines = 1)
+        }
+        RuleHint("Co tydzień gry świat stawia sekcie jedno wyzwanie. Każde zwycięstwo podnosi poprzeczkę i nagrody.", maxLines = 2)
     }
 }
 
 // ─── Okazje ──────────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalLayoutApi::class)
+private fun opportunityArt(k: com.example.model.OpportunityKind) = when (k) {
+    com.example.model.OpportunityKind.WANDERING_MASTER -> "avatar_sword_immortal"
+    com.example.model.OpportunityKind.RARE_MERCHANT -> "bg_forge_hall"
+    com.example.model.OpportunityKind.IMPERIAL_EXAM -> "bg_sect_sanctuary"
+    com.example.model.OpportunityKind.HIDDEN_CAVE -> "bg_combat_arena"
+    com.example.model.OpportunityKind.REFUGEES -> "bg_sect_sanctuary"
+}
+
 @Composable
 fun OpportunityPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: () -> Unit) {
     val o = ui.opportunity
-    SimplePanel(title = o?.let { "${it.kind.glyph} ${Opportunities.title(it)}" } ?: "Okazje", onClose = onClose) {
+    SimplePanel(title = o?.let { Opportunities.title(it) } ?: "Okazje", onClose = onClose) {
         if (o == null) {
-            SheetBody("Żadna okazja nie czeka. Wędrowcy, kupcy i wieści przychodzą co kilkanaście dni.", color = Aaa.TextLow)
+            InfoCard { SheetBody("Żadna okazja nie czeka. Wędrowcy, kupcy i wieści przychodzą co kilkanaście dni.", color = Aaa.TextMid) }
             return@SimplePanel
         }
         val left = (o.untilDay - ui.currentDay).coerceAtLeast(0)
-        SheetBody(Opportunities.description(o), color = Aaa.TextHi, maxLines = 5)
-        KvRow("Czas", if (left == 0) "ostatni dzień" else "jeszcze $left d.", valueColor = if (left == 0) Aaa.Cinnabar else Aaa.TextMid)
-        if (o.cost > 0) KvRow("Koszt", "${o.cost} kamieni", valueColor = if (ui.spiritStones >= o.cost) Aaa.Gold else Aaa.Cinnabar)
+        // Kadr okazji jak scena z manhwy.
+        Box(Modifier.fillMaxWidth().height(210.dp).clip(cutCornerTicket())) {
+            ArtImage(opportunityArt(o.kind), Modifier.matchParentSize(), alignment = androidx.compose.ui.BiasAlignment(0f, -0.5f), colorFilter = dimFilter(0.55f, 0.8f))
+            Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Transparent, Aaa.Ink0.copy(alpha = 0.95f)))))
+            Text(
+                if (left == 0) "OSTATNI DZIEŃ" else "JESZCZE $left D.",
+                style = AaaType.Overline.copy(fontSize = 10.sp, color = if (left == 0) Aaa.Cinnabar else Aaa.GoldHi, letterSpacing = 2.sp),
+                modifier = Modifier.align(Alignment.TopEnd).padding(10.dp).background(Aaa.Ink0.copy(alpha = 0.75f)).border(1.dp, Aaa.Hairline).padding(horizontal = 8.dp, vertical = 3.dp)
+            )
+            Column(Modifier.align(Alignment.BottomStart).padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Overline("${o.kind.glyph} Okazja", color = Aaa.Violet)
+                Text(Opportunities.title(o), fontFamily = BrushFont, color = Aaa.GoldHi, fontSize = 30.sp)
+            }
+        }
+        Text(Opportunities.description(o), style = AaaType.Body.copy(fontSize = 12.sp, lineHeight = 17.sp, color = Aaa.TextHi))
+        o.artifact?.let { a ->
+            Row(Modifier.fillMaxWidth().background(Aaa.Ink3.copy(alpha = 0.85f)).border(1.dp, rarityColor(a.rarity).copy(alpha = 0.5f)).padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                GearTile(a, com.example.game.engine.Gear.slotOf(a), 64.dp) {}
+                Column(Modifier.weight(1f)) {
+                    Text(a.name, style = AaaType.Label.copy(fontSize = 12.sp, color = rarityColor(a.rarity), fontWeight = FontWeight.Bold), maxLines = 2)
+                    Text("${a.rarity} · ${a.quality.polishName} · atak +${a.attackBonus} · obrona +${a.defenseBonus}", style = AaaType.Label.copy(fontSize = 10.sp, color = Aaa.TextMid))
+                    if (a.specialEffect.isNotBlank()) Text(a.specialEffect, style = AaaType.Label.copy(fontSize = 10.sp, color = Aaa.TextHi), maxLines = 2)
+                }
+            }
+        }
+        if (o.cost > 0) KvRow("Koszt", "${o.cost} kamieni (masz ${ui.spiritStones})", valueColor = if (ui.spiritStones >= o.cost) Aaa.Gold else Aaa.Cinnabar)
         var pick by remember(o) { mutableStateOf<String?>(null) }
         val needs = Opportunities.needsDisciple(o.kind)
         if (needs) {
-            Section("Kogo wysłać?")
-            val hint = when (o.kind) {
-                com.example.model.OpportunityKind.IMPERIAL_EXAM -> "Liczy się zrozumienie Dao."
-                com.example.model.OpportunityKind.HIDDEN_CAVE -> "Liczy się moc – słabszy może wrócić ranny."
-                else -> "Najwięcej zyska ten, kto ma najwięcej przed sobą."
+            val chanceOf: (Disciple) -> Int? = when (o.kind) {
+                com.example.model.OpportunityKind.IMPERIAL_EXAM -> { d -> Opportunities.examChance(d) }
+                com.example.model.OpportunityKind.HIDDEN_CAVE -> { d -> Opportunities.caveChance(d) }
+                else -> { _ -> null }
             }
-            SheetBody(hint, color = Aaa.TextLow, maxLines = 1)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                ui.disciples.filter { it.currentHp >= it.maxHp / 3 }.sortedByDescending {
-                    if (o.kind == com.example.model.OpportunityKind.IMPERIAL_EXAM) it.comprehension else it.combatPower
-                }.take(10).forEach { d ->
-                    val stat = if (o.kind == com.example.model.OpportunityKind.IMPERIAL_EXAM) "zr. ${d.comprehension}" else "${d.combatPower}"
-                    SelectChip("${short(d).substringBefore(" ")} · $stat", d.id == pick, Aaa.Gold) { pick = d.id }
+            Section("Kogo wysłać?", if (o.kind == com.example.model.OpportunityKind.WANDERING_MASTER) "zyskuje każdy" else "szansa powodzenia")
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ui.disciples.filter { it.currentHp >= it.maxHp / 3 }.sortedByDescending { chanceOf(it) ?: it.combatPower }.forEach { d ->
+                    val p = chanceOf(d)
+                    PortraitChip(d, d.id == pick, p?.let { "$it%" } ?: "${d.combatPower}",
+                        captionColor = p?.let { if (it >= 65) Aaa.Jade else if (it >= 40) Aaa.Ember else Aaa.Cinnabar } ?: Aaa.TextMid) { pick = d.id }
                 }
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             GhostButton("Odpraw", onClick = { viewModel.declineOpportunity(); onClose() }, modifier = Modifier.weight(1f))
-            GoldCta("Przyjmij", enabled = (!needs || pick != null) && ui.spiritStones >= o.cost,
+            GoldCta(if (needs && pick == null) "Wybierz ucznia" else "Przyjmij", enabled = (!needs || pick != null) && ui.spiritStones >= o.cost,
                 onClick = { viewModel.acceptOpportunity(pick); onClose() }, modifier = Modifier.weight(1.6f))
         }
     }
@@ -224,37 +311,77 @@ fun OpportunityPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: (
 
 // ─── Zarządca ────────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun PolicyCard(title: String, subtitle: String, on: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    Column(
+        modifier
+            .background(if (on) Aaa.Jade.copy(alpha = 0.14f) else Aaa.Ink3.copy(alpha = 0.85f))
+            .border(1.dp, if (on) Aaa.Jade else Aaa.Hairline)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(10.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(title, style = AaaType.Label.copy(fontSize = 11.5.sp, color = Aaa.TextHi), modifier = Modifier.weight(1f), maxLines = 1)
+            Text(if (on) "●" else "○", color = if (on) Aaa.Jade else Aaa.TextLow, fontSize = 13.sp)
+        }
+        Text(subtitle, style = AaaType.Label.copy(fontSize = 9.5.sp, color = Aaa.TextMid), maxLines = 2)
+    }
+}
+
 @Composable
 fun StewardPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onClose: () -> Unit) {
     val p = ui.steward
     fun set(x: StewardPolicy) = viewModel.setSteward(x)
+    val who = ui.disciples.find { it.id == p.stewardId }
     SimplePanel(title = "Zarządca skarbca", onClose = onClose) {
-        RuleHint("Zarządca codziennie handluje według twojej polityki: sprzedaje nadwyżki ziół i minerałów, oddaje kontrakty, dokupuje ryż. Charyzmatyczny targuje się o 5% lepiej, chciwy przy niskiej lojalności podbiera. Obiecanych przedmiotów nie rusza.", maxLines = 5)
-        Section("Zarządca")
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            SelectChip("Brak", p.stewardId == null, Aaa.TextMid) { set(p.copy(stewardId = null)) }
-            ui.disciples.take(14).forEach { d ->
-                val tag = when {
-                    d.traitIds.contains("charismatic") -> " ✦"
-                    d.traitIds.contains("greedy") -> " ⚠"
-                    else -> ""
+        // Biurko zarządcy: kto prowadzi księgi i co robi codziennie.
+        Row(
+            Modifier.fillMaxWidth().background(Brush.horizontalGradient(listOf(Aaa.Jade.copy(alpha = 0.14f), Aaa.Ink3.copy(alpha = 0.9f)))).border(1.dp, Aaa.Hairline).padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            if (who != null) PortraitChip(who, true, "zarządca", Aaa.Jade, size = 70.dp)
+            else Box(Modifier.size(70.dp).clip(cutCornerTicket()).background(Aaa.Ink2), contentAlignment = Alignment.Center) { Text("管", fontFamily = BrushFont, fontSize = 34.sp, color = Aaa.TextLow) }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(who?.let { short(it) } ?: "Księgi leżą odłogiem", fontFamily = BrushFont, fontSize = 22.sp, color = Aaa.GoldHi, maxLines = 1)
+                val duties = buildList {
+                    if (p.keepAbove > 0) add("sprzedaje nadwyżki ponad ${p.keepAbove}")
+                    if (p.autoContracts) add("oddaje kontrakty")
+                    if (p.autoFood) add("pilnuje spiżarni")
                 }
-                SelectChip("${short(d).substringBefore(" ")}$tag", d.id == p.stewardId, Aaa.Gold) { set(p.copy(stewardId = d.id)) }
+                SheetBody(if (who == null) "Wybierz ucznia poniżej." else if (duties.isEmpty()) "Czeka na twoje polecenia." else "Codziennie: " + duties.joinToString(", ") + ".", color = Aaa.TextHi, maxLines = 3)
+                who?.let { w ->
+                    when {
+                        w.traitIds.contains("charismatic") -> StateTag("✦ Charyzmatyczny: ceny +5%", Aaa.Jade)
+                        w.traitIds.contains("greedy") && w.loyalty < 50 -> StateTag("⚠ Chciwy: podbiera 5%", Aaa.Cinnabar)
+                        else -> Unit
+                    }
+                }
             }
         }
-        Section("Nadwyżki", if (p.keepAbove == 0) "nie sprzedawaj" else "trzymaj ${p.keepAbove}")
+        Section("Kto prowadzi księgi?", "✦ charyzma · ⚠ chciwość")
+        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            ui.disciples.sortedByDescending { if (it.traitIds.contains("charismatic")) 1 else 0 }.forEach { d ->
+                val tag = when {
+                    d.traitIds.contains("charismatic") -> "✦"
+                    d.traitIds.contains("greedy") -> "⚠"
+                    else -> null
+                }
+                PortraitChip(d, d.id == p.stewardId, "lojalność ${d.loyalty}", badge = tag) { set(p.copy(stewardId = if (d.id == p.stewardId) null else d.id)) }
+            }
+        }
+        Section("Nadwyżki ziół i minerałów")
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             listOf(0, 20, 50, 100).forEach { n ->
-                SelectChip(if (n == 0) "Nie" else "> $n", p.keepAbove == n, Aaa.Gold) { set(p.copy(keepAbove = n)) }
+                PolicyCard(if (n == 0) "Trzymaj" else "> $n", if (n == 0) "nic nie sprzedaje" else "sprzedaj resztę", p.keepAbove == n, Modifier.weight(1f)) { set(p.copy(keepAbove = n)) }
             }
         }
         Section("Obowiązki")
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            SelectChip("Kontrakty dostaw", p.autoContracts, Aaa.Jade) { set(p.copy(autoContracts = !p.autoContracts)) }
-            SelectChip("Pełna spiżarnia", p.autoFood, Aaa.Jade) { set(p.copy(autoFood = !p.autoFood)) }
+            PolicyCard("Kontrakty dostaw", "Oddaje, gdy magazyn ma towar.", p.autoContracts, Modifier.weight(1f)) { set(p.copy(autoContracts = !p.autoContracts)) }
+            PolicyCard("Pełna spiżarnia", "Dokupuje ryż na 5 dni.", p.autoFood, Modifier.weight(1f)) { set(p.copy(autoFood = !p.autoFood)) }
         }
-        if (p.stewardId == null) SheetBody("Bez zarządcy polityka czeka – wybierz ucznia.", color = Aaa.Ember, maxLines = 1)
+        RuleHint("Przedmiotów obiecanych uczniom zarządca nie rusza. Najwyżej 3 sprzedaże dziennie, od największej nadwyżki.", maxLines = 2)
     }
 }
 

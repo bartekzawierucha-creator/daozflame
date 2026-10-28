@@ -37,7 +37,10 @@ class Stage11Test {
     fun slotsAreRecognizedFromNames() {
         assertEquals(EquipSlot.WEAPON, Gear.slotOf(sword))
         assertEquals(EquipSlot.ARMOR, Gear.slotOf(robe))
-        assertEquals(EquipSlot.TREASURE, Gear.slotOf(ring))
+        assertEquals(EquipSlot.RING, Gear.slotOf(ring))
+        assertEquals(EquipSlot.HEAD, Gear.slotOf(Artifact("h", "Rogaty Hełm Mroźnego Qilina", "Niebiański", 15, 95, "")))
+        assertEquals(EquipSlot.HANDS, Gear.slotOf(Artifact("g", "Rękawice Smoczej Kości", "Boski", 120, 60, "")))
+        assertEquals(EquipSlot.RELIC, Gear.slotOf(Artifact("b", "Dzwon Tłumienia Duszy Pustki", "Nieśmiertelny", 110, 80, "")))
     }
 
     @Test
@@ -62,9 +65,9 @@ class Stage11Test {
         val d = s.disciples.first()
         repeat(3) { s = apply(s, GameCommand.Equip(d.id, 0)).state }
         val x = s.disciple(d.id)!!
-        assertTrue(Gear.fullSet(x))
-        assertEquals(d.attack + (95 + 30 + 75) * 110 / 100, x.attack)
-        assertEquals(d.defense + (15 + 95 + 25) * 110 / 100, x.defense)
+        assertEquals(Gear.SET_HALF, Gear.setPercent(Gear.items(x).size))
+        assertEquals(d.attack + (95 + 30 + 75) * (100 + Gear.SET_HALF) / 100, x.attack)
+        assertEquals(d.defense + (15 + 95 + 25) * (100 + Gear.SET_HALF) / 100, x.defense)
         s = apply(s, GameCommand.Unequip(d.id, EquipSlot.ARMOR)).state
         assertEquals(d.attack + 95 + 75, s.disciple(d.id)!!.attack)
     }

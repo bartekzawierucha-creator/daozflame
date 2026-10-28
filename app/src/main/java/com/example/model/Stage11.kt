@@ -5,11 +5,14 @@ package com.example.model
  * Każde pole ma wartość domyślną – stare zapisy wczytują się bez migracji.
  */
 
-/** Miejsca ekwipunku ucznia. */
+/** Miejsca ekwipunku ucznia (lalka postaci: lewa kolumna broń–dłonie–pierścień, prawa głowa–szata–relikwia). */
 enum class EquipSlot(val polishName: String, val glyph: String) {
     WEAPON("Broń", "⚔"),
+    HEAD("Głowa", "👑"),
     ARMOR("Szata", "🛡"),
-    TREASURE("Skarb", "💍")
+    HANDS("Dłonie", "🧤"),
+    RING("Pierścień", "💍"),
+    RELIC("Relikwia", "🔔")
 }
 
 /** Obietnica mistrza: nagroda za osiągnięcie wskazanego wielkiego królestwa przed terminem. */

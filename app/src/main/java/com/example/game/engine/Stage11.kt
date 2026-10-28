@@ -3,7 +3,7 @@ package com.example.game.engine
 /** Etap 11: dobowe systemy (blizny, obietnice, więzi, cel tygodnia, okazje, zarządca) i migracja. */
 object Stage11 {
     fun normalize(s: GameState): GameState {
-        if (s.disciples.none { it.equippedArtifact != null && Gear.slotOf(it.equippedArtifact) != com.example.model.EquipSlot.WEAPON }) return s
+        if (s.disciples.none { Gear.misplaced(it) }) return s
         return s.copy(disciples = s.disciples.map { Gear.normalize(it) })
     }
 

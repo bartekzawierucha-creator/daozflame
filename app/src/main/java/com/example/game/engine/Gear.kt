@@ -5,24 +5,31 @@ import com.example.model.Disciple
 import com.example.model.EquipSlot
 
 /**
- * Etap 11: ekwipunek ucznia – trzy miejsca: broń ([Disciple.equippedArtifact]), szata i skarb.
- * Premie artefaktu są wliczone w atak i obronę ucznia (jak dotąd); zdjęty przedmiot wraca do skarbca.
- * Pełny komplet tej samej lub wyższej jakości daje premię zestawu.
+ * Etap 11: ekwipunek ucznia – sześć miejsc wokół postaci: broń ([Disciple.equippedArtifact]), głowa, szata,
+ * dłonie, pierścień i relikwia ([Disciple.treasure]). Premie artefaktów są wliczone w atak i obronę ucznia;
+ * zdjęty przedmiot wraca do skarbca. Komplet: 3 przedmioty +[SET_HALF]%, wszystkie 6 +[SET_FULL]% premii przedmiotów.
  */
 object Gear {
-    /** Premia zestawu: +10% ataku i obrony z przedmiotów, gdy wszystkie trzy miejsca są zajęte. */
-    const val SET_BONUS_PERCENT = 10
+    const val SET_HALF_PIECES = 3
+    const val SET_HALF = 5
+    const val SET_FULL = 12
 
-    private val WEAPON_WORDS = listOf("miecz", "sztylet", "włóczni", "łuk", "lask", "bicz", "wachlarz", "rękawic", "kieł", "młot", "ostrz", "szabl", "topór", "kosa")
-    private val ARMOR_WORDS = listOf("pancerz", "zbroj", "szat", "płaszcz", "karwasz", "tarcz", "hełm", "kaptur", "pas ")
-    private val TREASURE_WORDS = listOf("pierścień", "dzwon", "zwierciadł", "kocioł", "koron", "wisior", "diadem", "gwiazdozbiór", "lustr", "amulet", "perł", "talizman")
+    private val WEAPON_WORDS = listOf("miecz", "sztylet", "włóczni", "łuk", "lask", "bicz", "wachlarz", "kieł", "młot", "ostrz", "szabl", "topór", "kosa", "halabard")
+    private val HEAD_WORDS = listOf("hełm", "diadem", "koron", "kaptur", "opask", "spink")
+    private val HANDS_WORDS = listOf("karwasz", "rękawic", "naramienn", "bransolet")
+    private val ARMOR_WORDS = listOf("pancerz", "zbroj", "szat", "płaszcz", "tarcz", "kamizel", "pas ")
+    private val RING_WORDS = listOf("pierścień", "sygnet")
+    private val RELIC_WORDS = listOf("dzwon", "zwierciadł", "kocioł", "wisior", "gwiazdozbiór", "lustr", "amulet", "perł", "talizman", "pieczęć", "tykw")
 
     fun slotOf(a: Artifact): EquipSlot {
         val n = a.name.lowercase()
         return when {
+            RING_WORDS.any { it in n } -> EquipSlot.RING
+            HEAD_WORDS.any { it in n } -> EquipSlot.HEAD
+            HANDS_WORDS.any { it in n } -> EquipSlot.HANDS
             WEAPON_WORDS.any { it in n } -> EquipSlot.WEAPON
             ARMOR_WORDS.any { it in n } -> EquipSlot.ARMOR
-            TREASURE_WORDS.any { it in n } -> EquipSlot.TREASURE
+            RELIC_WORDS.any { it in n } -> EquipSlot.RELIC
             a.attackBonus >= a.defenseBonus -> EquipSlot.WEAPON
             else -> EquipSlot.ARMOR
         }
@@ -30,26 +37,38 @@ object Gear {
 
     fun inSlot(d: Disciple, slot: EquipSlot): Artifact? = when (slot) {
         EquipSlot.WEAPON -> d.equippedArtifact
+        EquipSlot.HEAD -> d.head
         EquipSlot.ARMOR -> d.armor
-        EquipSlot.TREASURE -> d.treasure
+        EquipSlot.HANDS -> d.hands
+        EquipSlot.RING -> d.ring
+        EquipSlot.RELIC -> d.treasure
     }
 
-    fun items(d: Disciple): List<Artifact> = listOfNotNull(d.equippedArtifact, d.armor, d.treasure)
+    fun items(d: Disciple): List<Artifact> = EquipSlot.entries.mapNotNull { inSlot(d, it) }
 
-    fun fullSet(d: Disciple) = d.equippedArtifact != null && d.armor != null && d.treasure != null
+    fun fullSet(d: Disciple) = items(d).size == EquipSlot.entries.size
 
-    /** Łączna premia przedmiotów (z zestawem) – to, co siedzi w ataku i obronie ucznia. */
+    /** Premia kompletu w % dla danej liczby przedmiotów. */
+    fun setPercent(pieces: Int): Int = when {
+        pieces >= EquipSlot.entries.size -> SET_FULL
+        pieces >= SET_HALF_PIECES -> SET_HALF
+        else -> 0
+    }
+
+    /** Łączna premia przedmiotów (z kompletem) – to, co siedzi w ataku i obronie ucznia. */
     fun bonus(d: Disciple): Pair<Int, Int> {
         val it = items(d)
-        val atk = it.sumOf { a -> a.attackBonus }
-        val def = it.sumOf { a -> a.defenseBonus }
-        return if (fullSet(d)) atk * (100 + SET_BONUS_PERCENT) / 100 to def * (100 + SET_BONUS_PERCENT) / 100 else atk to def
+        val pct = 100 + setPercent(it.size)
+        return it.sumOf { a -> a.attackBonus } * pct / 100 to it.sumOf { a -> a.defenseBonus } * pct / 100
     }
 
     private fun place(d: Disciple, slot: EquipSlot, a: Artifact?): Disciple = when (slot) {
         EquipSlot.WEAPON -> d.copy(equippedArtifact = a)
+        EquipSlot.HEAD -> d.copy(head = a)
         EquipSlot.ARMOR -> d.copy(armor = a)
-        EquipSlot.TREASURE -> d.copy(treasure = a)
+        EquipSlot.HANDS -> d.copy(hands = a)
+        EquipSlot.RING -> d.copy(ring = a)
+        EquipSlot.RELIC -> d.copy(treasure = a)
     }
 
     /** Zmiana ekwipunku z przeliczeniem premii (stara premia odjęta, nowa dodana). */
@@ -60,6 +79,9 @@ object Gear {
         return x.copy(attack = (d.attack - oa + na).coerceAtLeast(1), defense = (d.defense - od + nd).coerceAtLeast(0))
     }
 
+    /** Podgląd: (atak, obrona) ucznia po założeniu [a] – do porównania w interfejsie. */
+    fun preview(d: Disciple, a: Artifact): Pair<Int, Int> = reequip(d, slotOf(a), a).let { it.attack to it.defense }
+
     /** Załóż artefakt ze skarbca; poprzedni z tego miejsca wraca do skarbca. */
     fun equip(s: GameState, discipleId: String, vaultIndex: Int): StepResult {
         val d = s.disciple(discipleId) ?: return ok(s)
@@ -68,11 +90,12 @@ object Gear {
         val prev = inSlot(d, slot)
         val vault = s.vaultArtifacts.filterIndexed { i, _ -> i != vaultIndex } + listOfNotNull(prev)
         val after = reequip(d, slot, a)
-        val set = !fullSet(d) && fullSet(after)
+        val before = setPercent(items(d).size)
+        val now = setPercent(items(after).size)
         return ok(
             s.copy(vaultArtifacts = vault, disciples = s.disciples.map { if (it.id == d.id) after else it }),
             "${Autonomy.short(d)}: ${slot.polishName.lowercase()} – ${a.name}." + (prev?.let { " ${it.name} wraca do skarbca." } ?: "") +
-                if (set) " Pełny komplet: +$SET_BONUS_PERCENT% premii przedmiotów!" else ""
+                if (now > before) " Komplet ${items(after).size}/${EquipSlot.entries.size}: +$now% premii przedmiotów!" else ""
         )
     }
 
@@ -93,13 +116,16 @@ object Gear {
         return ok(s.copy(disciples = s.disciples.map { if (it.id == d.id) after else it }), "Wyposażono artefakt: ${artifact.name}!")
     }
 
-    /** Migracja: broń założona przed Etapem 11, która jest szatą lub skarbem, trafia na właściwe miejsce. */
+    /** Migracja: przedmioty założone na niewłaściwe miejsce (stare zapisy) trafiają na swoje, jeśli jest wolne. */
     fun normalize(d: Disciple): Disciple {
-        val a = d.equippedArtifact ?: return d
-        return when (slotOf(a)) {
-            EquipSlot.WEAPON -> d
-            EquipSlot.ARMOR -> if (d.armor == null) d.copy(equippedArtifact = null, armor = a) else d
-            EquipSlot.TREASURE -> if (d.treasure == null) d.copy(equippedArtifact = null, treasure = a) else d
+        var x = d
+        for (slot in listOf(EquipSlot.WEAPON, EquipSlot.ARMOR, EquipSlot.RELIC)) {
+            val a = inSlot(x, slot) ?: continue
+            val right = slotOf(a)
+            if (right != slot && inSlot(x, right) == null) x = place(place(x, slot, null), right, a)
         }
+        return x
     }
+
+    fun misplaced(d: Disciple): Boolean = EquipSlot.entries.any { s -> inSlot(d, s)?.let { slotOf(it) != s } == true }
 }
