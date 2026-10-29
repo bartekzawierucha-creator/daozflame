@@ -224,6 +224,16 @@ fun eventArtKey(title: String): String {
     }
 }
 
+/** Przywódca sekty: własna grafika 9:16 (leader_<id sekty>), inaczej wspólna wg charakteru sekty. */
+@Composable
+fun sectLeaderArt(s: com.example.model.RivalSect): String =
+    if (rememberWuxiaGraphic("leader_${s.id}") != null) "leader_${s.id}" else sectLeaderKey(s.name, s.alignment)
+
+/** Twarz przywódcy do małych ikon (null = brak własnej grafiki). */
+@Composable
+fun sectLeaderFace(s: com.example.model.RivalSect): String? =
+    "leader_${s.id}_face".takeIf { rememberWuxiaGraphic(it) != null }
+
 /** Przywódca wrogiej sekty – po nazwie / charakterze sekty. */
 fun sectLeaderKey(name: String, alignment: String = ""): String {
     val n = (name + " " + alignment).lowercase()

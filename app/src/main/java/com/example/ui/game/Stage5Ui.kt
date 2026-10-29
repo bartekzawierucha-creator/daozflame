@@ -226,7 +226,7 @@ fun SectsPanel(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, sect: com.exampl
         onSelect = { tab = SectsTab.entries[it] },
         onClose = onClose,
         header = {
-            sect?.let { NpcScene("bg_sect_sanctuary", sectLeaderKey(it.name, it.alignment), "Przywódca: ${it.leaderName}", it.name, height = 150.dp, overlineColor = statusColor(it.status)) }
+            sect?.let { NpcScene("bg_sect_sanctuary", sectLeaderArt(it), "Przywódca: ${it.leaderName}", it.name, height = 150.dp, overlineColor = statusColor(it.status)) }
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 ui.raid?.let { StateTag("⚠ Najazd za ${(it.arriveDay - ui.currentDay).coerceAtLeast(0)} d.", Aaa.Cinnabar) }
                 StateTag("Formacja ${ui.formationNodes.size}/7", Aaa.Gold)

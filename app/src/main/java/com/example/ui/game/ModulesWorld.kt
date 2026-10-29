@@ -474,7 +474,7 @@ fun ClansModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
             glyphAlpha = 0f,
             background = {
                 // Przywódca wybranej sekty na cały ekran.
-                if (s != null) FullFigure(sectLeaderKey(s.name, s.alignment), topPad = 40.dp, heightFraction = 0.8f, bias = 0.3f)
+                if (s != null) FullFigure(sectLeaderArt(s), topPad = 40.dp, heightFraction = 0.8f, bias = 0.3f)
                 else ArtImage("bg_sect_sanctuary", Modifier.matchParentSize().blur(10.dp), colorFilter = dimFilter(0.32f, 0.5f))
             },
             topRight = { CurrencyPill(AaaGlyph.REPUTATION, ui.sectReputation) }
@@ -506,7 +506,9 @@ fun ClansModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
                                 .testTag("clan_${x.id}"),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(sectGlyph(x.name), fontFamily = BrushFont, fontSize = 24.sp, color = Aaa.GoldHi)
+                            val face = sectLeaderFace(x)
+                            if (face != null) ArtImage(face, Modifier.matchParentSize().padding(2.dp).clip(CircleShape), alignment = Alignment.TopCenter)
+                            else Text(sectGlyph(x.name), fontFamily = BrushFont, fontSize = 24.sp, color = Aaa.GoldHi)
                         }
                         if (x.status == DiplomaticStatus.TOTAL_WAR || x.status == DiplomaticStatus.COLD_WAR || x.activeTrade != null) {
                             Box(Modifier.align(Alignment.TopEnd)) { RedDot(if (x.activeTrade != null) "$" else "!") }
