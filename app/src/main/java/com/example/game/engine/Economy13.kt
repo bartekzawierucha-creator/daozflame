@@ -61,7 +61,7 @@ object Auction {
                 }
                 1 -> {
                     val grade = com.example.model.MethodGrade.entries.getOrElse((top / 2 + rng.nextInt(2)).coerceAtMost(3)) { com.example.model.MethodGrade.BLACK }
-                    val path = com.example.model.CultivationPath.entries.random(rng)
+                    val path = CombatSystem.wantedPath(s, rng)
                     val m = Realms.methodOf(path, grade)
                     AuctionLot(m.scrollItem, TIER_PRICE[(grade.ordinal + 1).coerceAtMost(5)] * 2, item = m.scrollItem)
                 }

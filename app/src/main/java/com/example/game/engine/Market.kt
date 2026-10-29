@@ -150,7 +150,7 @@ object Market {
     /** Oferty czarnego rynku zależą od ziarna i dnia – ta sama noc, te same oferty. */
     fun blackOffers(s: GameState): List<BlackOffer> {
         val rng = GameRng.stream(s.worldSeed, s.currentDay.toLong(), "black-market")
-        val path = com.example.model.CultivationPath.entries.random(rng)
+        val path = CombatSystem.wantedPath(s, rng)
         val grade = if (rng.nextInt(100) < 25) MethodGrade.MYSTIC else MethodGrade.BLACK
         val scroll = Realms.methodOf(path, grade).scrollItem
         return listOf(

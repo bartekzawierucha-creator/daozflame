@@ -364,6 +364,9 @@ object Expeditions {
         val lootRng = ctx.rng("boss-loot")
         val dropped = if (lootRng.nextInt(100) < Loot.BOSS_ARTIFACT_CHANCE) Loot.artifactFor(s.regions.indexOfFirst { it.id == region.id }, lootRng) else null
         if (dropped != null) paid = paid.copy(vaultArtifacts = paid.vaultArtifacts + dropped)
+        // Zwój metody – tak samo jak w walce ze strażnikiem.
+        val scroll = CombatSystem.rollScroll(s, run.discipleId, s.regions.indexOfFirst { it.id == region.id }, lootRng)
+        if (scroll != null) inv[scroll] = (inv[scroll] ?: 0) + 1
         val (withEgg, eggMsg) = Road.firstEgg(paid)
         paid = withEgg
         paid = paid.copy(
@@ -372,7 +375,7 @@ object Expeditions {
             sectReputation = paid.sectReputation + 25,
             regions = paid.regions.map { if (it.id == region.id) it.copy(explorationProgress = (it.explorationProgress + 25).coerceAtMost(100)) else it }
         )
-        val notes = mutableListOf("Wyprawa (auto): pokonano ${boss.name}." + (dropped?.let { " Łup: ${it.name}." } ?: "") + (eggMsg?.let { " $it" } ?: ""))
+        val notes = mutableListOf("Wyprawa (auto): pokonano ${boss.name}." + (dropped?.let { " Łup: ${it.name}." } ?: "") + (scroll?.let { " Znaleziono: $it!" } ?: "") + (eggMsg?.let { " $it" } ?: ""))
         if (paid.regions.first { it.id == region.id }.explorationProgress >= 100) {
             val (withTrail, msg) = FlameSources.onRegionExplored(paid, region.id)
             paid = withTrail

@@ -201,6 +201,22 @@ object CombatSystem {
         else -> com.example.model.MethodGrade.HEAVENLY
     }
 
+    /** Zwój z bossa krainy (także na wyprawie Auto): 25%, zwykle ścieżki zwycięzcy (75%). */
+    fun rollScroll(s: GameState, discipleId: String, regionIndex: Int, rng: kotlin.random.Random): String? {
+        if (!s.e3Initialized || rng.nextInt(100) >= SCROLL_DROP_CHANCE) return null
+        val own = s.disciple(discipleId)?.path
+        val path = if (own != null && rng.nextInt(100) < 75) own else com.example.model.CultivationPath.entries.random(rng)
+        return Realms.methodOf(path, scrollGrade(regionIndex)).scrollItem
+    }
+
+    /** Ścieżka, której sekta naprawdę potrzebuje: losowo spośród ścieżek uczniów (częściej tych przy suficie metody). */
+    fun wantedPath(s: GameState, rng: kotlin.random.Random): com.example.model.CultivationPath {
+        val stuck = s.disciples.filter { d -> d.path != null && d.majorRealm?.next?.let { it.ordinal > Realms.ceiling(d).ordinal } == true }.mapNotNull { it.path }
+        val all = s.disciples.mapNotNull { it.path }
+        val pool = stuck.ifEmpty { all }
+        return if (pool.isNotEmpty() && rng.nextInt(100) < 70) pool.random(rng) else com.example.model.CultivationPath.entries.random(rng)
+    }
+
     /** Koniec walki: łupy, eksploracja krainy, HP ucznia, reputacja. */
     private fun finish(s: GameState, c: ActiveCombat, victory: Boolean, vararg extra: GameEvent): StepResult {
         val beast = c.enemy
@@ -217,13 +233,9 @@ object CombatSystem {
             inv[beast.dropItemName] = (inv[beast.dropItemName] ?: 0) + 1
             if (s.e3Initialized) {
                 val rng = GameRng.stream(s.worldSeed, s.step, "scroll-drop")
-                if (rng.nextInt(100) < SCROLL_DROP_CHANCE) {
-                    // Zwój zwykle pasuje do ścieżki zwycięzcy (75%), czasem to cudza nauka.
-                    val own = s.disciple(c.discipleId)?.path
-                    val path = if (own != null && rng.nextInt(100) < 75) own else com.example.model.CultivationPath.entries.random(rng)
-                    val m = Realms.methodOf(path, scrollGrade(s.regions.indexOfFirst { it.id == region.id }))
-                    inv[m.scrollItem] = (inv[m.scrollItem] ?: 0) + 1
-                    scroll = m.scrollItem
+                rollScroll(s, c.discipleId, s.regions.indexOfFirst { it.id == region.id }, rng)?.let { item ->
+                    inv[item] = (inv[item] ?: 0) + 1
+                    scroll = item
                 }
             }
         }
