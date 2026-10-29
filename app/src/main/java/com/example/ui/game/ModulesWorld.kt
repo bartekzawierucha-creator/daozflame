@@ -471,16 +471,14 @@ fun ClansModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
             onBack = onBack,
             accent = s?.let { statusColor(it.status) } ?: Aaa.Gold,
             glyph = s?.let { sectGlyph(it.name) } ?: GameModule.CLANS.glyph,
+            glyphAlpha = 0f,
             background = {
-                ArtImage("bg_sect_sanctuary", Modifier.matchParentSize().blur(10.dp), colorFilter = dimFilter(0.32f, 0.5f))
+                // Przywódca wybranej sekty na cały ekran.
+                if (s != null) FullFigure(sectLeaderKey(s.name, s.alignment), topPad = 40.dp, heightFraction = 0.8f, bias = 0.3f)
+                else ArtImage("bg_sect_sanctuary", Modifier.matchParentSize().blur(10.dp), colorFilter = dimFilter(0.32f, 0.5f))
             },
             topRight = { CurrencyPill(AaaGlyph.REPUTATION, ui.sectReputation) }
         ) {
-            // Etap 16: przywódca wybranej sekty jako postać w kadrze.
-            if (s != null) HeroArt(
-                sectLeaderKey(s.name, s.alignment),
-                Modifier.align(Alignment.TopEnd).padding(top = 56.dp).fillMaxHeight(0.52f).fillMaxWidth(0.62f)
-            )
             Column(
                 modifier = Modifier
                     .safeTop()

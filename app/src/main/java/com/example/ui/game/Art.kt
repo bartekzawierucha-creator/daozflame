@@ -20,6 +20,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -432,5 +435,30 @@ fun IconTab(key: String, label: String, modifier: Modifier = Modifier, badge: St
         }
         Text(label, style = AaaType.Label.copy(fontSize = 10.sp, color = Aaa.TextHi), maxLines = 1)
     }
+}
+
+
+/**
+ * Postać na cały ekran: ta sama grafika rozmyta jako tło (wypełnia ekran) i ostra postać na pełną wysokość,
+ * z miękko wtopionymi krawędziami – bez widocznej ramki.
+ */
+@Composable
+fun androidx.compose.foundation.layout.BoxScope.FullFigure(key: String, topPad: Dp = 56.dp, heightFraction: Float = 0.78f, bias: Float = 0.25f) {
+    val full = if (rememberWuxiaGraphic(key + "_full") != null) key + "_full" else key
+    ArtImage(full, Modifier.matchParentSize().blur(22.dp), colorFilter = dimFilter(0.42f, 0.85f))
+    ArtImage(
+        full,
+        Modifier.align(androidx.compose.ui.BiasAlignment(bias, -1f)).padding(top = topPad).fillMaxHeight(heightFraction).fillMaxWidth(0.82f)
+            .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+            .drawWithContent {
+                drawContent()
+                drawRect(Brush.horizontalGradient(0f to Color.Transparent, 0.2f to Color.Black, 0.8f to Color.Black, 1f to Color.Transparent),
+                    blendMode = androidx.compose.ui.graphics.BlendMode.DstIn)
+                drawRect(Brush.verticalGradient(0f to Color.Black, 0.72f to Color.Black, 1f to Color.Transparent),
+                    blendMode = androidx.compose.ui.graphics.BlendMode.DstIn)
+            },
+        alignment = Alignment.TopCenter,
+        contentScale = ContentScale.Fit
+    )
 }
 
