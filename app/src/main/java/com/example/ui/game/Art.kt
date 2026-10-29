@@ -445,20 +445,21 @@ fun IconTab(key: String, label: String, modifier: Modifier = Modifier, badge: St
 @Composable
 fun androidx.compose.foundation.layout.BoxScope.FullFigure(key: String, topPad: Dp = 56.dp, heightFraction: Float = 0.78f, bias: Float = 0.25f) {
     val full = if (rememberWuxiaGraphic(key + "_full") != null) key + "_full" else key
-    ArtImage(full, Modifier.matchParentSize().blur(22.dp), colorFilter = dimFilter(0.42f, 0.85f))
+    ArtImage(full, Modifier.matchParentSize().blur(40.dp), colorFilter = dimFilter(0.3f, 0.7f))
+    Box(Modifier.matchParentSize().background(Brush.horizontalGradient(listOf(Aaa.Ink0.copy(alpha = 0.7f), Color.Transparent, Aaa.Ink0.copy(alpha = 0.7f)))))
     ArtImage(
         full,
-        Modifier.align(androidx.compose.ui.BiasAlignment(bias, -1f)).padding(top = topPad).fillMaxHeight(heightFraction).fillMaxWidth(0.82f)
+        Modifier.align(androidx.compose.ui.BiasAlignment(bias, -1f)).padding(top = topPad).fillMaxHeight(heightFraction).fillMaxWidth(0.7f)
             .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
             .drawWithContent {
                 drawContent()
-                drawRect(Brush.horizontalGradient(0f to Color.Transparent, 0.2f to Color.Black, 0.8f to Color.Black, 1f to Color.Transparent),
+                drawRect(Brush.horizontalGradient(0f to Color.Transparent, 0.18f to Color.Black, 0.82f to Color.Black, 1f to Color.Transparent),
                     blendMode = androidx.compose.ui.graphics.BlendMode.DstIn)
                 drawRect(Brush.verticalGradient(0f to Color.Black, 0.72f to Color.Black, 1f to Color.Transparent),
                     blendMode = androidx.compose.ui.graphics.BlendMode.DstIn)
             },
         alignment = Alignment.TopCenter,
-        contentScale = ContentScale.Fit
+        contentScale = ContentScale.Crop
     )
 }
 
