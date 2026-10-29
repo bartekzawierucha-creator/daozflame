@@ -40,6 +40,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -240,7 +242,16 @@ private fun PaperDoll(d: Disciple, ui: WuxiaUiState, school: Color, selected: Eq
             drawCircle(Brush.radialGradient(listOf(school.copy(alpha = 0.28f), Color.Transparent), center = Offset(size.width / 2, size.height * 0.45f), radius = size.width * 0.42f))
         })
         Art("orn_seal_ring", Modifier.align(Alignment.Center).offset(y = (-14).dp).size(250.dp).rotate(angle).alpha(0.45f))
-        Art(bodyKey(d), Modifier.align(Alignment.BottomCenter).padding(bottom = 22.dp).width(190.dp).fillMaxHeight(0.95f), alignment = Alignment.BottomCenter)
+        // Ta sama postać co na karcie ucznia, wtopiona w tło miękką winietą.
+        ArtImage(heroKey(d).first,
+            Modifier.align(Alignment.BottomCenter).padding(bottom = 18.dp).width(200.dp).fillMaxHeight(0.96f)
+                .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+                .drawWithContent {
+                    drawContent()
+                    drawRect(Brush.radialGradient(0.55f to Color.Black, 1f to Color.Transparent, center = Offset(size.width / 2, size.height * 0.4f), radius = size.maxDimension * 0.62f),
+                        blendMode = androidx.compose.ui.graphics.BlendMode.DstIn)
+                },
+            alignment = Alignment.TopCenter)
         // Wtopienie dołu portretu w tło.
         Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(90.dp).background(Brush.verticalGradient(listOf(Color.Transparent, Aaa.Ink1))))
         Column(Modifier.align(Alignment.CenterStart).padding(start = 10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {

@@ -54,46 +54,35 @@ import com.example.ui.graphics.rememberWuxiaGraphic
 
 // ─── Uczniowie ───────────────────────────────────────────────────────────────
 
+/** Postać ucznia: duża grafika na kartę + portret wycięty z tej samej grafiki (twarz zawsze ta sama). */
+private data class Look(val hero: String, val portrait: String)
+
+private fun looks(slug: String, g: String, classic: String? = null): List<Look> =
+    (1..3).map { Look("hero_${slug}_$g$it", "portrait_${slug}_$g$it") } +
+        listOfNotNull(classic?.let { Look("avatar_$it", "portrait_classic_$it") })
+
 private val FEMALE_POOL = mapOf(
-    MartialSchool.SWORD_IMMORTAL to listOf("sword_buns", "sword_hairpin", "sword_stern", "sword_twin"),
-    MartialSchool.BODY_ASURA to listOf("asura_braid", "asura_scarred", "asura_nun", "asura_tribal"),
-    MartialSchool.ELEMENTAL_TAOIST to listOf("taoist_flame", "taoist_sage", "taoist_alchemist", "taoist_diviner"),
-    MartialSchool.SHADOW_VIPER to listOf("viper_masked", "viper_pale", "viper_veil", "viper_snake")
+    MartialSchool.SWORD_IMMORTAL to looks("sword", "f"),
+    MartialSchool.BODY_ASURA to looks("asura", "f"),
+    MartialSchool.ELEMENTAL_TAOIST to looks("taoist", "f"),
+    MartialSchool.SHADOW_VIPER to looks("viper", "f", "shadow_viper")
 )
 private val MALE_POOL = mapOf(
-    MartialSchool.SWORD_IMMORTAL to listOf("sword_ponytail", "sword_scar", "sword_elder", "sword_jade"),
-    MartialSchool.BODY_ASURA to listOf("asura_grin", "asura_wild", "asura_monk", "asura_chains"),
-    MartialSchool.ELEMENTAL_TAOIST to listOf("taoist_lightning", "taoist_scholar", "taoist_fan", "taoist_incense"),
-    MartialSchool.SHADOW_VIPER to listOf("viper_hooded", "viper_elder", "viper_oni", "viper_fan")
+    MartialSchool.SWORD_IMMORTAL to looks("sword", "m", "sword_immortal"),
+    MartialSchool.BODY_ASURA to looks("asura", "m", "body_asura"),
+    MartialSchool.ELEMENTAL_TAOIST to looks("taoist", "m", "elemental_taoist"),
+    MartialSchool.SHADOW_VIPER to looks("viper", "m")
 )
 
 private fun female(d: Disciple) = d.gender == "Kobieta"
-private fun lifespan(d: Disciple) = (d.majorRealm ?: MajorRealm.QI_CONDENSATION).lifespanYears
 
-/**
- * Portret ucznia. Stan ucznia ma pierwszeństwo przed wyglądem szkoły: demon serca, ciężkie blizny,
- * starość, talent SSS, młody rekrut, sierota. Inaczej stały wybór z puli szkoły i płci.
- */
-fun portraitKey(d: Disciple): String {
-    special(d)?.let { return "special_$it" }
-    val pool = (if (female(d)) FEMALE_POOL else MALE_POOL)[d.martialSchool] ?: listOf("sword_ponytail")
-    return "portrait_" + pool[Math.floorMod(d.id.hashCode(), pool.size)]
+private fun look(d: Disciple): Look {
+    val pool = (if (female(d)) FEMALE_POOL else MALE_POOL)[d.martialSchool] ?: looks("sword", "m", "sword_immortal")
+    return pool[Math.floorMod(d.id.hashCode(), pool.size)]
 }
 
-private fun special(d: Disciple): String? = when {
-    d.heartDemon || (d.path == CultivationPath.DEMONIC && d.cursed) -> "demonic"
-    d.has("traitor") && d.loyalty < 30 -> "traitor"
-    d.scars >= 5 -> "crippled"
-    d.ageYears >= lifespan(d) * 85 / 100 -> "elder"
-    d.talentGrade == TalentGrade.SSS -> "prodigy"
-    (d.majorRealm == null || d.majorRealm.ordinal <= MajorRealm.QI_CONDENSATION.ordinal) && d.ageYears <= 16 ->
-        if (female(d)) "recruit_f" else "recruit_m"
-    d.origin == OriginType.SECRET_REALM_ORPHAN && d.ageYears <= 20 -> "orphan"
-    else -> null
-}
-
-/** Płeć postaci na starych pełnych grafikach szkół (miecz, asura, taoista – mężczyźni; żmija – kobieta). */
-private val AVATAR_FEMALE = setOf(MartialSchool.SHADOW_VIPER)
+/** Portret ucznia – wycinek twarzy z jego dużej grafiki. */
+fun portraitKey(d: Disciple): String = look(d).portrait
 
 private fun schoolSlug(s: MartialSchool) = when (s) {
     MartialSchool.SWORD_IMMORTAL -> "sword"
@@ -102,20 +91,8 @@ private fun schoolSlug(s: MartialSchool) = when (s) {
     MartialSchool.SHADOW_VIPER -> "viper"
 }
 
-/**
- * Pełna postać na karcie ucznia. Duża grafika szkoły tylko przy zgodnej płci i co drugim uczniu,
- * reszta dostaje wyciętą sylwetkę swojej płci – kobieta-szermierz nie wygląda już jak Li Long.
- * Druga wartość: true = wycinek z przezroczystym tłem (rysujemy w całości, stopami do dołu).
- */
-fun heroKey(d: Disciple): Pair<String, Boolean> {
-    val classicFits = female(d) == (d.martialSchool in AVATAR_FEMALE)
-    return if (classicFits && Math.floorMod(d.id.hashCode() / 7, 2) == 0)
-        com.example.ui.graphics.WuxiaAssetLoader.getSchoolAvatarKey(d.martialSchool) to false
-    else "body_${if (female(d)) "f" else "m"}_${schoolSlug(d.martialSchool)}" to true
-}
-
-/** Wycięta pełna sylwetka (przezroczyste tło) – lalka ekwipunku. */
-fun bodyKey(d: Disciple) = "body_${if (female(d)) "f" else "m"}_${schoolSlug(d.martialSchool)}"
+/** Pełna postać na karcie ucznia (ta sama osoba co na portrecie). Druga wartość: wycinek bez tła – teraz zawsze false. */
+fun heroKey(d: Disciple): Pair<String, Boolean> = look(d).hero to false
 
 fun roleKey(r: DiscipleRole) = "role_" + r.name.lowercase()
 
@@ -224,9 +201,15 @@ fun eventArtKey(title: String): String {
         has("duch", "przodk", "założyciel") -> "npc_founder_ghost"
         has("bandy", "rozbój", "zbój") -> "foe_bandit"
         has("szpieg", "skrytob", "zamach") -> "foe_spy"
+        has("demon serca", "opęta") -> "special_demonic"
         has("demon", "krwi", "kult") -> "foe_demonic"
         has("mnich", "klasztor") -> "special_monk"
         has("sierot", "dzieck", "dziec") -> "special_orphan"
+        has("starość", "staroś", "umier", "odchodzi") -> "special_elder"
+        has("zdrad") -> "special_traitor"
+        has("geniusz", "talent", "cudown") -> "special_prodigy"
+        has("rekrut", "nabór", "kandydat") -> "special_recruit_m"
+        has("kalek", "okalecz", "rany") -> "special_crippled"
         has("besti", "smok") -> "beast_azure_dragon"
         has("piorun", "burz", "niebios") -> "bg_region_desert"
         has("grobow", "ruin", "wieża") -> "bg_tower"
