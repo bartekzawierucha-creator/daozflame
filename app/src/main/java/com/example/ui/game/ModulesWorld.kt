@@ -507,7 +507,7 @@ fun ClansModule(ui: WuxiaUiState, viewModel: WuxiaGameViewModel, onBack: () -> U
                             contentAlignment = Alignment.Center
                         ) {
                             val face = sectLeaderFace(x)
-                            if (face != null) ArtImage(face, Modifier.matchParentSize().padding(2.dp).clip(CircleShape), alignment = Alignment.TopCenter)
+                            if (face != null) ArtImage(face, Modifier.matchParentSize().padding(2.dp).clip(CircleShape))
                             else Text(sectGlyph(x.name), fontFamily = BrushFont, fontSize = 24.sp, color = Aaa.GoldHi)
                         }
                         if (x.status == DiplomaticStatus.TOTAL_WAR || x.status == DiplomaticStatus.COLD_WAR || x.activeTrade != null) {
